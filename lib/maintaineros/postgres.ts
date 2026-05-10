@@ -1,0 +1,162 @@
+import { createRequire } from 'node:module';
+
+export type PgClient = {
+  query<T = Record<string, unknown>>(text: string, values?: unknown[]): Promise<{ rows: T[]; rowCount: number | null }>;
+};
+
+type PgPoolClient = PgClient & {
+  release(): void;
+};
+
+type PgPool = {
+  connect(): Promise<PgPoolClient>;
+};
+
+type PgPoolConstructor = new (options: { connectionString: string; ssl?: { rejectUnauthorized: boolean }; connectionTimeoutMillis?: number }) => PgPool;
+
+const require = createRequire(import.meta.url);
+let pool: PgPool | null = null;
+let schemaReady: Promise<void> | null = null;
+
+export function getDatabaseUrl() {
+  return process.env.NEON_DATABASE_URL || process.env.DATABASE_URL || '';
+}
+
+export function hasNeonConnection() {
+  return Boolean(getDatabaseUrl());
+}
+
+export async function withPostgres<T>(fn: (client: PgClient) => Promise<T>): Promise<T> {
+  const client = await getPool().connect();
+  try {
+    await ensureSchemaReady(client);
+    return await fn(client);
+  } finally {
+    client.release();
+  }
+}
+
+function getPool() {
+  if (pool) return pool;
+
+  const connectionString = getDatabaseUrl();
+  if (!connectionString) {
+    throw new Error('NEON_DATABASE_URL or DATABASE_URL is required for live MaintainerOS data.');
+  }
+
+  const { Pool } = require('pg') as { Pool: PgPoolConstructor };
+  pool = new Pool({
+    connectionString,
+    ssl: connectionString.includes('sslmode=disable') ? undefined : { rejectUnauthorized: false },
+    connectionTimeoutMillis: Number(process.env.MAINTAINEROS_POSTGRES_CONNECTION_TIMEOUT_MS || '3000'),
+  });
+  return pool;
+}
+
+async function ensureSchemaReady(client: PgClient) {
+  schemaReady ??= ensureMaintainerSchema(client);
+  try {
+    await schemaReady;
+  } catch (error) {
+    schemaReady = null;
+    throw error;
+  }
+}
+
+async function ensureMaintainerSchema(client: PgClient) {
+  await client.query(`
+    create table if not exists maintaineros_repositories (
+      id text primary key,
+      provider text not null default 'github',
+      owner text not null,
+      name text not null,
+      full_name text not null,
+      html_url text not null,
+      open_issue_count integer not null default 0,
+      imported_at timestamptz,
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    )
+  `);
+
+  await client.query(`
+    create table if not exists maintaineros_issues (
+      id text primary key,
+      repository_id text not null references maintaineros_repositories(id) on delete cascade,
+      number integer not null,
+      title text not null,
+      body text not null default '',
+      author text not null,
+      labels jsonb not null default '[]'::jsonb,
+      comments_count integer not null default 0,
+      html_url text not null,
+      state text not null default 'open',
+      created_at timestamptz,
+      updated_at timestamptz,
+      closed_at timestamptz,
+      unique(repository_id, number)
+    )
+  `);
+
+  await client.query(`
+    create table if not exists maintaineros_import_runs (
+      id text primary key,
+      provider text not null default 'github',
+      owner text not null,
+      repo text not null,
+      requested_limit integer not null,
+      imported_issue_count integer not null default 0,
+      skipped_pull_request_count integer not null default 0,
+      status text not null,
+      source_state text not null default 'live',
+      started_at timestamptz not null,
+      finished_at timestamptz,
+      error_message text
+    )
+  `);
+
+  await client.query(`
+    create table if not exists maintaineros_provider_runs (
+      id text primary key,
+      provider text not null,
+      purpose text not null,
+      status text not null,
+      source_state text not null,
+      repository_id text,
+      issue_number integer,
+      artifact_url text,
+      latency_ms integer,
+      error_message text,
+      request_meta jsonb not null default '{}'::jsonb,
+      response_meta jsonb not null default '{}'::jsonb,
+      occurred_at timestamptz not null default now()
+    )
+  `);
+
+  await client.query(`
+    create index if not exists idx_maintaineros_provider_runs_provider
+    on maintaineros_provider_runs(provider, occurred_at desc)
+  `);
+
+  await client.query(`
+    create table if not exists maintaineros_trace_events (
+      id text primary key,
+      repository_id text not null,
+      issue_number integer,
+      provider text,
+      source_state text not null,
+      status text not null,
+      title text not null,
+      detail text not null,
+      artifact_url text,
+      related_id text,
+      payload jsonb not null default '{}'::jsonb,
+      occurred_at timestamptz not null default now()
+    )
+  `);
+
+  await client.query(`
+    create index if not exists idx_maintaineros_trace_events_issue
+    on maintaineros_trace_events(repository_id, issue_number, occurred_at desc)
+  `);
+}

@@ -4,9 +4,10 @@ import { motion } from 'framer-motion';
 import { Award, CheckCircle2, Clock, ExternalLink, TrendingUp, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { StatCard } from '@/components/ui/stat-card';
+import { DataSourceBanner } from '@/components/maintaineros/data-source-banner';
 import { EvidenceBadge } from '@/components/maintaineros/evidence-badge';
 import { ProviderStatusBar } from '@/components/maintaineros/provider-status-bar';
-import type { ClustlyBountyListItemViewModel, ProviderStatusViewModel } from '@/lib/maintaineros/types';
+import type { ClustlyBountyListItemViewModel, MaintainerRepositorySummary, ProviderStatusViewModel } from '@/lib/maintaineros/types';
 
 const ACTIVE_BOUNTIES = [
   { id: 112, title: 'Redis queue drains silently on OOM restart',     reward: 350, status: 'Open',        posted: '2d ago',  claimants: 2, complexity: 'High'   },
@@ -28,7 +29,7 @@ const STATUS_STYLES: Record<string, string> = {
   'In Review':   'bg-violet-950 text-violet-400 border-violet-800',
 };
 
-export function RepoBounties({ bounties, providerStatuses }: { bounties?: ClustlyBountyListItemViewModel[]; providerStatuses?: ProviderStatusViewModel[] }) {
+export function RepoBounties({ bounties, repository, providerStatuses }: { bounties?: ClustlyBountyListItemViewModel[]; repository?: MaintainerRepositorySummary; providerStatuses?: ProviderStatusViewModel[] }) {
   const repositoryBacked = bounties !== undefined;
   const hasRepositoryBounties = Boolean(bounties?.length);
   const totalActive = repositoryBacked ? bounties.reduce((s, b) => s + b.bounty.amountCents / 100, 0) : ACTIVE_BOUNTIES.reduce((s, b) => s + b.reward, 0);
@@ -44,6 +45,7 @@ export function RepoBounties({ bounties, providerStatuses }: { bounties?: Clustl
         <p className="text-sm text-zinc-500 mt-1">Community-funded via Clustly · payouts on Greptile-verified merges only</p>
       </motion.div>
 
+      {repository && <DataSourceBanner repository={repository} compact />}
       {providerStatuses && <ProviderStatusBar providers={providerStatuses} />}
 
       {/* Clustly budget card — hero */}

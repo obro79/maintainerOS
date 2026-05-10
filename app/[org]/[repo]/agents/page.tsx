@@ -18,6 +18,7 @@ export default async function AgentsPage({ params }: Props) {
       eyebrow={`${org}/${repo} · agents`}
       title="Sandboxed Agent Attempts"
       description="Daytona-style execution artifacts land here: sandbox IDs, context packs, commands, logs, files touched, PR links, and failure reasons."
+      repository={dashboard.repository}
       providerStatuses={dashboard.providerStatuses}
     >
       <p className="rounded-xl border border-amber-500/20 bg-amber-500/8 p-3 text-xs leading-relaxed text-amber-200">

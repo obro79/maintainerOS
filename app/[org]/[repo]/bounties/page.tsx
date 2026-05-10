@@ -12,5 +12,5 @@ export default async function BountiesPage({ params }: Props) {
     repository.getBountyTasks(`${org}/${repo}`),
     repository.getDashboard(`${org}/${repo}`),
   ]);
-  return <RepoBounties bounties={bounties} providerStatuses={dashboard.providerStatuses} />;
+  return <RepoBounties bounties={bounties} repository={dashboard.repository} providerStatuses={dashboard.providerStatuses} />;
 }

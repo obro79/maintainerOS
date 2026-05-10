@@ -71,6 +71,24 @@ const issueColumns = [
   "closed_at timestamptz"
 ];
 
+const pullRequestContractColumns = [
+  "head_sha text",
+  "author_owner_type text not null",
+  "automation_owned boolean not null",
+  "linked_at timestamptz",
+  "closed_at timestamptz"
+];
+
+const verificationContractColumns = [
+  "criteria jsonb not null",
+  "files_inspected jsonb not null",
+  "blocking_findings jsonb not null",
+  "verified_sha text",
+  "current_sha text",
+  "failure_reason text",
+  "source_state text not null"
+];
+
 for (const column of providerRunColumns) {
   if (!runtimeSchema.toLowerCase().includes(column)) {
     throw new Error(`Provider run schema missing proof column: ${column}`);
@@ -86,6 +104,19 @@ for (const column of importRunColumns) {
 for (const column of issueColumns) {
   if (!runtimeSchema.toLowerCase().includes(column)) {
     throw new Error(`Issue schema missing persistence column: ${column}`);
+  }
+}
+
+const staticSchema = schema.toLowerCase();
+for (const column of pullRequestContractColumns) {
+  if (!staticSchema.includes(column)) {
+    throw new Error(`Static PR schema missing PR gate column: ${column}`);
+  }
+}
+
+for (const column of verificationContractColumns) {
+  if (!staticSchema.includes(column)) {
+    throw new Error(`Static verification schema missing Greptile column: ${column}`);
   }
 }
 

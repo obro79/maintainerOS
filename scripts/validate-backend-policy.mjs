@@ -9,6 +9,8 @@ const files = {
   neonRepository: readFileSync('lib/maintaineros/neon-repository.ts', 'utf8'),
   verification: readFileSync('lib/maintaineros/verification.ts', 'utf8'),
   payout: readFileSync('lib/maintaineros/payout.ts', 'utf8'),
+  prGates: readFileSync('lib/maintaineros/pr-gates.ts', 'utf8'),
+  postgres: readFileSync('lib/maintaineros/postgres.ts', 'utf8'),
 };
 
 assertIncludes(files.routing, 'evaluateRoutePolicy', 'routing exports the central route policy evaluator');
@@ -50,6 +52,29 @@ assertIncludes(files.verification, 'verification.verifiedSha !== verification.cu
 assertIncludes(files.verification, "verification.status === 'stale'", 'explicit stale verification status remains blocking');
 assertIncludes(files.verification, "effectiveStatus = isStale ? 'stale' : status", 'stale verification forces stale effective status');
 assertIncludes(files.payout, 'isVerificationStale(issue.verification)', 'payout gate blocks stale verification');
+
+assertIncludes(files.types, 'authorOwnerType', 'PR link model distinguishes automation, human, and unknown owners');
+assertIncludes(files.types, 'automationOwned: boolean', 'PR link model exposes automation ownership');
+assertIncludes(files.postgres, 'maintaineros_pull_requests', 'runtime schema stores durable PR links');
+assertIncludes(files.postgres, 'author_owner_type text not null default', 'runtime PR schema stores owner type');
+assertIncludes(files.postgres, 'automation_owned boolean not null default false', 'runtime PR schema stores automation ownership');
+assertIncludes(files.postgres, 'maintaineros_verification_runs', 'runtime schema stores durable Greptile verification runs');
+assertIncludes(files.postgres, 'files_inspected jsonb not null default', 'Greptile schema stores inspected files');
+assertIncludes(files.postgres, 'blocking_findings jsonb not null default', 'Greptile schema stores findings');
+assertIncludes(files.verification, 'buildGreptileVerificationAdapterResult', 'Greptile adapter normalizes durable verification runs');
+assertIncludes(files.neonRepository, 'getLatestPullRequest', 'live repository hydrates persisted PR links');
+assertIncludes(files.neonRepository, 'getLatestVerification', 'live repository hydrates persisted Greptile runs');
+
+assertIncludes(files.prGates, 'evaluateSafeSquashMerge', 'safe squash merge decision helper exists');
+assertIncludes(files.prGates, 'not_automation_owned', 'safe merge blocks human and unknown PRs');
+assertIncludes(files.prGates, 'required_checks_not_passed', 'safe merge explains required check failures');
+assertIncludes(files.prGates, 'human_commits_present', 'safe merge blocks human commits on automation branches');
+assertIncludes(files.prGates, 'branch_protection_blocks_squash', 'safe merge respects branch protection');
+assertIncludes(files.prGates, 'planFailedPrReroute', 'failed PR reroute decision helper exists');
+assertIncludes(files.prGates, 'human_pr_untouched', 'failed PR reroute leaves human PRs untouched');
+assertIncludes(files.prGates, 'preserve_trace', 'failed PR reroute preserves trace evidence');
+assertIncludes(files.prGates, 'reroute_clustly', 'failed PR reroute can target CLUSTLY');
+assertIncludes(files.prGates, 'reroute_dev', 'failed PR reroute can target DEV');
 
 console.log('MaintainerOS backend policy check passed.');
 

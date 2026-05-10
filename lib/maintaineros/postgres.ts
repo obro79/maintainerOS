@@ -99,6 +99,17 @@ async function ensureMaintainerSchema(client: PgClient) {
   `);
 
   await client.query(`
+    alter table maintaineros_issues
+      add column if not exists provider text not null default 'github',
+      add column if not exists body text not null default '',
+      add column if not exists author text not null default 'unknown',
+      add column if not exists labels jsonb not null default '[]'::jsonb,
+      add column if not exists comments_count integer not null default 0,
+      add column if not exists state text not null default 'open',
+      add column if not exists closed_at timestamptz
+  `);
+
+  await client.query(`
     create table if not exists maintaineros_import_runs (
       id text primary key,
       provider text not null default 'github',
@@ -113,6 +124,19 @@ async function ensureMaintainerSchema(client: PgClient) {
       finished_at timestamptz,
       error_message text
     )
+  `);
+
+  await client.query(`
+    alter table maintaineros_import_runs
+      add column if not exists provider text not null default 'github',
+      add column if not exists requested_limit integer not null default 0,
+      add column if not exists imported_issue_count integer not null default 0,
+      add column if not exists skipped_pull_request_count integer not null default 0,
+      add column if not exists status text not null default 'pending',
+      add column if not exists source_state text not null default 'live',
+      add column if not exists started_at timestamptz not null default now(),
+      add column if not exists finished_at timestamptz,
+      add column if not exists error_message text
   `);
 
   await client.query(`

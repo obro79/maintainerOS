@@ -11,8 +11,9 @@ export class FixtureGreptileObserver implements VerificationObserver {
 }
 
 export function isVerificationStale(verification: VerificationViewModel) {
+  if (verification.status === 'stale' || verification.isStale) return true;
   if (!verification.verifiedSha || !verification.currentSha) return false;
-  return verification.isStale || verification.verifiedSha.replace('-verified', '') !== verification.currentSha;
+  return verification.verifiedSha !== verification.currentSha;
 }
 
 export function parsePullRequestReference(input: string) {
@@ -29,23 +30,29 @@ export function parsePullRequestReference(input: string) {
 }
 
 export function buildGreptileVerification(issue: IssueDetailViewModel, pullRequest: PullRequestViewModel, sourceState: ArtifactSourceState): VerificationViewModel {
-  const currentSha = pullRequest.headSha;
   const base = issue.verification;
+  const currentSha = pullRequest.headSha;
   const forcedStatus = forcedVerificationStatus(issue);
   const status = forcedStatus ?? base?.status ?? 'pending';
-  const verifiedSha = status === 'pending' ? null : status === 'stale' ? `${currentSha}-old` : currentSha;
-  const isStale = status === 'stale' || Boolean(verifiedSha && verifiedSha !== currentSha);
-  const blockingFindings = status === 'failed'
-    ? ['Missing regression coverage for the failing path.', 'Acceptance criteria were not demonstrated in the PR.']
+  const baseVerifiedSha = base?.verifiedSha ?? null;
+  const verifiedSha = status === 'pending'
+    ? null
     : status === 'stale'
+      ? baseVerifiedSha && baseVerifiedSha !== currentSha ? baseVerifiedSha : `${currentSha}-old`
+      : baseVerifiedSha ?? currentSha;
+  const isStale = status === 'stale' || Boolean(verifiedSha && currentSha && verifiedSha !== currentSha);
+  const effectiveStatus = isStale ? 'stale' : status;
+  const blockingFindings = effectiveStatus === 'failed'
+    ? ['Missing regression coverage for the failing path.', 'Acceptance criteria were not demonstrated in the PR.']
+    : effectiveStatus === 'stale'
       ? ['PR head changed after verification; rerun Greptile before completion.']
       : [];
 
   return {
     provider: 'greptile',
     sourceState,
-    status: isStale ? 'stale' : status,
-    summary: summaryFor(issue, status),
+    status: effectiveStatus,
+    summary: summaryFor(issue, effectiveStatus),
     criteria: issue.workOrder.acceptanceChecks,
     filesTouched: issue.workOrder.suggestedFiles,
     filesInspected: Array.from(new Set([...(issue.workOrder.suggestedFiles ?? []), ...(issue.contextPack?.citations.map((citation) => citation.pathOrUrl ?? citation.title) ?? [])])).slice(0, 6),
@@ -53,9 +60,9 @@ export function buildGreptileVerification(issue: IssueDetailViewModel, pullReque
     currentSha,
     blockingFindingsCount: blockingFindings.length,
     blockingFindings,
-    riskSummary: riskFor(status),
+    riskSummary: riskFor(effectiveStatus),
     failureReason: blockingFindings[0] ?? null,
-    verifiedAt: status === 'pending' ? null : '2026-05-08T21:12:00.000Z',
+    verifiedAt: effectiveStatus === 'pending' ? null : '2026-05-08T21:12:00.000Z',
     isStale,
   };
 }

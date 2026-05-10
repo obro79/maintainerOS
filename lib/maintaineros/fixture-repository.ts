@@ -21,13 +21,14 @@ import {
   type VerificationViewModel,
 } from './types';
 import { canReleasePayout } from './payout';
-import { classifyComplexity, classifyRisk, estimatePremiumBaselineCents, scoreIssue, selectClodModel } from './routing';
+import { classifyComplexity, classifyRisk, estimatePremiumBaselineCents, evaluateRoutePolicy, scoreIssue, selectClodModel } from './routing';
 import { applyStoredClodArtifact } from './clod-artifacts';
 import { buildContextPackForIssue, buildNiaTraceEvent } from './nia-context';
 import { buildSandboxExecutionsForIssue, buildSandboxTraceEvents, toSandboxAttemptListItems } from './daytona';
 import { buildGreptileVerification, toVerificationQueueItem } from './verification';
 import { toClustlyBountyListItem } from './payments';
 import { listPersistedTraceEvents, mergeTraceEvents } from './trace-events';
+import { buildDeterministicWorkOrder } from './work-orders';
 
 interface FixtureRepositoryFile {
   repository: {
@@ -248,7 +249,23 @@ function toIssueCard(issue: FixtureIssue): IssueCardViewModel {
 
 function toIssueDetail(issue: FixtureIssue, sourceState: ArtifactSourceState = 'fixture', repositoryId = 'maintaineros-demo-large'): IssueDetailViewModel {
   const card = toIssueCard(issue);
-  const selection = selectClodModel(scoreIssue(issue));
+  const decision = scoreIssue(issue);
+  const routePolicy = evaluateRoutePolicy({
+    route: decision.route,
+    complexityScore: decision.complexityScore,
+    riskScore: decision.riskScore,
+    confidence: decision.confidence,
+    labels: issue.labels,
+  });
+  const selection = selectClodModel(decision);
+  const workOrder = buildDeterministicWorkOrder({
+    issueNumber: issue.number,
+    title: issue.title,
+    route: decision.route,
+    routePolicy,
+    suggestedFiles: issue.workOrder.suggestedFiles,
+    base: issue.workOrder,
+  });
   const estimatedCostCents = issue.modelRun.estimatedCostCents ?? null;
   const modelRun: ModelRunViewModel = {
     provider: 'clod',
@@ -272,9 +289,9 @@ function toIssueDetail(issue: FixtureIssue, sourceState: ArtifactSourceState = '
         sourceState,
         status: issue.verification.status,
         summary: issue.verification.summary,
-        criteria: issue.workOrder.acceptanceChecks,
-        filesTouched: issue.workOrder.suggestedFiles,
-        filesInspected: issue.workOrder.suggestedFiles,
+        criteria: workOrder.acceptanceChecks,
+        filesTouched: workOrder.suggestedFiles,
+        filesInspected: workOrder.suggestedFiles,
         verifiedSha: issue.verification.status === 'pending' ? null : pullRequest.headSha,
         currentSha: pullRequest.headSha,
         blockingFindingsCount: 0,
@@ -285,7 +302,7 @@ function toIssueDetail(issue: FixtureIssue, sourceState: ArtifactSourceState = '
         isStale: false,
       }
     : null;
-  const verification = pullRequest ? buildGreptileVerification({ ...card, body: issue.body, htmlUrl: issue.htmlUrl, author: issue.author, labels: issue.labels, modelRun, workOrder: issue.workOrder, contextPack: null, sandboxExecutions: [], pullRequest, verification: baseVerification, bounty: issue.bounty, paymentArtifact: null, trace: [], payoutGate: { canRelease: false, reasons: [] } }, pullRequest, sourceState) : null;
+  const verification = pullRequest ? buildGreptileVerification({ ...card, body: issue.body, htmlUrl: issue.htmlUrl, author: issue.author, labels: issue.labels, modelRun, workOrder, routePolicy, contextPack: null, sandboxExecutions: [], pullRequest, verification: baseVerification, bounty: issue.bounty, paymentArtifact: null, trace: [], payoutGate: { canRelease: false, reasons: [] } }, pullRequest, sourceState) : null;
   const contextPack = buildContextPackForIssue(
     {
       id: issue.id,
@@ -294,7 +311,7 @@ function toIssueDetail(issue: FixtureIssue, sourceState: ArtifactSourceState = '
       body: issue.body,
       labels: issue.labels,
       route: card.route,
-      workOrder: issue.workOrder,
+      workOrder,
     },
     sourceState,
   );
@@ -305,7 +322,8 @@ function toIssueDetail(issue: FixtureIssue, sourceState: ArtifactSourceState = '
     author: issue.author,
     labels: issue.labels,
     modelRun,
-    workOrder: issue.workOrder,
+    workOrder,
+    routePolicy,
     contextPack,
     sandboxExecutions: [],
     pullRequest,
@@ -323,10 +341,10 @@ function toIssueDetail(issue: FixtureIssue, sourceState: ArtifactSourceState = '
   const sandboxExecutions = buildSandboxExecutionsForIssue(baseDetail, repositoryId, sourceState);
   const payoutGate = canReleasePayout(baseDetail);
   const trace = [
-    ...buildTrace(issue, modelRun, sourceState, contextPack, verification),
+    ...buildTrace(issue, modelRun, sourceState, contextPack, verification, card.route, workOrder),
     ...buildSandboxTraceEvents(baseDetail, sandboxExecutions).map((event) => ({ ...event, route: card.route })),
-    ...buildPullRequestTraceEvents(issue, pullRequest, sourceState),
-    ...buildPayoutGateTraceEvents(issue, baseDetail.paymentArtifact, payoutGate, sourceState),
+    ...buildPullRequestTraceEvents(issue, pullRequest, sourceState, card.route, workOrder),
+    ...buildPayoutGateTraceEvents(issue, baseDetail.paymentArtifact, payoutGate, sourceState, card.route),
   ].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
   const detail = {
     ...baseDetail,
@@ -369,7 +387,7 @@ function buildBuckets(issues: IssueCardViewModel[]): RouteBucketViewModel[] {
   });
 }
 
-function buildTrace(issue: FixtureIssue, modelRun: ModelRunViewModel, sourceState: ArtifactSourceState, contextPack: IssueDetailViewModel['contextPack'], verification: VerificationViewModel | null): IssueTraceEventViewModel[] {
+function buildTrace(issue: FixtureIssue, modelRun: ModelRunViewModel, sourceState: ArtifactSourceState, contextPack: IssueDetailViewModel['contextPack'], verification: VerificationViewModel | null, route: ExecutionRoute, workOrder: IssueDetailViewModel['workOrder']): IssueTraceEventViewModel[] {
   const base = `2026-05-08T18:${String(issue.number % 50).padStart(2, '0')}:00.000Z`;
   const trace: IssueTraceEventViewModel[] = [
     {
@@ -399,13 +417,13 @@ function buildTrace(issue: FixtureIssue, modelRun: ModelRunViewModel, sourceStat
       at: base,
       actor: 'MaintainerOS router',
       sourceState,
-      title: `Routed to ${ROUTE_LABEL[issue.classification.route]}`,
-      detail: issue.classification.rationale,
+      title: `Routed to ${ROUTE_LABEL[route]}`,
+      detail: workOrder.rationale ?? issue.classification.rationale,
       status: 'routed',
     },
   ];
 
-  if (issue.number === 41 || issue.classification.route === 'bounty-worthy') {
+  if (issue.number === 41 || route === 'bounty-worthy') {
     trace.push(
       {
         id: `${issue.id}-cheap-attempt`,
@@ -418,7 +436,7 @@ function buildTrace(issue: FixtureIssue, modelRun: ModelRunViewModel, sourceStat
         status: 'failed',
         model: 'cheap-open',
         costCents: 2,
-        filesTouched: issue.workOrder.suggestedFiles.slice(0, 1),
+        filesTouched: workOrder.suggestedFiles.slice(0, 1),
       },
       {
         id: `${issue.id}-escalated`,
@@ -428,8 +446,8 @@ function buildTrace(issue: FixtureIssue, modelRun: ModelRunViewModel, sourceStat
         title: 'Escalated after failed proof',
         detail: 'MaintainerOS preserved the failed attempt and selected a stronger route based on verification evidence.',
         status: 'escalated',
-        model: issue.classification.route === 'bounty-worthy' ? 'bounty' : 'balanced',
-        costCents: issue.classification.route === 'bounty-worthy' ? issue.bounty?.amountCents ? Math.round(issue.bounty.amountCents / 100) : 150 : 7,
+        model: route === 'bounty-worthy' ? 'bounty' : 'balanced',
+        costCents: route === 'bounty-worthy' ? issue.bounty?.amountCents ? Math.round(issue.bounty.amountCents / 100) : 150 : 7,
       },
     );
   }
@@ -445,7 +463,7 @@ function buildTrace(issue: FixtureIssue, modelRun: ModelRunViewModel, sourceStat
       detail: verification.summary,
       status: verification.status === 'passed' ? 'passed' : verification.status === 'failed' ? 'failed' : verification.status === 'stale' ? 'stale' : 'pending',
       relatedId: verification.verifiedSha ?? verification.currentSha ?? undefined,
-      filesTouched: issue.workOrder.suggestedFiles,
+      filesTouched: workOrder.suggestedFiles,
     });
     if (verification.status === 'failed' || verification.status === 'stale') {
       trace.push({
@@ -503,10 +521,10 @@ function buildTrace(issue: FixtureIssue, modelRun: ModelRunViewModel, sourceStat
     );
   }
 
-  return trace.map((event) => ({ ...event, route: issue.classification.route }));
+  return trace.map((event) => ({ ...event, route }));
 }
 
-function buildPullRequestTraceEvents(issue: FixtureIssue, pullRequest: IssueDetailViewModel['pullRequest'], sourceState: ArtifactSourceState): IssueTraceEventViewModel[] {
+function buildPullRequestTraceEvents(issue: FixtureIssue, pullRequest: IssueDetailViewModel['pullRequest'], sourceState: ArtifactSourceState, route: ExecutionRoute, workOrder: IssueDetailViewModel['workOrder']): IssueTraceEventViewModel[] {
   if (!pullRequest) return [];
   return [
     {
@@ -515,13 +533,13 @@ function buildPullRequestTraceEvents(issue: FixtureIssue, pullRequest: IssueDeta
       actor: 'GitHub pull request',
       provider: 'github',
       sourceState,
-      route: issue.classification.route,
+      route,
       title: `PR #${pullRequest.number} linked`,
       detail: `${pullRequest.authorLogin} opened ${pullRequest.branchName}; MaintainerOS tied the PR back to issue #${issue.number}.`,
       status: pullRequest.status === 'closed' ? 'blocked' : 'succeeded',
       artifactUrl: pullRequest.htmlUrl,
       relatedId: pullRequest.headSha,
-      filesTouched: issue.workOrder.suggestedFiles,
+      filesTouched: workOrder.suggestedFiles,
     },
   ];
 }
@@ -531,6 +549,7 @@ function buildPayoutGateTraceEvents(
   paymentArtifact: IssueDetailViewModel['paymentArtifact'],
   payoutGate: IssueDetailViewModel['payoutGate'],
   sourceState: ArtifactSourceState,
+  route: ExecutionRoute,
 ): IssueTraceEventViewModel[] {
   if (!issue.bounty && !paymentArtifact) return [];
   return [
@@ -540,7 +559,7 @@ function buildPayoutGateTraceEvents(
       actor: 'MaintainerOS payout gate',
       provider: 'clustly',
       sourceState,
-      route: issue.classification.route,
+      route,
       title: payoutGate.canRelease ? 'Payout gate release allowed' : 'Payout gate blocked',
       detail: payoutGate.canRelease
         ? 'Funded task, linked PR, passed non-stale verification, and maintainer acceptance are all present.'

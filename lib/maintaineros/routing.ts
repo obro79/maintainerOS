@@ -1,4 +1,4 @@
-import type { ExecutionRoute, IssueComplexity, IssueRisk, ModelRunViewModel } from './types';
+import type { ExecutionRoute, IssueComplexity, IssueRisk, ModelRunViewModel, RoutePolicyViewModel } from './types';
 
 interface RawIssueLike {
   title: string;
@@ -28,6 +28,19 @@ export interface ModelSelection {
   reason: string;
 }
 
+export interface RoutePolicyInput {
+  route: ExecutionRoute;
+  complexityScore: number;
+  riskScore: number;
+  confidence: number;
+  labels?: string[];
+}
+
+const AI_CONFIDENCE_THRESHOLD = 0.78;
+const AI_MAX_COMPLEXITY = 5;
+const AI_MAX_RISK = 4;
+const HARD_BLOCK_LABELS = new Set(['security', 'auth', 'permissions', 'needs design', 'maintainer-review', 'migration']);
+
 export function classifyComplexity(score: number | undefined): IssueComplexity {
   if (!score) return 'unknown';
   if (score <= 3) return 'low';
@@ -48,19 +61,38 @@ export function scoreIssue(issue: RawIssueLike, priorFailures = 0): RouteDecisio
   const riskScore = clampScore((existing?.riskScore ?? heuristicRisk(issue)) + Math.min(priorFailures, 2));
   const confidence = existing?.confidence ?? confidenceFor(issue, complexityScore, riskScore);
   let route: ExecutionRoute;
+  let policyRationale: string | null = null;
 
   if (labels.has('needs reproduction') || labels.has('triage')) {
     route = 'close-or-clarify';
   } else if (labels.has('bounty') || labels.has('integration')) {
     route = 'bounty-worthy';
-  } else if (labels.has('security') || labels.has('needs design') || riskScore >= 7) {
+  } else if (hasHardBlockLabel(labels) || riskScore >= 7) {
     route = 'maintainer-review';
   } else {
     route = 'agent-solvable';
   }
 
+  if (route === 'agent-solvable') {
+    const aiPolicy = evaluateRoutePolicy({ route, complexityScore, riskScore, confidence, labels: [...labels] });
+    if (!aiPolicy.automationAllowed) {
+      policyRationale = aiPolicy.reasons.join(' ');
+      route = 'maintainer-review';
+    }
+  }
+
   if (priorFailures >= 2 && route === 'agent-solvable') {
+    policyRationale = `Prior sandbox or verification failures crossed the retry limit; rerouted after ${priorFailures} failed attempts.`;
     route = complexityScore >= 6 ? 'bounty-worthy' : 'maintainer-review';
+  }
+
+  if (route === 'maintainer-review' && !policyRationale) {
+    const devPolicy = evaluateRoutePolicy({ route, complexityScore, riskScore, confidence, labels: [...labels] });
+    policyRationale = devPolicy.reasons.join(' ');
+  }
+
+  if (route === 'bounty-worthy' && priorFailures >= 2 && !policyRationale) {
+    policyRationale = `Repeated failures and complexity=${complexityScore} moved this to bounded paid work.`;
   }
 
   return {
@@ -69,9 +101,76 @@ export function scoreIssue(issue: RawIssueLike, priorFailures = 0): RouteDecisio
     riskScore,
     confidence,
     rationale:
+      policyRationale ??
       existing?.rationale ??
       `${route} because complexity=${complexityScore}, risk=${riskScore}, confidence=${Math.round(confidence * 100)}%.`,
   };
+}
+
+export function evaluateRoutePolicy(input: RoutePolicyInput): RoutePolicyViewModel {
+  const labels = new Set((input.labels ?? []).map((label) => label.toLowerCase()));
+  const reasons: string[] = [];
+  const safetyChecks = [
+    'Fresh Greptile verification is required before completion.',
+    'Sandbox execution is evidence only, not correctness proof.',
+    'Preserve failed attempts and reroute reasons in the trace ledger.',
+  ];
+
+  if (input.route === 'bounty-worthy') {
+    return {
+      executionMode: 'clustly',
+      automationAllowed: false,
+      sandboxAllowed: false,
+      requiresHumanReview: true,
+      requiresPaidWork: true,
+      reasons: ['CLUSTLY route becomes bounded paid work; AI automation does not start this issue.'],
+      safetyChecks: [...safetyChecks, 'Release remains blocked until funded task, linked PR, fresh verification, and maintainer acceptance exist.'],
+    };
+  }
+
+  const aiBlockers = aiGateReasons(input, labels);
+
+  if (input.route === 'maintainer-review') {
+    return {
+      executionMode: 'dev',
+      automationAllowed: false,
+      sandboxAllowed: false,
+      requiresHumanReview: true,
+      requiresPaidWork: false,
+      reasons: aiBlockers.length > 0
+        ? ['DEV route is human-owned and never starts autonomous AI execution.', ...aiBlockers]
+        : ['DEV route is human-owned and never starts autonomous AI execution.'],
+      safetyChecks,
+    };
+  }
+
+  if (input.route === 'close-or-clarify') {
+    return {
+      executionMode: 'clarify',
+      automationAllowed: false,
+      sandboxAllowed: false,
+      requiresHumanReview: true,
+      requiresPaidWork: false,
+      reasons: ['Issue needs clarification before any implementation route is safe.'],
+      safetyChecks: [...safetyChecks, 'Ask for reproduction or expected behavior before dispatch.'],
+    };
+  }
+
+  reasons.push(...aiBlockers);
+
+  return {
+    executionMode: reasons.length === 0 ? 'ai' : 'dev',
+    automationAllowed: reasons.length === 0,
+    sandboxAllowed: reasons.length === 0,
+    requiresHumanReview: reasons.length > 0,
+    requiresPaidWork: false,
+    reasons: reasons.length > 0 ? reasons : ['AI route passed deterministic risk, complexity, confidence, and label gates.'],
+    safetyChecks,
+  };
+}
+
+export function isAiSafe(input: RoutePolicyInput) {
+  return evaluateRoutePolicy(input).automationAllowed;
 }
 
 export function selectClodModel(decision: RouteDecision, priorFailures = 0): ModelSelection {
@@ -116,6 +215,20 @@ function heuristicRisk(issue: RawIssueLike) {
   if (text.includes('security') || text.includes('permission') || text.includes('auth')) return 8;
   if (text.includes('migration') || text.includes('payment')) return 6;
   return 3;
+}
+
+function hasHardBlockLabel(labels: Set<string>) {
+  return [...labels].some((label) => HARD_BLOCK_LABELS.has(label));
+}
+
+function aiGateReasons(input: RoutePolicyInput, labels: Set<string>) {
+  const reasons: string[] = [];
+  if (input.riskScore > AI_MAX_RISK) reasons.push(`Risk score ${input.riskScore} exceeds AI gate ${AI_MAX_RISK}.`);
+  if (input.complexityScore > AI_MAX_COMPLEXITY) reasons.push(`Complexity score ${input.complexityScore} exceeds AI gate ${AI_MAX_COMPLEXITY}.`);
+  if (input.confidence < AI_CONFIDENCE_THRESHOLD) reasons.push(`Confidence ${Math.round(input.confidence * 100)}% is below AI gate ${Math.round(AI_CONFIDENCE_THRESHOLD * 100)}%.`);
+  const hardLabels = [...labels].filter((label) => HARD_BLOCK_LABELS.has(label));
+  if (hardLabels.length > 0) reasons.push(`Hard-block label(s): ${hardLabels.join(', ')}.`);
+  return reasons;
 }
 
 function confidenceFor(issue: RawIssueLike, complexityScore: number, riskScore: number) {

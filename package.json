@@ -13,7 +13,8 @@
     "neon:smoke-import": "node scripts/neon-smoke-import.mjs",
     "preview:styles": "node scripts/preview-style-prototypes.mjs",
     "prep:check": "node scripts/validate-prep.mjs",
-    "ci": "npm run prep:check && npm run build"
+    "backend:check": "node scripts/validate-backend-policy.mjs",
+    "ci": "npm run prep:check && npm run backend:check && npm run build"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",

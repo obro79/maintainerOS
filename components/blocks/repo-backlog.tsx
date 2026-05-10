@@ -9,6 +9,8 @@ import { LANE_CONFIG, lane, laneOf } from '@/lib/design-system';
 import { LaneBadge } from '@/components/ui/lane-badge';
 import { ConfidenceRing } from '@/components/ui/confidence-ring';
 import { DataSourceBanner } from '@/components/maintaineros/data-source-banner';
+import { IssueWorkflowWorkbench } from '@/components/maintaineros/issue-workflow-workbench';
+import { useWorkflowIssueUrl } from '@/components/maintaineros/use-workflow-issue-url';
 import type { DashboardViewModel } from '@/lib/maintaineros/types';
 
 type LaneFilter = 'all' | 'agent' | 'review' | 'bounty' | 'clarify';
@@ -43,6 +45,7 @@ export function RepoBacklog({ dashboard, initialLane }: { dashboard?: DashboardV
   const [filter, setFilter] = useState<LaneFilter>(() => normalizeInitialLane(initialLane));
   const [search, setSearch] = useState('');
   const [overriding, setOverriding] = useState<number | null>(null);
+  const { workflowIssueNumber, openWorkflowIssue, closeWorkflowIssue } = useWorkflowIssueUrl();
   const issues = dashboard
     ? dashboard.issues.map(issue => ({
         id: issue.number,
@@ -67,6 +70,9 @@ export function RepoBacklog({ dashboard, initialLane }: { dashboard?: DashboardV
     return true;
   });
   const traceBase = dashboard ? `/${dashboard.repository.owner}/${dashboard.repository.name}` : null;
+  const selectedWorkflowIssue = workflowIssueNumber
+    ? dashboard?.issueDetails.find((issue) => issue.number === workflowIssueNumber) ?? null
+    : null;
 
   return (
     <div className="p-8 max-w-5xl space-y-6">
@@ -144,7 +150,18 @@ export function RepoBacklog({ dashboard, initialLane }: { dashboard?: DashboardV
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="flex items-center border-b border-[#F9F7F7]/8 last:border-b-0 hover:bg-[#F9F7F7]/[0.025] transition-colors group">
+                role={dashboard ? 'button' : undefined}
+                tabIndex={dashboard ? 0 : undefined}
+                onClick={() => { if (dashboard) openWorkflowIssue(issue.id); }}
+                onKeyDown={(event) => {
+                  if (!dashboard) return;
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    openWorkflowIssue(issue.id);
+                  }
+                }}
+                className={cn('flex items-center border-b border-[#F9F7F7]/8 last:border-b-0 hover:bg-[#F9F7F7]/[0.025] transition-colors group', dashboard && 'cursor-pointer')}
+              >
                 {/* Lane bar */}
                 <div className={cn('w-1 self-stretch shrink-0', l.tw.bg)} />
 
@@ -189,26 +206,26 @@ export function RepoBacklog({ dashboard, initialLane }: { dashboard?: DashboardV
                         .map(k => {
                           const c = LANE_CONFIG[k];
                           return (
-                            <button key={k} onClick={() => setOverriding(null)}
+                            <button key={k} onClick={(event) => { event.stopPropagation(); setOverriding(null); }}
                               className={cn('text-[8px] font-sans font-bold px-1 py-0.5 rounded border transition-colors',
                                 c.tw.bgMuted, c.tw.text, c.tw.borderMuted, 'hover:opacity-80')}>
                               {c.label[0]}
                             </button>
                           );
                         })}
-                      <button onClick={() => setOverriding(null)} className="text-[#F9F7F7]/28 hover:text-[#F9F7F7]/56 ml-0.5">
+                      <button onClick={(event) => { event.stopPropagation(); setOverriding(null); }} className="text-[#F9F7F7]/28 hover:text-[#F9F7F7]/56 ml-0.5">
                         <RotateCcw className="size-2.5" />
                       </button>
                     </div>
                   ) : (
                     <>
                       <button
-                        onClick={() => setOverriding(issue.id)}
+                        onClick={(event) => { event.stopPropagation(); setOverriding(issue.id); }}
                         className="text-[10px] text-[#F9F7F7]/40 hover:text-[#F9F7F7]/76 px-1.5 py-1 rounded hover:bg-[#F9F7F7]/7 transition-colors">
                         Override
                       </button>
                       {traceBase ? (
-                        <Link href={`${traceBase}/issues/${issue.id}/trace`} aria-label={`Open trace for issue ${issue.id}`}>
+                        <Link href={`${traceBase}/issues/${issue.id}/trace`} aria-label={`Open trace for issue ${issue.id}`} onClick={(event) => event.stopPropagation()}>
                           <ExternalLink className="size-3 text-[#F9F7F7]/28 hover:text-[#F9F7F7]/56 cursor-pointer transition-colors" />
                         </Link>
                       ) : (
@@ -228,6 +245,15 @@ export function RepoBacklog({ dashboard, initialLane }: { dashboard?: DashboardV
           </div>
         )}
       </motion.div>
+      {dashboard && (
+        <IssueWorkflowWorkbench
+          org={dashboard.repository.owner}
+          repo={dashboard.repository.name}
+          issueNumber={workflowIssueNumber}
+          initialIssue={selectedWorkflowIssue}
+          onClose={closeWorkflowIssue}
+        />
+      )}
     </div>
   );
 }

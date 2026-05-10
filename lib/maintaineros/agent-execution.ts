@@ -179,7 +179,7 @@ function executionCommands(repositoryId: string, issue: IssueDetailViewModel, pa
 async function createDaytonaSandbox(repositoryId: string, issueNumber: number) {
   if (!process.env.DAYTONA_API_KEY) throw new Error('DAYTONA_API_KEY is required to create an agent sandbox.');
   const baseUrl = (process.env.DAYTONA_API_URL || process.env.DAYTONA_BASE_URL || 'https://app.daytona.io/api').replace(/\/$/, '');
-  const response = await fetch(`${baseUrl}/sandboxes`, {
+  const response = await fetch(`${baseUrl}/sandbox`, {
     method: 'POST',
     headers: daytonaHeaders(),
     body: JSON.stringify({

@@ -8,6 +8,8 @@ export type ArtifactStatus = 'pending' | 'running' | 'passed' | 'failed' | 'stal
 
 export type ExecutionRoute = 'agent-solvable' | 'maintainer-review' | 'bounty-worthy' | 'close-or-clarify';
 
+export type ExecutionRouteOwner = 'ai' | 'dev' | 'clustly' | 'clarify';
+
 export type DemoLane = 'agent' | 'maintainer' | 'bounty' | 'clarify';
 
 export type IssueRisk = 'low' | 'medium' | 'high';
@@ -424,4 +426,78 @@ export const ROUTE_LABEL: Record<ExecutionRoute, string> = {
   'maintainer-review': 'Maintainer',
   'bounty-worthy': 'Bounty',
   'close-or-clarify': 'Clarify',
+};
+
+export interface RouteContract {
+  route: ExecutionRoute;
+  lane: DemoLane;
+  owner: ExecutionRouteOwner;
+  label: string;
+  artifactPolicy: {
+    modelRun: boolean;
+    contextPack: boolean;
+    sandbox: boolean;
+    pullRequest: boolean;
+    verification: boolean;
+    payoutArtifact: boolean;
+  };
+}
+
+export const ROUTE_CONTRACTS: Record<ExecutionRoute, RouteContract> = {
+  'agent-solvable': {
+    route: 'agent-solvable',
+    lane: 'agent',
+    owner: 'ai',
+    label: ROUTE_LABEL['agent-solvable'],
+    artifactPolicy: {
+      modelRun: true,
+      contextPack: true,
+      sandbox: true,
+      pullRequest: true,
+      verification: true,
+      payoutArtifact: false,
+    },
+  },
+  'maintainer-review': {
+    route: 'maintainer-review',
+    lane: 'maintainer',
+    owner: 'dev',
+    label: ROUTE_LABEL['maintainer-review'],
+    artifactPolicy: {
+      modelRun: true,
+      contextPack: true,
+      sandbox: false,
+      pullRequest: true,
+      verification: true,
+      payoutArtifact: false,
+    },
+  },
+  'bounty-worthy': {
+    route: 'bounty-worthy',
+    lane: 'bounty',
+    owner: 'clustly',
+    label: ROUTE_LABEL['bounty-worthy'],
+    artifactPolicy: {
+      modelRun: true,
+      contextPack: true,
+      sandbox: true,
+      pullRequest: true,
+      verification: true,
+      payoutArtifact: true,
+    },
+  },
+  'close-or-clarify': {
+    route: 'close-or-clarify',
+    lane: 'clarify',
+    owner: 'clarify',
+    label: ROUTE_LABEL['close-or-clarify'],
+    artifactPolicy: {
+      modelRun: true,
+      contextPack: false,
+      sandbox: false,
+      pullRequest: false,
+      verification: false,
+      payoutArtifact: false,
+    },
+  },
 };

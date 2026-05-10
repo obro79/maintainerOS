@@ -237,7 +237,10 @@ function loadFixture(repositoryId: string): FixtureRepositoryFile {
   if (existsSync(fixturePath)) {
     return JSON.parse(readFileSync(fixturePath, 'utf8')) as FixtureRepositoryFile;
   }
-  const fallbackPath = join(process.cwd(), 'data', 'mock-repos', `${process.env.MAINTAINEROS_DEMO_REPO_ID || 'maintaineros-demo-large'}.json`);
+  const configuredFallbackPath = join(process.cwd(), 'data', 'mock-repos', `${process.env.MAINTAINEROS_DEMO_REPO_ID || 'maintaineros-demo-large'}.json`);
+  const fallbackPath = existsSync(configuredFallbackPath)
+    ? configuredFallbackPath
+    : join(process.cwd(), 'data', 'mock-repos', 'maintaineros-demo-large.json');
   return JSON.parse(readFileSync(fallbackPath, 'utf8')) as FixtureRepositoryFile;
 }
 

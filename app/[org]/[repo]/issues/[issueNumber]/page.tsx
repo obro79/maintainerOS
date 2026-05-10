@@ -21,6 +21,7 @@ export default async function IssuePage({ params }: Props) {
       eyebrow={`${org}/${repo} · issue detail`}
       title={issue ? `#${issue.number} ${issue.title}` : `Issue #${issueNumber}`}
       description="Live-first artifact stack for route, work order, CLōD model run, Nia context, Daytona sandbox, Greptile verification, and Clustly release state."
+      repository={dashboard.repository}
       providerStatuses={dashboard.providerStatuses}
     >
       <div className="flex flex-wrap gap-2">

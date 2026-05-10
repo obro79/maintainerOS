@@ -347,7 +347,7 @@ function HeroHeader() {
               See demo
             </Link>
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              <Link href="#connect"
+              <Link href="/connect"
                 className="px-4 py-2 text-sm font-semibold bg-emerald-500 hover:bg-emerald-400 text-black rounded-xl shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 transition-all duration-200 inline-block">
                 Connect repo
               </Link>
@@ -368,7 +368,7 @@ function HeroHeader() {
               </Link>
             ))}
             <div className="mt-3 pt-3 border-t border-white/10">
-              <Link href="#connect" className="block text-center py-2.5 text-sm font-semibold bg-emerald-500 text-black rounded-xl">
+              <Link href="/connect" className="block text-center py-2.5 text-sm font-semibold bg-emerald-500 text-black rounded-xl">
                 Connect repo
               </Link>
             </div>
@@ -461,7 +461,7 @@ export function HeroSection() {
               transition={{ duration: 0.5, delay: 0.3 }}
               className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-16">
               <motion.div whileHover={{ scale: 1.02, y: -1 }} whileTap={{ scale: 0.98 }}>
-                <Link href="#connect"
+                <Link href="/connect"
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-[15px] shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-colors duration-200">
                   <GitMerge className="size-4" />
                   Connect repo
@@ -797,7 +797,7 @@ export function HeroSection() {
                 Connect your GitHub repo and see every open issue routed in seconds.
               </p>
               <motion.div whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }} className="inline-block">
-                <Link href="#connect"
+                <Link href="/connect"
                   className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-base shadow-2xl shadow-emerald-500/30 hover:shadow-emerald-500/50 transition-colors duration-200">
                   <GitMerge className="size-4" />
                   Connect your repo

@@ -31,6 +31,7 @@ import { canReleasePayout, hidePayoutArtifactsForNonClustlyRoutes } from './payo
 import { buildRouteHistoryFromTrace } from './route-history';
 import { listTraceEvents, mergeTraceEvents } from './trace-events';
 import { getProviderHealth } from './provider-runtime';
+import { getWorkflowArtifacts, type WorkflowArtifacts } from './workflow-state';
 
 interface RepositoryRow {
   id: string;
@@ -157,8 +158,8 @@ export class NeonMaintainerOSRepository implements MaintainerOSRepository {
           { provider: 'clod', sourceState: 'planned', status: 'planned', label: 'CLōD', detail: 'Routing artifacts land in Phase 2.' },
           buildNiaProviderStatus(),
           { provider: 'daytona', sourceState: 'planned', status: 'planned', label: 'Daytona', detail: 'Sandbox dispatch lands in Phase 4.' },
-          { provider: 'greptile', sourceState: 'planned', status: 'planned', label: 'Greptile', detail: 'Verification lands in Phase 5.' },
-          { provider: 'clustly', sourceState: 'planned', status: 'planned', label: 'Clustly', detail: 'Bounty rail lands in Phase 6.' },
+          buildWorkflowProviderStatus('greptile', 'Greptile', 'Greptile verification endpoints are available; configure GREPTILE_API_KEY for live proof runs.'),
+          buildWorkflowProviderStatus('clustly', 'Clustly', 'Clustly task endpoints are available; configure CLUSTLY_AGENT_KEY for live task lifecycle.'),
         ],
         sponsorProof,
       };
@@ -206,8 +207,11 @@ export class NeonMaintainerOSRepository implements MaintainerOSRepository {
 }
 
 async function toIssueDetailWithPersistedTrace(client: PgClient, repositoryId: string, issue: IssueRow) {
-  const persistedTrace = await listTraceEvents(client, repositoryId, issue.number);
-  return applyStoredClodArtifact(repositoryId, await toIssueDetail(client, issue, persistedTrace));
+  const [persistedTrace, workflowArtifacts] = await Promise.all([
+    listTraceEvents(client, repositoryId, issue.number),
+    getWorkflowArtifacts(client, repositoryId, issue.number),
+  ]);
+  return applyStoredClodArtifact(repositoryId, await toIssueDetail(client, issue, persistedTrace, workflowArtifacts));
 }
 
 async function findRepository(client: PgClient, repositoryId: string): Promise<RepositoryRow> {
@@ -258,7 +262,7 @@ function toIssueCard(issue: IssueRow): IssueCardViewModel {
   };
 }
 
-async function toIssueDetail(client: PgClient, issue: IssueRow, persistedTrace: IssueTraceEventViewModel[] = []): Promise<IssueDetailViewModel> {
+async function toIssueDetail(client: PgClient, issue: IssueRow, persistedTrace: IssueTraceEventViewModel[] = [], workflowArtifacts: WorkflowArtifacts | null = null): Promise<IssueDetailViewModel> {
   const card = toIssueCard(issue);
   const labels = normalizeLabels(issue.labels);
   const decision = scoreIssue({
@@ -326,7 +330,7 @@ async function toIssueDetail(client: PgClient, issue: IssueRow, persistedTrace: 
     sandboxExecutions: [],
     pullRequest,
     verification,
-    bounty: decision.route === 'bounty-worthy'
+    bounty: workflowArtifacts?.bounty ?? (decision.route === 'bounty-worthy'
       ? {
           status: 'proposed',
           amountCents: 15000,
@@ -334,28 +338,29 @@ async function toIssueDetail(client: PgClient, issue: IssueRow, persistedTrace: 
           rationale: 'Live import heuristic marked this as bounty-worthy; Clustly task creation lands in Phase 6.',
           maintainerAccepted: false,
         }
-      : null,
-    paymentArtifact: null,
+      : null),
+    paymentArtifact: workflowArtifacts?.paymentArtifact ?? null,
     routeHistory: [],
     trace: [],
     payoutGate: emptyPayoutGate(),
   };
   const payoutVisibleBaseDetail = hidePayoutArtifactsForNonClustlyRoutes(baseDetail);
   const payoutGate = canReleasePayout(payoutVisibleBaseDetail);
-  const sandboxExecutions = buildSandboxExecutionsForIssue(payoutVisibleBaseDetail, issue.repository_id, 'live');
+  const hydratedDetail = { ...payoutVisibleBaseDetail, payoutGate };
+  const sandboxExecutions = buildSandboxExecutionsForIssue(hydratedDetail, issue.repository_id, 'live');
   const derivedTrace = [
     ...buildLiveTrace(issue, decision.route, modelRun.model, contextPack),
     ...buildLivePullRequestTraceEvents(issue, pullRequest, decision.route),
     ...buildLiveVerificationTraceEvents(issue, verification, decision.route),
-    ...buildSandboxTraceEvents(payoutVisibleBaseDetail, sandboxExecutions).map((event) => ({ ...event, route: decision.route })),
+    ...buildSandboxTraceEvents(hydratedDetail, sandboxExecutions).map((event) => ({ ...event, route: decision.route })),
   ];
   const trace = mergeTraceEvents(derivedTrace, persistedTrace);
 
   return hidePayoutArtifactsForNonClustlyRoutes({
-    ...payoutVisibleBaseDetail,
+    ...hydratedDetail,
     payoutGate,
     sandboxExecutions,
-    routeHistory: buildRouteHistoryFromTrace(payoutVisibleBaseDetail, trace),
+    routeHistory: buildRouteHistoryFromTrace(hydratedDetail, trace),
     trace,
   });
 }
@@ -557,6 +562,26 @@ function emptyIssueDetail(repositoryId: string): IssueDetailViewModel {
     routeHistory: [],
     trace: [],
     payoutGate: emptyPayoutGate(),
+  };
+}
+
+function buildWorkflowProviderStatus(provider: 'greptile' | 'clustly', label: string, fallbackDetail: string): NonNullable<DashboardViewModel['providerStatuses']>[number] {
+  const health = getProviderHealth(provider);
+  if (health?.configured) {
+    return {
+      provider,
+      sourceState: health.sourceState,
+      status: 'connected',
+      label,
+      detail: 'Live workflow endpoint is configured and can record durable artifacts.',
+    };
+  }
+  return {
+    provider,
+    sourceState: health?.sourceState ?? 'planned',
+    status: 'planned',
+    label,
+    detail: health?.detail ?? fallbackDetail,
   };
 }
 

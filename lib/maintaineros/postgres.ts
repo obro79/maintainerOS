@@ -283,4 +283,45 @@ async function ensureMaintainerSchema(client: PgClient) {
     create index if not exists idx_maintaineros_trace_events_issue
     on maintaineros_trace_events(repository_id, issue_number, occurred_at desc)
   `);
+
+  await client.query(`
+    create table if not exists maintaineros_bounties (
+      id text primary key,
+      repository_id text not null references maintaineros_repositories(id) on delete cascade,
+      issue_number integer not null,
+      status text not null default 'proposed',
+      amount_cents integer not null,
+      currency text not null default 'USD',
+      rationale text not null,
+      maintainer_accepted boolean not null default false,
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now(),
+      unique(repository_id, issue_number)
+    )
+  `);
+
+  await client.query(`
+    create table if not exists maintaineros_payment_artifacts (
+      id text primary key,
+      repository_id text not null references maintaineros_repositories(id) on delete cascade,
+      issue_number integer not null,
+      bounty_id text not null references maintaineros_bounties(id) on delete cascade,
+      provider text not null default 'clustly',
+      source_state text not null default 'live',
+      status text not null,
+      task_id text,
+      task_url text,
+      claim_id text,
+      claimer_kind text,
+      funding_mode text,
+      amount_cents integer not null,
+      currency text not null default 'USDC',
+      artifact_url text,
+      release_reason text not null,
+      raw_response jsonb not null default '{}'::jsonb,
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now(),
+      unique(repository_id, issue_number)
+    )
+  `);
 }

@@ -106,7 +106,24 @@ async function ensureMaintainerSchema(client: PgClient) {
       add column if not exists labels jsonb not null default '[]'::jsonb,
       add column if not exists comments_count integer not null default 0,
       add column if not exists state text not null default 'open',
-      add column if not exists closed_at timestamptz
+      add column if not exists closed_at timestamptz,
+      add column if not exists provider_issue_id text,
+      add column if not exists node_id text,
+      add column if not exists author_metadata jsonb not null default '{}'::jsonb,
+      add column if not exists author_association text,
+      add column if not exists assignees jsonb not null default '[]'::jsonb,
+      add column if not exists milestone jsonb,
+      add column if not exists labels_full jsonb not null default '[]'::jsonb,
+      add column if not exists reactions jsonb,
+      add column if not exists comments_url text,
+      add column if not exists events_url text,
+      add column if not exists timeline_url text,
+      add column if not exists repository_url text,
+      add column if not exists api_url text,
+      add column if not exists state_reason text,
+      add column if not exists locked boolean not null default false,
+      add column if not exists active_lock_reason text,
+      add column if not exists raw_payload jsonb not null default '{}'::jsonb
   `);
 
   await client.query(`
@@ -282,5 +299,46 @@ async function ensureMaintainerSchema(client: PgClient) {
   await client.query(`
     create index if not exists idx_maintaineros_trace_events_issue
     on maintaineros_trace_events(repository_id, issue_number, occurred_at desc)
+  `);
+
+  await client.query(`
+    create table if not exists maintaineros_bounties (
+      id text primary key,
+      repository_id text not null references maintaineros_repositories(id) on delete cascade,
+      issue_number integer not null,
+      status text not null default 'proposed',
+      amount_cents integer not null,
+      currency text not null default 'USD',
+      rationale text not null,
+      maintainer_accepted boolean not null default false,
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now(),
+      unique(repository_id, issue_number)
+    )
+  `);
+
+  await client.query(`
+    create table if not exists maintaineros_payment_artifacts (
+      id text primary key,
+      repository_id text not null references maintaineros_repositories(id) on delete cascade,
+      issue_number integer not null,
+      bounty_id text not null references maintaineros_bounties(id) on delete cascade,
+      provider text not null default 'clustly',
+      source_state text not null default 'live',
+      status text not null,
+      task_id text,
+      task_url text,
+      claim_id text,
+      claimer_kind text,
+      funding_mode text,
+      amount_cents integer not null,
+      currency text not null default 'USDC',
+      artifact_url text,
+      release_reason text not null,
+      raw_response jsonb not null default '{}'::jsonb,
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now(),
+      unique(repository_id, issue_number)
+    )
   `);
 }

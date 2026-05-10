@@ -320,7 +320,7 @@ export function DashboardPage() {
   const [selectedRepo, setSelectedRepo] = useState(FALLBACK_REPOS[0].id);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [columnIssues, setColumnIssues] = useState<Record<LaneKey, DashboardIssue[]>>(FALLBACK_ISSUES);
-  const [loadingCols, setLoadingCols] = useState<Set<LaneKey>>(new Set());
+  const [loadedLaneRepos, setLoadedLaneRepos] = useState<Partial<Record<LaneKey, string>>>({});
   const [dispatchingIssues, setDispatchingIssues] = useState<Set<number>>(new Set());
   const [selectedIssue, setSelectedIssue] = useState<{ issue: DashboardIssue; laneKey: LaneKey } | null>(null);
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
@@ -348,26 +348,32 @@ export function DashboardPage() {
 
   useEffect(() => {
     if (!selectedRepo) return;
-    setLoadingCols(new Set(LANES));
+    let canceled = false;
+    const repoId = selectedRepo;
+
     LANES.forEach((laneKey) => {
-      fetch(`/api/dashboard/issues?lane=${laneKey}&repo=${encodeURIComponent(selectedRepo)}`)
+      fetch(`/api/dashboard/issues?lane=${laneKey}&repo=${encodeURIComponent(repoId)}`)
         .then((response) => response.json())
         .then((data: DashboardIssue[]) => {
-          if (Array.isArray(data)) {
+          if (!canceled && Array.isArray(data)) {
             setColumnIssues((current) => ({ ...current, [laneKey]: data }));
           }
         })
         .catch(() => {
-          setColumnIssues((current) => ({ ...current, [laneKey]: FALLBACK_ISSUES[laneKey] }));
+          if (!canceled) {
+            setColumnIssues((current) => ({ ...current, [laneKey]: FALLBACK_ISSUES[laneKey] }));
+          }
         })
         .finally(() => {
-          setLoadingCols((current) => {
-            const next = new Set(current);
-            next.delete(laneKey);
-            return next;
-          });
+          if (!canceled) {
+            setLoadedLaneRepos((current) => ({ ...current, [laneKey]: repoId }));
+          }
         });
     });
+
+    return () => {
+      canceled = true;
+    };
   }, [selectedRepo]);
 
   useEffect(() => {
@@ -382,6 +388,7 @@ export function DashboardPage() {
   }, [dropdownOpen]);
 
   const selectedLabel = repos.find((repo) => repo.id === selectedRepo)?.label ?? selectedRepo;
+  const loadingCols = new Set(LANES.filter((laneKey) => loadedLaneRepos[laneKey] !== selectedRepo));
   const totalIssues = LANES.reduce((sum, laneKey) => sum + (columnIssues[laneKey]?.length ?? 0), 0);
   const isLoading = loadingCols.size > 0;
 

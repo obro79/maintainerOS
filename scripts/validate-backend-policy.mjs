@@ -15,16 +15,21 @@ const files = {
   payout: readFileSync('lib/maintaineros/payout.ts', 'utf8'),
   linkPrRoute: readFileSync('app/api/maintaineros/link-pr/route.ts', 'utf8'),
   verifyPrRoute: readFileSync('app/api/maintaineros/verify-pr/route.ts', 'utf8'),
+  runAgentRoute: readFileSync('app/api/maintaineros/run-agent/route.ts', 'utf8'),
   clustlyReleaseRoute: readFileSync('app/api/maintaineros/clustly/release/route.ts', 'utf8'),
   prGates: readFileSync('lib/maintaineros/pr-gates.ts', 'utf8'),
   clod: readFileSync('lib/maintaineros/clod.ts', 'utf8'),
   clodRunEvidence: readFileSync('lib/maintaineros/clod-run-evidence.ts', 'utf8'),
   aiAttempts: readFileSync('lib/maintaineros/ai-attempts.ts', 'utf8'),
+  agentExecution: readFileSync('lib/maintaineros/agent-execution.ts', 'utf8'),
+  greptileShape: readFileSync('lib/maintaineros/greptile-shape.ts', 'utf8'),
 };
 
 assertIncludes(files.routing, 'evaluateRoutePolicy', 'routing exports the central route policy evaluator');
 assertIncludes(files.routing, 'AI_CONFIDENCE_THRESHOLD', 'AI routing has a confidence gate');
 assertIncludes(files.routing, 'HARD_BLOCK_LABELS', 'AI routing has hard-block labels');
+assertIncludes(files.routing, 'SAFE_AGENT_LABELS', 'AI routing has explicit safe-label signals');
+assertIncludes(files.routing, 'decision-needed', 'AI routing treats decision-needed as a hard blocker');
 assertIncludes(files.routing, "route = 'maintainer-review'", 'unsafe AI candidates reroute to DEV/maintainer review');
 
 assertIncludes(files.workOrders, 'buildDeterministicWorkOrder', 'deterministic work-order builder exists');
@@ -111,6 +116,20 @@ assertIncludes(files.aiAttempts, 'buildAiSandboxAttemptResult', 'AI sandbox atte
 assertIncludes(files.aiAttempts, "status: 'blocked'", 'AI attempt recorder returns structured blocked results');
 assertIncludes(files.aiAttempts, 'automationOwned: true', 'AI attempt recorder creates automation-owned PR artifacts');
 assertIncludes(files.neonRepository, 'buildAiSandboxAttemptResult', 'live repository uses AI attempt recorder');
+assertIncludes(files.runAgentRoute, 'authorizeWorkflowMutation', 'agent execution endpoint requires workflow mutation authorization');
+assertIncludes(files.runAgentRoute, 'persistPullRequest', 'agent execution endpoint persists opened PR artifacts');
+assertIncludes(files.agentExecution, 'parseAgentPatchPackage', 'agent execution validates CLŌD patch packages');
+assertIncludes(files.agentExecution, 'DAYTONA_API_KEY', 'agent execution uses Daytona credentials');
+assertIncludes(files.agentExecution, 'GITHUB_TOKEN', 'agent execution uses server-side GitHub token');
+assertIncludes(files.agentExecution, 'process/execute', 'agent execution runs commands through Daytona toolbox');
+assertIncludes(files.greptileShape, 'https://api.greptile.com/v2', 'Greptile defaults to the documented v2 API root');
+assertIncludes(files.greptile, '/repositories', 'Greptile verification indexes repository branches before querying');
+assertIncludes(files.greptile, '/query', 'Greptile verification queries indexed repositories for PR proof');
+assertIncludes(files.greptileShape, 'X-GitHub-Token', 'Greptile requests include the GitHub token header');
+assertIncludes(files.greptile, 'GREPTILE_GITHUB_TOKEN || process.env.GITHUB_TOKEN', 'Greptile can use a dedicated or shared GitHub token');
+assertIncludes(files.verifyPrRoute, 'requestMeta', 'verification provider runs store Greptile request metadata');
+assertIncludes(files.verifyPrRoute, 'rawResponse', 'verification provider runs store Greptile raw response metadata');
+assertIncludes(files.verification, 'const verification = issue.verification ??', 'verification queue prefers persisted verification artifacts');
 
 console.log('MaintainerOS backend policy check passed.');
 

@@ -16,9 +16,9 @@ export function PhaseShell({ eyebrow, title, description, repository, providerSt
   return (
     <div className="w-full max-w-6xl space-y-6 p-5 sm:p-6 lg:p-8">
       <header>
-        <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-zinc-600 mb-1">{eyebrow}</p>
-        <h1 className="font-heading text-3xl font-bold tracking-tight text-white">{title}</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-500">{description}</p>
+        <p className="font-sans text-[10px] uppercase tracking-[0.25em] text-[#F9F7F7]/40 mb-1">{eyebrow}</p>
+        <h1 className="font-heading text-3xl font-semibold tracking-tight text-white">{title}</h1>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#F9F7F7]/56">{description}</p>
       </header>
       {repository && <DataSourceBanner repository={repository} compact />}
       <ProviderStatusBar providers={providerStatuses} />

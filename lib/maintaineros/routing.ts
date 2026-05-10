@@ -46,7 +46,8 @@ export interface RoutePolicyInput {
 const AI_CONFIDENCE_THRESHOLD = 0.78;
 const AI_MAX_COMPLEXITY = 5;
 const AI_MAX_RISK = 4;
-const HARD_BLOCK_LABELS = new Set(['security', 'auth', 'permissions', 'needs design', 'maintainer-review', 'migration']);
+const HARD_BLOCK_LABELS = new Set(['security', 'auth', 'permissions', 'needs design', 'maintainer-review', 'migration', 'payment', 'decision-needed']);
+const SAFE_AGENT_LABELS = new Set(['agent-solvable', 'bug', 'documentation', 'docs', 'test', 'testing', 'backend', 'frontend']);
 
 export function classifyComplexity(score: number | undefined): IssueComplexity {
   if (!score) return 'unknown';
@@ -62,7 +63,7 @@ export function classifyRisk(score: number | undefined): IssueRisk {
 }
 
 export function scoreIssue(issue: RawIssueLike, priorFailures = 0): RouteDecision {
-  const labels = new Set((issue.labels ?? []).map((label) => label.toLowerCase()));
+  const labels = new Set((issue.labels ?? []).map(normalizeLabel));
   const existing = issue.classification;
   const complexityScore = clampScore((existing?.complexityScore ?? heuristicComplexity(issue)) + priorFailures);
   const riskScore = clampScore((existing?.riskScore ?? heuristicRisk(issue)) + Math.min(priorFailures, 2));
@@ -76,6 +77,8 @@ export function scoreIssue(issue: RawIssueLike, priorFailures = 0): RouteDecisio
     route = 'bounty-worthy';
   } else if (hasHardBlockLabel(labels) || riskScore >= 7) {
     route = 'maintainer-review';
+  } else if (hasSafeAgentLabel(labels)) {
+    route = 'agent-solvable';
   } else {
     route = 'agent-solvable';
   }
@@ -115,7 +118,7 @@ export function scoreIssue(issue: RawIssueLike, priorFailures = 0): RouteDecisio
 }
 
 export function evaluateRoutePolicy(input: RoutePolicyInput): RoutePolicyViewModel {
-  const labels = new Set((input.labels ?? []).map((label) => label.toLowerCase()));
+  const labels = new Set((input.labels ?? []).map(normalizeLabel));
   const reasons: string[] = [];
   const safetyChecks = [
     'Fresh Greptile verification is required before completion.',
@@ -235,14 +238,22 @@ function heuristicComplexity(issue: RawIssueLike) {
 }
 
 function heuristicRisk(issue: RawIssueLike) {
-  const text = `${issue.title} ${issue.body ?? ''}`.toLowerCase();
-  if (text.includes('security') || text.includes('permission') || text.includes('auth')) return 8;
-  if (text.includes('migration') || text.includes('payment')) return 6;
+  const text = issue.title.toLowerCase();
+  if (/\b(security|auth|permissions?)\b/.test(text)) return 8;
+  if (/\b(migration|payment)\b/.test(text)) return 6;
   return 3;
 }
 
 function hasHardBlockLabel(labels: Set<string>) {
   return [...labels].some((label) => HARD_BLOCK_LABELS.has(label));
+}
+
+function hasSafeAgentLabel(labels: Set<string>) {
+  return [...labels].some((label) => SAFE_AGENT_LABELS.has(label));
+}
+
+function normalizeLabel(label: string) {
+  return label.trim().toLowerCase();
 }
 
 function aiGateReasons(input: RoutePolicyInput, labels: Set<string>) {

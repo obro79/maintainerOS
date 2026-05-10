@@ -21,7 +21,7 @@ export default async function AgentsPage({ params }: Props) {
       repository={dashboard.repository}
       providerStatuses={dashboard.providerStatuses}
     >
-      <p className="rounded-xl border border-amber-500/20 bg-amber-500/8 p-3 text-xs leading-relaxed text-amber-200">
+      <p className="rounded-lg border border-[#DBE2EF]/20 bg-[#DBE2EF]/8 p-3 text-xs leading-relaxed text-[#DBE2EF]">
         Sandbox success is execution evidence only. It records what ran, changed, and produced a PR artifact; Phase 5 verification decides correctness.
       </p>
       <SandboxAttemptList attempts={attempts} />

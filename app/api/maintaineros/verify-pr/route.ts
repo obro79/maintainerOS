@@ -38,10 +38,19 @@ export async function POST(request: Request) {
       logUrl: result.logUrl ?? undefined,
       latencyMs: result.latencyMs,
       errorMessage: result.errorMessage ?? null,
+      requestMeta: result.requestMeta ?? {
+        repositoryId,
+        branch: issue.pullRequest.branchName,
+        pullRequestUrl: issue.pullRequest.htmlUrl,
+        acceptanceCheckCount: issue.workOrder.acceptanceChecks.length,
+        filesTouched: issue.workOrder.suggestedFiles,
+      },
       responseMeta: {
         status: result.verification.status,
         verifiedSha: result.verification.verifiedSha,
         currentSha: result.verification.currentSha,
+        blockingFindings: result.verification.blockingFindings ?? [],
+        rawResponse: result.rawResponse,
       },
     });
 

@@ -25,8 +25,13 @@ export async function POST(request: Request) {
 
   const results = [];
   for (const provider of providers) {
-    const result = await smokeProvider(provider);
+    const runId = `smoke-${provider}-${Date.now()}`;
+    const result = await smokeProvider(provider, runId);
     await recordProviderCallResult('smoke', result, {
+      runId,
+      artifactUrl: result.artifactUrl,
+      logUrl: result.logUrl,
+      screenshotUrl: result.screenshotUrl,
       requestMeta: { provider },
       responseMeta: { detail: result.detail },
     });
@@ -40,24 +45,24 @@ export async function POST(request: Request) {
   });
 }
 
-async function smokeProvider(provider: ProviderKey): Promise<ProviderCallResult> {
+async function smokeProvider(provider: ProviderKey, runId: string): Promise<ProviderCallResult> {
   const startedAt = Date.now();
   const runtime = getProviderRuntimeConfig();
   const health = getProviderHealth(provider);
 
   if (runtime.offline) {
-    return offlineProviderResult(provider, 'Offline mode is enabled; smoke call skipped.');
+    return { ...offlineProviderResult(provider, 'Offline mode is enabled; smoke call skipped.'), runId };
   }
   if (!health?.configured) {
-    return blockedProviderResult(provider, health?.detail ?? 'Provider config is missing.');
+    return { ...blockedProviderResult(provider, health?.detail ?? 'Provider config is missing.'), runId };
   }
 
   try {
-    if (provider === 'neon') return await smokeNeon(startedAt);
-    if (provider === 'github') return await smokeGitHub(startedAt);
-    if (provider === 'clod') return await smokeClod(startedAt);
-    if (provider === 'clustly') return await smokeClustly(startedAt);
-    return await smokeGenericProvider(provider, startedAt);
+    if (provider === 'neon') return await smokeNeon(startedAt, runId);
+    if (provider === 'github') return await smokeGitHub(startedAt, runId);
+    if (provider === 'clod') return await smokeClod(startedAt, runId);
+    if (provider === 'clustly') return await smokeClustly(startedAt, runId);
+    return await smokeGenericProvider(provider, startedAt, runId);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown provider smoke failure.';
     return {
@@ -65,6 +70,7 @@ async function smokeProvider(provider: ProviderKey): Promise<ProviderCallResult>
       status: 'failed',
       sourceState: 'live',
       skipped: false,
+      runId,
       latencyMs: Date.now() - startedAt,
       errorMessage: message,
       detail: message,
@@ -72,14 +78,15 @@ async function smokeProvider(provider: ProviderKey): Promise<ProviderCallResult>
   }
 }
 
-async function smokeNeon(startedAt: number): Promise<ProviderCallResult> {
-  if (!hasNeonConnection()) return blockedProviderResult('neon', 'DATABASE_URL is missing.');
+async function smokeNeon(startedAt: number, runId: string): Promise<ProviderCallResult> {
+  if (!hasNeonConnection()) return { ...blockedProviderResult('neon', 'DATABASE_URL is missing.'), runId };
   const result = await withPostgres((client) => client.query<{ ok: number }>('select 1 as ok'));
   return {
     provider: 'neon',
     status: 'succeeded',
     sourceState: 'live',
     skipped: false,
+    runId,
     artifact: { rowCount: result.rows.length },
     latencyMs: Date.now() - startedAt,
     errorMessage: null,
@@ -87,14 +94,15 @@ async function smokeNeon(startedAt: number): Promise<ProviderCallResult> {
   };
 }
 
-async function smokeGitHub(startedAt: number): Promise<ProviderCallResult> {
+async function smokeGitHub(startedAt: number, runId: string): Promise<ProviderCallResult> {
+  const artifactUrl = 'https://api.github.com/rate_limit';
   const headers: HeadersInit = {
     Accept: 'application/vnd.github+json',
     'X-GitHub-Api-Version': '2022-11-28',
     'User-Agent': 'MaintainerOS-provider-smoke',
   };
   if (process.env.GITHUB_TOKEN) headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
-  const response = await fetch('https://api.github.com/rate_limit', { headers });
+  const response = await fetch(artifactUrl, { headers });
   if (!response.ok) throw new Error(`GitHub smoke failed with ${response.status}.`);
   const payload = await response.json();
   return {
@@ -102,6 +110,8 @@ async function smokeGitHub(startedAt: number): Promise<ProviderCallResult> {
     status: 'succeeded',
     sourceState: 'live',
     skipped: false,
+    runId,
+    artifactUrl,
     artifact: { rateLimitRemaining: payload?.rate?.remaining ?? null },
     latencyMs: Date.now() - startedAt,
     errorMessage: null,
@@ -109,8 +119,9 @@ async function smokeGitHub(startedAt: number): Promise<ProviderCallResult> {
   };
 }
 
-async function smokeClod(startedAt: number): Promise<ProviderCallResult> {
+async function smokeClod(startedAt: number, runId: string): Promise<ProviderCallResult> {
   const baseUrl = (process.env.CLOD_BASE_URL || 'https://api.clod.io/v1').replace(/\/$/, '');
+  const artifactUrl = `${baseUrl}/chat/completions`;
   const response = await fetch(`${baseUrl}/chat/completions`, {
     method: 'POST',
     headers: {
@@ -134,6 +145,8 @@ async function smokeClod(startedAt: number): Promise<ProviderCallResult> {
     status: 'succeeded',
     sourceState: 'live',
     skipped: false,
+    runId,
+    artifactUrl,
     artifact: { model: process.env.CLOD_CHEAP_MODEL || 'DeepSeek V3', usage: payload?.usage ?? null },
     latencyMs: Date.now() - startedAt,
     errorMessage: null,
@@ -141,9 +154,10 @@ async function smokeClod(startedAt: number): Promise<ProviderCallResult> {
   };
 }
 
-async function smokeClustly(startedAt: number): Promise<ProviderCallResult> {
+async function smokeClustly(startedAt: number, runId: string): Promise<ProviderCallResult> {
   const baseUrl = (process.env.CLUSTLY_BASE_URL || 'https://clustly.ai/api/v1').replace(/\/$/, '');
-  const response = await fetch(`${baseUrl}/tasks/open`, {
+  const artifactUrl = `${baseUrl}/tasks/open`;
+  const response = await fetch(artifactUrl, {
     headers: {
       'x-agent-key': process.env.CLUSTLY_AGENT_KEY || '',
       Accept: 'application/json',
@@ -156,6 +170,8 @@ async function smokeClustly(startedAt: number): Promise<ProviderCallResult> {
     status: 'succeeded',
     sourceState: 'live',
     skipped: false,
+    runId,
+    artifactUrl,
     artifact: { openTaskCount: Array.isArray(payload) ? payload.length : payload?.tasks?.length ?? null },
     latencyMs: Date.now() - startedAt,
     errorMessage: null,
@@ -163,11 +179,12 @@ async function smokeClustly(startedAt: number): Promise<ProviderCallResult> {
   };
 }
 
-async function smokeGenericProvider(provider: ProviderKey, startedAt: number): Promise<ProviderCallResult> {
+async function smokeGenericProvider(provider: ProviderKey, startedAt: number, runId: string): Promise<ProviderCallResult> {
   const envPrefix = provider.toUpperCase();
   const baseUrl = process.env[`${envPrefix}_BASE_URL`];
   const apiKey = process.env[`${envPrefix}_API_KEY`];
-  if (!baseUrl) return blockedProviderResult(provider, `${envPrefix}_BASE_URL is required before this provider smoke call can run.`);
+  if (!baseUrl) return { ...blockedProviderResult(provider, `${envPrefix}_BASE_URL is required before this provider smoke call can run.`), runId };
+  const artifactUrl = baseUrl.replace(/:\/\/[^@]+@/, '://');
 
   const response = await fetch(baseUrl, {
     headers: {
@@ -181,7 +198,9 @@ async function smokeGenericProvider(provider: ProviderKey, startedAt: number): P
     status: 'succeeded',
     sourceState: 'live',
     skipped: false,
-    artifact: { endpoint: baseUrl.replace(/:\/\/[^@]+@/, '://') },
+    runId,
+    artifactUrl,
+    artifact: { endpoint: artifactUrl },
     latencyMs: Date.now() - startedAt,
     errorMessage: null,
     detail: `${provider} base endpoint smoke call succeeded.`,

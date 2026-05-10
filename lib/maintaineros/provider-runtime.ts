@@ -29,6 +29,10 @@ export interface ProviderCallResult<TArtifact = unknown> {
   sourceState: ArtifactSourceState;
   skipped: boolean;
   artifact?: TArtifact;
+  runId?: string;
+  artifactUrl?: string | null;
+  logUrl?: string | null;
+  screenshotUrl?: string | null;
   latencyMs: number;
   errorMessage: string | null;
   detail: string;

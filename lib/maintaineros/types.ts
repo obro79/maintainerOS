@@ -236,6 +236,7 @@ export interface SponsorProofViewModel {
   runId?: string;
   artifactUrl?: string;
   screenshotUrl?: string;
+  logUrl?: string;
   occurredAt?: string;
   summary: string;
 }

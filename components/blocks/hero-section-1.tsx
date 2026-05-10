@@ -177,7 +177,7 @@ export function HeroSection() {
                 transition={{ duration: 0.45 }}
               >
                 <Link
-                  href="/dashboard"
+                  href="/connect"
                   className="inline-flex items-center gap-2 rounded-full border border-[#F9F7F7]/12 bg-black/25 px-3 py-1.5 text-sm text-[#F9F7F7]/72 transition-colors hover:border-[#3F72AF]/35 hover:text-white"
                 >
                   <span className="size-1.5 rounded-full bg-[#3F72AF]" />
@@ -217,10 +217,10 @@ export function HeroSection() {
                   Connect repo
                 </Link>
                 <Link
-                  href="/dashboard"
+                  href="/docs"
                   className="inline-flex h-11 items-center justify-center rounded-md border border-[#F9F7F7]/14 bg-black/20 px-5 text-sm font-medium text-[#F9F7F7]/82 transition-colors hover:border-[#F9F7F7]/30 hover:bg-[#F9F7F7]/7 hover:text-white"
                 >
-                  Open dashboard
+                  Read docs
                 </Link>
               </motion.div>
             </div>

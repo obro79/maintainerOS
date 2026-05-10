@@ -4,7 +4,7 @@ import { Suspense, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { AlertCircle, CheckCircle2, ChevronRight, Clock, CreditCard, GitMerge, Loader2, ShieldCheck } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, CreditCard, GitMerge, Loader2, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 function GitHubMark() {
@@ -178,13 +178,6 @@ function ConnectContent() {
             <div className="text-[10px] text-zinc-600">{label}</div>
           </div>
         ))}
-      </div>
-
-      <div className="text-center">
-        <Link href="/demo" className="inline-flex items-center gap-1 text-sm text-zinc-600 transition-colors hover:text-zinc-400">
-          Want to explore first? <span className="text-emerald-500">View live demo</span>
-          <ChevronRight className="size-3.5 text-emerald-500" />
-        </Link>
       </div>
     </ConnectShell>
   );

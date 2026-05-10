@@ -13,7 +13,7 @@ This repo is a single-root Next.js app. The application routes live in `app/`, r
 The live demo should start from real GitHub-hosted issue backlogs. Neon is the import/cache layer. Fixture/offline mode remains the fallback path.
 
 ## App Commands
-
+ 
 ```bash
 npm install
 npm run dev

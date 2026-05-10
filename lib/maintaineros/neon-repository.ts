@@ -20,8 +20,9 @@ import {
 import { classifyComplexity, classifyRisk, estimatePremiumBaselineCents, evaluateRoutePolicy, scoreIssue, selectClodModel } from './routing';
 import { withPostgres, type PgClient } from './postgres';
 import { applyStoredClodArtifact } from './clod-artifacts';
+import { buildAiSandboxAttemptResult } from './ai-attempts';
 import { buildContextPackForIssue, buildNiaTraceEvent } from './nia-context';
-import { buildSandboxExecutionsForIssue, buildSandboxTraceEvents, toSandboxAttemptListItems } from './daytona';
+import { buildSandboxTraceEvents, toSandboxAttemptListItems } from './daytona';
 import { buildGreptileVerificationAdapterResult, toVerificationQueueItem } from './verification';
 import { toClustlyBountyListItem } from './payments';
 import { buildDeterministicWorkOrder } from './work-orders';
@@ -311,8 +312,8 @@ async function toIssueDetail(client: PgClient, issue: IssueRow, persistedTrace: 
     },
     'live',
   );
-  const pullRequest = await getLatestPullRequest(client, issue.repository_id, issue.number);
-  const verification = pullRequest ? await getLatestVerification(client, pullRequest) : null;
+  const persistedPullRequest = await getLatestPullRequest(client, issue.repository_id, issue.number);
+  const verification = persistedPullRequest ? await getLatestVerification(client, persistedPullRequest) : null;
   const baseDetail: IssueDetailViewModel = {
     ...card,
     body: issue.body,
@@ -324,7 +325,7 @@ async function toIssueDetail(client: PgClient, issue: IssueRow, persistedTrace: 
     routePolicy,
     contextPack,
     sandboxExecutions: [],
-    pullRequest,
+    pullRequest: persistedPullRequest,
     verification,
     bounty: decision.route === 'bounty-worthy'
       ? {
@@ -341,21 +342,26 @@ async function toIssueDetail(client: PgClient, issue: IssueRow, persistedTrace: 
     payoutGate: emptyPayoutGate(),
   };
   const payoutVisibleBaseDetail = hidePayoutArtifactsForNonClustlyRoutes(baseDetail);
-  const payoutGate = canReleasePayout(payoutVisibleBaseDetail);
-  const sandboxExecutions = buildSandboxExecutionsForIssue(payoutVisibleBaseDetail, issue.repository_id, 'live');
+  const aiAttemptResult = buildAiSandboxAttemptResult(payoutVisibleBaseDetail, issue.repository_id, 'live');
+  const issueWithAiArtifacts = {
+    ...payoutVisibleBaseDetail,
+    pullRequest: persistedPullRequest ?? aiAttemptResult.pullRequest,
+  };
+  const payoutGate = canReleasePayout(issueWithAiArtifacts);
   const derivedTrace = [
     ...buildLiveTrace(issue, decision.route, modelRun.model, contextPack),
-    ...buildLivePullRequestTraceEvents(issue, pullRequest, decision.route),
+    ...buildLivePullRequestTraceEvents(issue, persistedPullRequest, decision.route),
     ...buildLiveVerificationTraceEvents(issue, verification, decision.route),
-    ...buildSandboxTraceEvents(payoutVisibleBaseDetail, sandboxExecutions).map((event) => ({ ...event, route: decision.route })),
+    ...aiAttemptResult.traceEvents,
+    ...buildSandboxTraceEvents(issueWithAiArtifacts, aiAttemptResult.attempts).map((event) => ({ ...event, route: decision.route })),
   ];
   const trace = mergeTraceEvents(derivedTrace, persistedTrace);
 
   return hidePayoutArtifactsForNonClustlyRoutes({
-    ...payoutVisibleBaseDetail,
+    ...issueWithAiArtifacts,
     payoutGate,
-    sandboxExecutions,
-    routeHistory: buildRouteHistoryFromTrace(payoutVisibleBaseDetail, trace),
+    sandboxExecutions: aiAttemptResult.attempts,
+    routeHistory: buildRouteHistoryFromTrace(issueWithAiArtifacts, trace),
     trace,
   });
 }

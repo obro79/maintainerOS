@@ -23,8 +23,9 @@ import {
 import { NON_CLUSTLY_ROUTE_REASON, canReleasePayout, hidePayoutArtifactsForNonClustlyRoutes } from './payout';
 import { classifyComplexity, classifyRisk, estimatePremiumBaselineCents, evaluateRoutePolicy, scoreIssue, selectClodModel } from './routing';
 import { applyStoredClodArtifact } from './clod-artifacts';
+import { buildAiSandboxAttemptResult } from './ai-attempts';
 import { buildContextPackForIssue, buildNiaTraceEvent } from './nia-context';
-import { buildSandboxExecutionsForIssue, buildSandboxTraceEvents, toSandboxAttemptListItems } from './daytona';
+import { buildSandboxTraceEvents, toSandboxAttemptListItems } from './daytona';
 import { buildGreptileVerification, toVerificationQueueItem } from './verification';
 import { buildFixtureClustlyTask, toClustlyBountyListItem } from './payments';
 import { listPersistedTraceEvents, mergeTraceEvents } from './trace-events';
@@ -355,21 +356,26 @@ async function toIssueDetail(issue: FixtureIssue, sourceState: ArtifactSourceSta
     payoutGate: emptyPayoutGate(),
   };
   const payoutVisibleBaseDetail = hidePayoutArtifactsForNonClustlyRoutes(baseDetail);
-  const sandboxExecutions = buildSandboxExecutionsForIssue(payoutVisibleBaseDetail, repositoryId, sourceState);
-  const payoutGate = canReleasePayout(payoutVisibleBaseDetail);
-  const paymentArtifact = buildFixtureClustlyTask({ ...payoutVisibleBaseDetail, payoutGate }, sourceState);
-  const detailForTrace = { ...payoutVisibleBaseDetail, paymentArtifact, payoutGate };
+  const aiAttemptResult = buildAiSandboxAttemptResult(payoutVisibleBaseDetail, repositoryId, sourceState);
+  const detailWithAiArtifacts = {
+    ...payoutVisibleBaseDetail,
+    pullRequest: pullRequest ?? aiAttemptResult.pullRequest,
+  };
+  const payoutGate = canReleasePayout(detailWithAiArtifacts);
+  const paymentArtifact = buildFixtureClustlyTask({ ...detailWithAiArtifacts, payoutGate }, sourceState);
+  const detailForTrace = { ...detailWithAiArtifacts, paymentArtifact, payoutGate };
   const trace = [
     ...buildTrace(issue, modelRun, sourceState, contextPack, verification, card.route, workOrder),
-    ...buildSandboxTraceEvents(detailForTrace, sandboxExecutions).map((event) => ({ ...event, route: card.route })),
-    ...buildPullRequestTraceEvents(issue, pullRequest, sourceState, card.route, workOrder),
+    ...aiAttemptResult.traceEvents,
+    ...buildSandboxTraceEvents(detailForTrace, aiAttemptResult.attempts).map((event) => ({ ...event, route: card.route })),
+    ...buildPullRequestTraceEvents(issue, pullRequest ?? aiAttemptResult.pullRequest, sourceState, card.route, workOrder),
     ...buildPayoutGateTraceEvents(issue, paymentArtifact, payoutGate, sourceState, card.route),
   ].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
   const detail = hidePayoutArtifactsForNonClustlyRoutes({
-    ...payoutVisibleBaseDetail,
+    ...detailWithAiArtifacts,
     paymentArtifact,
     payoutGate,
-    sandboxExecutions,
+    sandboxExecutions: aiAttemptResult.attempts,
     routeHistory: buildRouteHistoryFromTrace(detailForTrace, trace),
     trace,
   });

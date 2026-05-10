@@ -11,6 +11,9 @@ const files = {
   payout: readFileSync('lib/maintaineros/payout.ts', 'utf8'),
   prGates: readFileSync('lib/maintaineros/pr-gates.ts', 'utf8'),
   postgres: readFileSync('lib/maintaineros/postgres.ts', 'utf8'),
+  clod: readFileSync('lib/maintaineros/clod.ts', 'utf8'),
+  clodRunEvidence: readFileSync('lib/maintaineros/clod-run-evidence.ts', 'utf8'),
+  aiAttempts: readFileSync('lib/maintaineros/ai-attempts.ts', 'utf8'),
 };
 
 assertIncludes(files.routing, 'evaluateRoutePolicy', 'routing exports the central route policy evaluator');
@@ -75,6 +78,17 @@ assertIncludes(files.prGates, 'human_pr_untouched', 'failed PR reroute leaves hu
 assertIncludes(files.prGates, 'preserve_trace', 'failed PR reroute preserves trace evidence');
 assertIncludes(files.prGates, 'reroute_clustly', 'failed PR reroute can target CLUSTLY');
 assertIncludes(files.prGates, 'reroute_dev', 'failed PR reroute can target DEV');
+
+assertIncludes(files.routing, 'fallbackReason?: string | null', 'CLŌD model policy has explicit fallback selection input');
+assertIncludes(files.routing, "tier: 'premium-fallback'", 'premium fallback tier is explicit, not default');
+assertIncludes(files.clodRunEvidence, 'buildClodRunEvidenceMeta', 'CLŌD run metadata builder exists');
+assertIncludes(files.clodRunEvidence, 'estimatedCostCents', 'CLŌD run evidence includes estimated cost');
+assertIncludes(files.clodRunEvidence, 'premiumBaselineCents', 'CLŌD run evidence includes premium baseline');
+assertIncludes(files.clodRunEvidence, 'inputTokens', 'CLŌD run evidence includes token counts');
+assertIncludes(files.aiAttempts, 'buildAiSandboxAttemptResult', 'AI sandbox attempt recorder exists');
+assertIncludes(files.aiAttempts, "status: 'blocked'", 'AI attempt recorder returns structured blocked results');
+assertIncludes(files.aiAttempts, 'automationOwned: true', 'AI attempt recorder creates automation-owned PR artifacts');
+assertIncludes(files.neonRepository, 'buildAiSandboxAttemptResult', 'live repository uses AI attempt recorder');
 
 console.log('MaintainerOS backend policy check passed.');
 

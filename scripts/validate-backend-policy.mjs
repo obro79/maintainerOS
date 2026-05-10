@@ -22,6 +22,7 @@ const files = {
   clodRunEvidence: readFileSync('lib/maintaineros/clod-run-evidence.ts', 'utf8'),
   aiAttempts: readFileSync('lib/maintaineros/ai-attempts.ts', 'utf8'),
   agentExecution: readFileSync('lib/maintaineros/agent-execution.ts', 'utf8'),
+  greptileShape: readFileSync('lib/maintaineros/greptile-shape.ts', 'utf8'),
 };
 
 assertIncludes(files.routing, 'evaluateRoutePolicy', 'routing exports the central route policy evaluator');
@@ -121,6 +122,14 @@ assertIncludes(files.agentExecution, 'parseAgentPatchPackage', 'agent execution 
 assertIncludes(files.agentExecution, 'DAYTONA_API_KEY', 'agent execution uses Daytona credentials');
 assertIncludes(files.agentExecution, 'GITHUB_TOKEN', 'agent execution uses server-side GitHub token');
 assertIncludes(files.agentExecution, 'process/execute', 'agent execution runs commands through Daytona toolbox');
+assertIncludes(files.greptileShape, 'https://api.greptile.com/v2', 'Greptile defaults to the documented v2 API root');
+assertIncludes(files.greptile, '/repositories', 'Greptile verification indexes repository branches before querying');
+assertIncludes(files.greptile, '/query', 'Greptile verification queries indexed repositories for PR proof');
+assertIncludes(files.greptileShape, 'X-GitHub-Token', 'Greptile requests include the GitHub token header');
+assertIncludes(files.greptile, 'GREPTILE_GITHUB_TOKEN || process.env.GITHUB_TOKEN', 'Greptile can use a dedicated or shared GitHub token');
+assertIncludes(files.verifyPrRoute, 'requestMeta', 'verification provider runs store Greptile request metadata');
+assertIncludes(files.verifyPrRoute, 'rawResponse', 'verification provider runs store Greptile raw response metadata');
+assertIncludes(files.verification, 'const verification = issue.verification ??', 'verification queue prefers persisted verification artifacts');
 
 console.log('MaintainerOS backend policy check passed.');
 

@@ -51,7 +51,7 @@ const PROVIDERS: ProviderDefinition[] = [
   { provider: 'clod', label: 'CLōD', requiredEnv: ['CLOD_API_KEY'], baseUrlEnv: 'CLOD_BASE_URL' },
   { provider: 'nia', label: 'Nia', requiredEnv: ['NIA_API_KEY'], baseUrlEnv: 'NIA_BASE_URL' },
   { provider: 'daytona', label: 'Daytona', requiredEnv: ['DAYTONA_API_KEY'], baseUrlEnv: 'DAYTONA_BASE_URL' },
-  { provider: 'greptile', label: 'Greptile', requiredEnv: ['GREPTILE_API_KEY'], baseUrlEnv: 'GREPTILE_BASE_URL' },
+  { provider: 'greptile', label: 'Greptile', requiredEnv: ['GREPTILE_API_KEY', 'GREPTILE_GITHUB_TOKEN or GITHUB_TOKEN'], baseUrlEnv: 'GREPTILE_BASE_URL' },
   { provider: 'clustly', label: 'Clustly', requiredEnv: ['CLUSTLY_AGENT_KEY'], baseUrlEnv: 'CLUSTLY_BASE_URL' },
 ];
 
@@ -134,6 +134,12 @@ function providerHealth(definition: ProviderDefinition, mode: ProviderRuntimeMod
 
 function missingEnvFor(definition: ProviderDefinition) {
   if (definition.provider === 'neon') return hasNeonConnection() ? [] : ['DATABASE_URL'];
+  if (definition.provider === 'greptile') {
+    return [
+      !process.env.GREPTILE_API_KEY ? 'GREPTILE_API_KEY' : null,
+      !process.env.GREPTILE_GITHUB_TOKEN && !process.env.GITHUB_TOKEN ? 'GREPTILE_GITHUB_TOKEN or GITHUB_TOKEN' : null,
+    ].filter((value): value is string => Boolean(value));
+  }
   return definition.requiredEnv.filter((key) => !process.env[key]);
 }
 

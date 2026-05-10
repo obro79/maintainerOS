@@ -47,9 +47,58 @@ const providerRunColumns = [
   "occurred_at timestamptz not null"
 ];
 
+const importRunColumns = [
+  "requested_limit integer not null",
+  "imported_issue_count integer not null",
+  "skipped_pull_request_count integer not null",
+  "status text not null",
+  "source_state text not null",
+  "started_at timestamptz not null",
+  "finished_at timestamptz",
+  "error_message text"
+];
+
+const issueColumns = [
+  "repository_id text not null",
+  "number integer not null",
+  "title text not null",
+  "body text not null",
+  "author text not null",
+  "labels jsonb not null",
+  "comments_count integer not null",
+  "html_url text not null",
+  "state text not null",
+  "closed_at timestamptz"
+];
+
 for (const column of providerRunColumns) {
   if (!runtimeSchema.toLowerCase().includes(column)) {
     throw new Error(`Provider run schema missing proof column: ${column}`);
+  }
+}
+
+for (const column of importRunColumns) {
+  if (!runtimeSchema.toLowerCase().includes(column)) {
+    throw new Error(`Import run schema missing persistence column: ${column}`);
+  }
+}
+
+for (const column of issueColumns) {
+  if (!runtimeSchema.toLowerCase().includes(column)) {
+    throw new Error(`Issue schema missing persistence column: ${column}`);
+  }
+}
+
+for (const alterTable of ["maintaineros_provider_runs", "maintaineros_import_runs", "maintaineros_issues"]) {
+  if (!runtimeSchema.includes(`alter table ${alterTable}`)) {
+    throw new Error(`${alterTable} schema must include ALTER TABLE backfill for existing Neon databases`);
+  }
+}
+
+const typeContracts = readFileSync("lib/maintaineros/types.ts", "utf8");
+for (const contract of ["ExecutionRouteOwner", "RouteContract", "ROUTE_CONTRACTS", "owner: 'ai'", "owner: 'dev'", "owner: 'clustly'"]) {
+  if (!typeContracts.includes(contract)) {
+    throw new Error(`Shared route/artifact contracts missing ${contract}`);
   }
 }
 
@@ -57,9 +106,8 @@ if (!runtimeSchema.includes("alter table maintaineros_provider_runs")) {
   throw new Error("Provider run schema must include ALTER TABLE backfill for existing Neon databases");
 }
 
-const sponsorProofTypes = readFileSync("lib/maintaineros/types.ts", "utf8");
 for (const field of ["sourceState: ArtifactSourceState", "artifactUrl?: string", "screenshotUrl?: string", "logUrl?: string", "occurredAt?: string"]) {
-  if (!sponsorProofTypes.includes(field)) {
+  if (!typeContracts.includes(field)) {
     throw new Error(`Sponsor proof type missing ${field}`);
   }
 }
@@ -85,6 +133,34 @@ if (!fixtureRepository.includes("costEvidence: 'known'") || !fixtureRepository.i
 const clodProvider = readFileSync("lib/maintaineros/clod.ts", "utf8");
 if (!clodProvider.includes("premiumBaselineCents: null")) {
   throw new Error("Live CLōD pricing must keep unknown premium baseline costs null");
+}
+
+const repository = readFileSync("lib/maintaineros/repository.ts", "utf8");
+for (const fallbackCall of [
+  ".getDashboard(repositoryId)",
+  ".getIssueDetail(repositoryId, issueNumber)",
+  ".getIssueTrace(repositoryId, issueNumber)",
+  ".getSandboxAttempts(repositoryId)",
+  ".getVerificationQueue(repositoryId)",
+  ".getBountyTasks(repositoryId)"
+]) {
+  if (!repository.includes(fallbackCall)) {
+    throw new Error(`Live repository fallback must preserve requested repository id for ${fallbackCall}`);
+  }
+}
+
+const daytona = readFileSync("lib/maintaineros/daytona.ts", "utf8");
+for (const preservedAttempt of ["Sandbox attempt failed", "Failed sandbox attempt preserved", "Escalation policy"]) {
+  if (!daytona.includes(preservedAttempt)) {
+    throw new Error(`Sandbox trace must preserve failed attempt evidence: ${preservedAttempt}`);
+  }
+}
+
+const routeHistory = readFileSync("lib/maintaineros/route-history.ts", "utf8");
+for (const historyGuard of ["status === 'failed'", "status === 'escalated'", "mergeRouteHistory"]) {
+  if (!routeHistory.includes(historyGuard)) {
+    throw new Error(`Route history must preserve failed/escalated attempts: ${historyGuard}`);
+  }
 }
 
 const fixtureIndex = JSON.parse(readFileSync("data/mock-repos/index.json", "utf8"));

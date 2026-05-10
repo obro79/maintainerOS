@@ -54,7 +54,7 @@ class FallbackMaintainerOSRepository implements MaintainerOSRepository {
     try {
       return await this.tryPrimary(() => this.primary.getDashboard(repositoryId));
     } catch (error) {
-      return this.fixture(error).getDashboard();
+      return this.fixture(error).getDashboard(repositoryId);
     }
   }
 
@@ -62,7 +62,7 @@ class FallbackMaintainerOSRepository implements MaintainerOSRepository {
     try {
       return await this.tryPrimary(() => this.primary.getIssueDetail(repositoryId, issueNumber));
     } catch (error) {
-      return this.fixture(error).getIssueDetail(process.env.MAINTAINEROS_DEMO_REPO_ID || 'maintaineros-demo-large', issueNumber);
+      return this.fixture(error).getIssueDetail(repositoryId, issueNumber);
     }
   }
 
@@ -70,7 +70,7 @@ class FallbackMaintainerOSRepository implements MaintainerOSRepository {
     try {
       return await this.tryPrimary(() => this.primary.getIssueTrace(repositoryId, issueNumber));
     } catch (error) {
-      return this.fixture(error).getIssueTrace(process.env.MAINTAINEROS_DEMO_REPO_ID || 'maintaineros-demo-large', issueNumber);
+      return this.fixture(error).getIssueTrace(repositoryId, issueNumber);
     }
   }
 
@@ -86,7 +86,7 @@ class FallbackMaintainerOSRepository implements MaintainerOSRepository {
     try {
       return await this.tryPrimary(() => this.primary.getSandboxAttempts(repositoryId));
     } catch (error) {
-      return this.fixture(error).getSandboxAttempts(process.env.MAINTAINEROS_DEMO_REPO_ID || 'maintaineros-demo-large');
+      return this.fixture(error).getSandboxAttempts(repositoryId);
     }
   }
 
@@ -94,7 +94,7 @@ class FallbackMaintainerOSRepository implements MaintainerOSRepository {
     try {
       return await this.tryPrimary(() => this.primary.getVerificationQueue(repositoryId));
     } catch (error) {
-      return this.fixture(error).getVerificationQueue(process.env.MAINTAINEROS_DEMO_REPO_ID || 'maintaineros-demo-large');
+      return this.fixture(error).getVerificationQueue(repositoryId);
     }
   }
 
@@ -102,7 +102,7 @@ class FallbackMaintainerOSRepository implements MaintainerOSRepository {
     try {
       return await this.tryPrimary(() => this.primary.getBountyTasks(repositoryId));
     } catch (error) {
-      return this.fixture(error).getBountyTasks(process.env.MAINTAINEROS_DEMO_REPO_ID || 'maintaineros-demo-large');
+      return this.fixture(error).getBountyTasks(repositoryId);
     }
   }
 

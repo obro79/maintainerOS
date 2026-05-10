@@ -1,6 +1,11 @@
 import Link from 'next/link';
 import { EvidenceBadge } from '@/components/maintaineros/evidence-badge';
 import { PhaseShell } from '@/components/maintaineros/phase-shell';
+import {
+  canDisplayLiftClaim,
+  computeBaselineEnrichedComparison,
+  type ModeEvalMetrics,
+} from '@/lib/maintaineros/eval-comparison';
 import { getMaintainerOSRepository } from '@/lib/maintaineros/repository';
 import type { EvaluationSummaryViewModel } from '@/lib/maintaineros/types';
 
@@ -16,7 +21,11 @@ export default async function EvalsPage({ params }: Props) {
     repository.getDashboard(`${org}/${repo}`),
   ]);
   const rows = evaluation.rows ?? [];
-  const liftLabel = evaluation.liftDeltaPct == null ? 'not claimed' : `+${evaluation.liftDeltaPct} pts`;
+  const comparison = computeBaselineEnrichedComparison(rows);
+  const liftLabel =
+    !canDisplayLiftClaim(evaluation) || evaluation.liftDeltaPct == null
+      ? 'not claimed'
+      : `${evaluation.liftDeltaPct >= 0 ? '+' : ''}${evaluation.liftDeltaPct} pts`;
 
   return (
     <PhaseShell
@@ -31,6 +40,57 @@ export default async function EvalsPage({ params }: Props) {
         <Metric label="Baseline pass" value={formatRate(evaluation.baselinePassRate)} sub={formatCount(evaluation.baselinePassedCount, evaluation.baselineTotalCount)} />
         <Metric label="Nia enriched" value={formatRate(evaluation.enrichedContextPassRate)} sub={`${formatCount(evaluation.enrichedPassedCount, evaluation.enrichedTotalCount)} · ${liftLabel}`} />
         <Metric label="Cost / verified" value={`${evaluation.costPerVerifiedFixCents}c`} sub={costSummary(evaluation)} />
+      </div>
+
+      <div className="rounded-xl border border-white/8 bg-[#080d14] p-4">
+        <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold text-white">Baseline vs Nia-enriched (evidence rows)</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-zinc-500">
+              Pass rate, retry share, escalation share, cost per verified fix, and failure labels are computed per mode from the evidence rows below.
+              Headline sample metrics above may aggregate a wider issue set than this table.
+            </p>
+          </div>
+          <EvidenceBadge sourceState={evaluation.sourceState ?? 'planned'} />
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[520px] border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-white/8 text-left text-[10px] uppercase tracking-[0.18em] text-zinc-600">
+                <th className="py-2 pr-3 font-medium">Metric</th>
+                <th className="py-2 pr-3 font-medium">Baseline</th>
+                <th className="py-2 font-medium">Nia-enriched</th>
+              </tr>
+            </thead>
+            <tbody className="text-zinc-300">
+              <ComparisonRow label="Evidence rows" baseline={String(comparison.baseline.rowCount)} enriched={String(comparison.niaEnriched.rowCount)} />
+              <ComparisonRow
+                label="Pass rate (terminal outcomes)"
+                baseline={formatMaybePassRate(comparison.baseline)}
+                enriched={formatMaybePassRate(comparison.niaEnriched)}
+              />
+              <ComparisonRow
+                label="Retry rate"
+                baseline={formatMaybeShare(comparison.baseline.retryRate, comparison.baseline.rowCount)}
+                enriched={formatMaybeShare(comparison.niaEnriched.retryRate, comparison.niaEnriched.rowCount)}
+              />
+              <ComparisonRow
+                label="Escalation rate"
+                baseline={formatMaybeShare(comparison.baseline.escalationRate, comparison.baseline.rowCount)}
+                enriched={formatMaybeShare(comparison.niaEnriched.escalationRate, comparison.niaEnriched.rowCount)}
+              />
+              <ComparisonRow
+                label="Cost / verified fix"
+                baseline={formatMaybeCost(comparison.baseline.costPerVerifiedFixCents, comparison.baseline.passedCount)}
+                enriched={formatMaybeCost(comparison.niaEnriched.costPerVerifiedFixCents, comparison.niaEnriched.passedCount)}
+              />
+            </tbody>
+          </table>
+        </div>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <FailureMix title="Baseline verification failures" metrics={comparison.baseline} />
+          <FailureMix title="Nia-enriched verification failures" metrics={comparison.niaEnriched} />
+        </div>
       </div>
 
       <div className="rounded-xl border border-white/8 bg-[#080d14] p-4">
@@ -127,6 +187,65 @@ export default async function EvalsPage({ params }: Props) {
       </Link>
     </PhaseShell>
   );
+}
+
+function ComparisonRow({
+  label,
+  baseline,
+  enriched,
+}: {
+  label: string;
+  baseline: string;
+  enriched: string;
+}) {
+  return (
+    <tr className="border-b border-white/6">
+      <td className="py-2.5 pr-3 text-zinc-400">{label}</td>
+      <td className="py-2.5 pr-3 tabular-nums">{baseline}</td>
+      <td className="py-2.5 tabular-nums">{enriched}</td>
+    </tr>
+  );
+}
+
+function FailureMix({ title, metrics }: { title: string; metrics: ModeEvalMetrics }) {
+  const items = metrics.failureCategories.slice(0, 5);
+  return (
+    <div>
+      <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-600">{title}</p>
+      {items.length === 0 ? (
+        <p className="mt-2 text-xs text-zinc-600">No labeled failures in this slice.</p>
+      ) : (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {items.map(({ category, count }) => (
+            <span
+              key={category}
+              className="rounded-full border border-white/8 bg-white/[0.02] px-2 py-1 text-xs text-zinc-500"
+            >
+              {category} ({count})
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function formatMaybePassRate(m: ModeEvalMetrics): string {
+  if (m.terminalCount === 0) return '— (no terminal outcomes)';
+  if (m.passRate == null) return '—';
+  return `${formatRate(m.passRate)} · ${m.passedCount}/${m.terminalCount}`;
+}
+
+function formatMaybeShare(rate: number | null, rowCount: number): string {
+  if (rowCount === 0) return '—';
+  if (rate == null) return '—';
+  return formatRate(rate);
+}
+
+function formatMaybeCost(cost: number | null, verifiedCount: number): string {
+  if (verifiedCount === 0) return '— (no verified rows)';
+  if (cost == null) return 'unknown';
+  return `${cost}c`;
 }
 
 function Metric({ label, value, sub }: { label: string; value: string; sub?: string }) {

@@ -45,7 +45,7 @@ function ConnectContent() {
   const ownerFromGitHub = searchParams.get('owner') ?? '';
   const [owner, setOwner] = useState(ownerFromGitHub);
   const [repo, setRepo] = useState('');
-  const [limit, setLimit] = useState(40);
+  const [limit, setLimit] = useState(100);
   const [error, setError] = useState<string | null>(connectMessage(githubState, searchParams.get('reason')));
   const [status, setStatus] = useState<'idle' | 'importing' | 'connected'>('idle');
 

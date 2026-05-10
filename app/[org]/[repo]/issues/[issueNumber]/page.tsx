@@ -25,10 +25,10 @@ export default async function IssuePage({ params }: Props) {
       providerStatuses={dashboard.providerStatuses}
     >
       <div className="flex flex-wrap gap-2">
-        <Link className="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-zinc-400" href={`/${org}/${repo}/issues/${issueNumber}/trace`}>
+        <Link className="rounded-lg border border-[#F9F7F7]/12 px-3 py-1.5 text-xs text-[#F9F7F7]/68" href={`/${org}/${repo}/issues/${issueNumber}/trace`}>
           View trace
         </Link>
-        <Link className="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-zinc-400" href={`/${org}/${repo}/proof`}>
+        <Link className="rounded-lg border border-[#F9F7F7]/12 px-3 py-1.5 text-xs text-[#F9F7F7]/68" href={`/${org}/${repo}/proof`}>
           View proof
         </Link>
       </div>

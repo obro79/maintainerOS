@@ -33,18 +33,18 @@ export default async function EvalsPage({ params }: Props) {
         <Metric label="Cost / verified" value={`${evaluation.costPerVerifiedFixCents}c`} sub={costSummary(evaluation)} />
       </div>
 
-      <div className="rounded-xl border border-white/8 bg-[#080d14] p-4">
+      <div className="rounded-lg border border-[#F9F7F7]/12 bg-[#0A111A] p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-sm font-semibold text-white">Methodology</h2>
-            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-zinc-500">
+            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#F9F7F7]/56">
               Eval rows compare baseline agent attempts against Nia-enriched attempts and treat Greptile verification as the pass/fail gate.
               {evaluation.comparisonKind === 'paired' ? ' Rows are paired.' : ' Rows are fixture-backed/comparable unless marked unpaired, so lift stays source-labeled.'}
             </p>
           </div>
           <div className="flex items-center gap-2">
             <EvidenceBadge sourceState={evaluation.sourceState ?? 'planned'} />
-            <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase text-zinc-500">{evaluation.comparisonKind ?? 'planned'}</span>
+            <span className="rounded-full border border-[#F9F7F7]/12 px-2 py-0.5 text-[10px] uppercase text-[#F9F7F7]/56">{evaluation.comparisonKind ?? 'planned'}</span>
           </div>
         </div>
         <div className="mt-4 grid gap-3 md:grid-cols-3">
@@ -54,19 +54,19 @@ export default async function EvalsPage({ params }: Props) {
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
           {evaluation.commonFailureReasons.map((reason) => (
-            <span key={reason} className="rounded-full border border-white/8 bg-white/[0.02] px-2 py-1 text-xs text-zinc-500">{reason}</span>
+            <span key={reason} className="rounded-full border border-[#F9F7F7]/12 bg-[#F9F7F7]/[0.025] px-2 py-1 text-xs text-[#F9F7F7]/56">{reason}</span>
           ))}
         </div>
       </div>
 
-      <div className="rounded-xl border border-white/8 bg-[#080d14] p-4">
+      <div className="rounded-lg border border-[#F9F7F7]/12 bg-[#0A111A] p-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-white">Evidence Rows</h2>
           <EvidenceBadge sourceState={evaluation.sourceState ?? 'planned'} />
         </div>
         <div className="overflow-x-auto">
-          <div className="min-w-[900px] divide-y divide-white/6">
-            <div className="grid grid-cols-[1.3fr_0.9fr_0.8fr_0.8fr_0.8fr_1fr_0.8fr] gap-3 px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-zinc-700">
+          <div className="min-w-[900px] divide-y divide-[#F9F7F7]/10">
+            <div className="grid grid-cols-[1.3fr_0.9fr_0.8fr_0.8fr_0.8fr_1fr_0.8fr] gap-3 px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-[#F9F7F7]/28">
               <span>Attempt</span>
               <span>Mode</span>
               <span>Verification</span>
@@ -78,36 +78,36 @@ export default async function EvalsPage({ params }: Props) {
             {rows.map((row) => (
               <div key={row.id} className="grid grid-cols-[1.3fr_0.9fr_0.8fr_0.8fr_0.8fr_1fr_0.8fr] items-center gap-3 px-3 py-3 text-sm">
                 <div className="min-w-0">
-                  <p className="truncate text-zinc-200">{row.label}</p>
+                  <p className="truncate text-[#F9F7F7]/88">{row.label}</p>
                   <div className="mt-1 flex flex-wrap items-center gap-2">
-                    <p className="text-xs text-zinc-600">{row.issueNumber ? `#${row.issueNumber}` : row.sampleId ?? row.id} · {row.pairState ?? 'unpaired'}</p>
+                    <p className="text-xs text-[#F9F7F7]/40">{row.issueNumber ? `#${row.issueNumber}` : row.sampleId ?? row.id} · {row.pairState ?? 'unpaired'}</p>
                     {row.sourceState && <EvidenceBadge sourceState={row.sourceState} />}
                   </div>
                 </div>
                 <div>
-                  <p className="text-xs text-zinc-400">{row.contextMode}</p>
-                  {row.contextPackId && <p className="mt-1 truncate text-[10px] text-zinc-600">{row.contextPackId}</p>}
+                  <p className="text-xs text-[#F9F7F7]/68">{row.contextMode}</p>
+                  {row.contextPackId && <p className="mt-1 truncate text-[10px] text-[#F9F7F7]/40">{row.contextPackId}</p>}
                 </div>
-                <span className="w-fit rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase text-zinc-500">{row.verificationStatus}</span>
-                <div className="text-xs text-zinc-500">
+                <span className="w-fit rounded-full border border-[#F9F7F7]/12 px-2 py-0.5 text-[10px] uppercase text-[#F9F7F7]/56">{row.verificationStatus}</span>
+                <div className="text-xs text-[#F9F7F7]/56">
                   <p>{row.retryCount ?? 0} retries</p>
                   <p>{row.escalated ? 'escalated' : 'not escalated'}</p>
                 </div>
-                <div className="text-xs text-zinc-500">
+                <div className="text-xs text-[#F9F7F7]/56">
                   <p>{formatCost(row.modelCostCents)}</p>
                   <p>{row.modelTierPath ?? 'unknown'}</p>
                 </div>
-                <p className="text-xs text-zinc-500">{row.failureCategory ?? 'none'}</p>
+                <p className="text-xs text-[#F9F7F7]/56">{row.failureCategory ?? 'none'}</p>
                 <div className="flex justify-end gap-3 text-xs">
-                  <Link className="text-zinc-400 hover:text-white" href={resolveEvidenceHref(row.traceUrl, org, repo, row)}>
+                  <Link className="text-[#F9F7F7]/68 hover:text-white" href={resolveEvidenceHref(row.traceUrl, org, repo, row)}>
                     Trace
                   </Link>
                   {row.contextPackId && (
-                    <Link className="text-zinc-400 hover:text-white" href={resolveEvidenceHref(row.traceUrl, org, repo, row)}>
+                    <Link className="text-[#F9F7F7]/68 hover:text-white" href={resolveEvidenceHref(row.traceUrl, org, repo, row)}>
                       Context
                     </Link>
                   )}
-                  <Link className="text-zinc-400 hover:text-white" href={resolveVerificationHref(row.verificationUrl, org, repo, row)}>
+                  <Link className="text-[#F9F7F7]/68 hover:text-white" href={resolveVerificationHref(row.verificationUrl, org, repo, row)}>
                     Verify
                   </Link>
                 </div>
@@ -115,14 +115,14 @@ export default async function EvalsPage({ params }: Props) {
             ))}
           </div>
           {rows.length === 0 && (
-            <div className="rounded-lg border border-white/6 p-4">
+            <div className="rounded-lg border border-[#F9F7F7]/10 p-4">
               <p className="text-sm font-medium text-white">No eval rows yet</p>
-              <p className="mt-2 text-sm text-zinc-500">Live imports are available, but eval rows appear after verification artifacts are recorded for baseline or Nia-enriched attempts.</p>
+              <p className="mt-2 text-sm text-[#F9F7F7]/56">Live imports are available, but eval rows appear after verification artifacts are recorded for baseline or Nia-enriched attempts.</p>
             </div>
           )}
         </div>
       </div>
-      <Link className="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-zinc-400" href={`/${org}/${repo}/proof`}>
+      <Link className="rounded-lg border border-[#F9F7F7]/12 px-3 py-1.5 text-xs text-[#F9F7F7]/68" href={`/${org}/${repo}/proof`}>
         View proof package
       </Link>
     </PhaseShell>
@@ -131,10 +131,10 @@ export default async function EvalsPage({ params }: Props) {
 
 function Metric({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="rounded-xl border border-white/8 bg-[#080d14] p-4">
-      <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-600">{label}</p>
+    <div className="rounded-lg border border-[#F9F7F7]/12 bg-[#0A111A] p-4">
+      <p className="text-[10px] uppercase tracking-[0.2em] text-[#F9F7F7]/40">{label}</p>
       <p className="mt-2 text-2xl font-bold text-white">{value}</p>
-      {sub && <p className="mt-1 text-xs text-zinc-600">{sub}</p>}
+      {sub && <p className="mt-1 text-xs text-[#F9F7F7]/40">{sub}</p>}
     </div>
   );
 }

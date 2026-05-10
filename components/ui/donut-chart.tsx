@@ -86,8 +86,8 @@ export function DonutChart({ segments, centerValue, centerLabel, size = 160 }: D
         textAnchor="middle"
         fill="#52525b"
         fontSize="10"
-        fontFamily="var(--font-mono)"
-        letterSpacing="0.08em">
+        fontFamily="var(--font-sans)"
+        letterSpacing="0">
         {centerLabel.toUpperCase()}
       </text>
     </svg>

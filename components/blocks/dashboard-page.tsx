@@ -1,359 +1,348 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { ElementType } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
-  ChevronDown, ChevronRight, ChevronLeft, RefreshCw,
-  CheckCircle2, GitPullRequest, Award, Zap, MessageSquare, X,
+  Bot,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  Coins,
+  GitPullRequest,
+  HelpCircle,
+  RefreshCw,
+  ShieldCheck,
+  UserCheck,
+  Zap,
 } from 'lucide-react';
 import { SiteNav } from '@/components/layout/site-nav';
 import { LANE_CONFIG } from '@/lib/design-system';
 import { cn } from '@/lib/utils';
 
-/* ─── Types ──────────────────────────────────────────── */
-interface GhLabel   { name: string; color: string; }
-interface DashboardIssue {
-  number: number; title: string; labels: GhLabel[];
-  user: string; daysAgo: number;
+interface GhLabel {
+  name: string;
+  color: string;
 }
-interface Repo { id: string; label: string; }
+
+interface DashboardIssue {
+  number: number;
+  title: string;
+  labels: GhLabel[];
+  user: string;
+  daysAgo: number;
+}
+
+interface Repo {
+  id: string;
+  label: string;
+}
+
 type LaneKey = 'agent' | 'review' | 'bounty' | 'clarify';
+
 interface ActivityEntry {
   id: string;
-  Icon: React.ElementType;
+  Icon: ElementType;
   color: string;
   label: string;
   time: string;
 }
-interface SelectedIssue { issue: DashboardIssue; laneKey: LaneKey; }
 
-/* ─── Constants ──────────────────────────────────────── */
 const LANES: LaneKey[] = ['agent', 'review', 'bounty', 'clarify'];
 
-const DAG_STEPS = [
-  { key: 'open',       label: 'Open'       },
-  { key: 'triaged',    label: 'Triaged'    },
-  { key: 'routed',     label: 'Routed'     },
-  { key: 'work_order', label: 'Work Order' },
-  { key: 'pr',         label: 'PR Open'    },
-  { key: 'verified',   label: 'Verified'   },
-  { key: 'done',       label: 'Done'       },
-] as const;
-
-type DagStepKey = typeof DAG_STEPS[number]['key'];
+const LANE_META = {
+  agent: {
+    title: 'AI',
+    copy: 'Safe for autonomous work',
+    icon: Bot,
+  },
+  review: {
+    title: 'DEV',
+    copy: 'Needs maintainer judgment',
+    icon: UserCheck,
+  },
+  bounty: {
+    title: 'CLUSTLY',
+    copy: 'Ready to fund externally',
+    icon: Coins,
+  },
+  clarify: {
+    title: 'CLARIFY',
+    copy: 'Needs a better report',
+    icon: HelpCircle,
+  },
+} satisfies Record<LaneKey, { title: string; copy: string; icon: ElementType }>;
 
 const FALLBACK_REPOS: Repo[] = [
   { id: 'acme/frontend', label: 'acme/frontend' },
-  { id: 'acme/api',      label: 'acme/api'      },
+  { id: 'acme/api', label: 'acme/api' },
 ];
 
 const FALLBACK_ISSUES: Record<LaneKey, DashboardIssue[]> = {
-  agent: [{
-    number: 111, title: 'Add cursor-based pagination to /issues endpoint',
-    labels: [{ name: 'enhancement', color: '0075ca' }, { name: 'api', color: 'e4e669' }],
-    user: 'johndoe', daysAgo: 2,
-  }],
-  review: [{
-    number: 87, title: 'Upgrade path for v1→v2 webhook format',
-    labels: [{ name: 'breaking-change', color: 'e11d48' }],
-    user: 'maintainer', daysAgo: 10,
-  }],
-  bounty: [{
-    number: 112, title: 'Redis queue drains silently on OOM restart',
-    labels: [{ name: 'infra', color: '0e8a16' }, { name: 'bug', color: 'd93f0b' }],
-    user: 'reporter', daysAgo: 2,
-  }],
-  clarify: [{
-    number: 99, title: 'Clarify expected retry semantics on 408',
-    labels: [{ name: 'question', color: 'd876e3' }],
-    user: 'contributor', daysAgo: 5,
-  }],
+  agent: [
+    {
+      number: 111,
+      title: 'Add cursor-based pagination to /issues endpoint',
+      labels: [
+        { name: 'enhancement', color: 'ECD852' },
+        { name: 'api', color: 'FBF7DA' },
+      ],
+      user: 'johndoe',
+      daysAgo: 2,
+    },
+  ],
+  review: [
+    {
+      number: 87,
+      title: 'Upgrade path for v1 to v2 webhook format',
+      labels: [{ name: 'breaking-change', color: '842E65' }],
+      user: 'maintainer',
+      daysAgo: 10,
+    },
+  ],
+  bounty: [
+    {
+      number: 112,
+      title: 'Redis queue drains silently on OOM restart',
+      labels: [
+        { name: 'infra', color: 'ECD852' },
+        { name: 'bug', color: '842E65' },
+      ],
+      user: 'reporter',
+      daysAgo: 2,
+    },
+  ],
+  clarify: [
+    {
+      number: 99,
+      title: 'Clarify expected retry semantics on 408',
+      labels: [{ name: 'question', color: 'FBF7DA' }],
+      user: 'contributor',
+      daysAgo: 5,
+    },
+  ],
 };
 
-/* ─── Helpers ────────────────────────────────────────── */
-function getDagDetail(key: DagStepKey, issue: DashboardIssue, laneKey: LaneKey): string {
-  const lbl = LANE_CONFIG[laneKey].label;
-  switch (key) {
-    case 'open':       return `#${issue.number} opened ${issue.daysAgo}d ago by ${issue.user}`;
-    case 'triaged':    return `CLōD classified → ${lbl} lane · 87% confidence`;
-    case 'routed':     return `Dispatched to ${lbl} queue · work order pending`;
-    case 'work_order': return `Work order generated with acceptance criteria and context`;
-    case 'pr':         return `Agent opened PR #${issue.number + 200} · awaiting review`;
-    case 'verified':   return `Greptile: PR #${issue.number + 200} verified · 0 blocking findings`;
-    case 'done':       return `Issue closed · PR #${issue.number + 200} merged`;
-  }
+function labelStyle(label: GhLabel) {
+  const hex = label.color.replace('#', '').padEnd(6, '0');
+  return {
+    borderColor: `#${hex}55`,
+    backgroundColor: `#${hex}1f`,
+    color: `#${hex}`,
+  };
 }
 
-/* ─── GhLabelBadge ───────────────────────────────────── */
-function GhLabelBadge({ label }: { label: GhLabel }) {
-  const hex = label.color.replace('#', '').padEnd(6, '0');
-  const r = parseInt(hex.slice(0, 2), 16);
-  const g = parseInt(hex.slice(2, 4), 16);
-  const b = parseInt(hex.slice(4, 6), 16);
-  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+function LabelBadge({ label }: { label: GhLabel }) {
   return (
     <span
-      style={{ backgroundColor: `#${hex}`, color: lum > 0.55 ? '#1a1a1a' : '#ffffff' }}
-      className="inline-flex items-center text-[9px] font-medium px-1.5 py-0.5 rounded-full leading-none"
+      style={labelStyle(label)}
+      className="rounded border px-1.5 py-0.5 text-[10px] font-medium leading-none"
     >
       {label.name}
     </span>
   );
 }
 
-/* ─── IssueCard ──────────────────────────────────────── */
-function IssueCard({
-  issue, laneKey, dispatching, completed, selected, onSelect,
+function IssueRow({
+  issue,
+  laneKey,
+  selected,
+  dispatching,
+  onSelect,
 }: {
-  issue: DashboardIssue; laneKey: LaneKey;
-  dispatching: boolean; completed: boolean; selected: boolean;
+  issue: DashboardIssue;
+  laneKey: LaneKey;
+  selected: boolean;
+  dispatching: boolean;
   onSelect: () => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
   const cfg = LANE_CONFIG[laneKey];
-
   return (
-    <motion.div
-      layout
-      animate={dispatching ? { scale: [1, 1.02, 1] } : { scale: 1 }}
-      transition={{ duration: 0.5 }}
+    <button
       onClick={onSelect}
       className={cn(
-        'rounded-lg border cursor-pointer transition-all duration-150',
-        selected  ? `${cfg.tw.border} ${cfg.tw.bgFaint}` : 'border-white/8 bg-[#0d1520] hover:border-white/15',
-        dispatching && 'ring-1 ring-emerald-400/40',
-        completed && 'opacity-40',
+        'group w-full rounded-md border px-3 py-3 text-left transition-colors',
+        selected
+          ? `${cfg.tw.border} ${cfg.tw.bgFaint}`
+          : 'border-[#F9F7F7]/10 bg-black/18 hover:border-[#F9F7F7]/22 hover:bg-[#F9F7F7]/5',
+        dispatching && 'ring-1 ring-[#3F72AF]/35',
       )}
     >
-      <div className="flex items-start gap-2 px-3 py-2.5">
-        <button
-          onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-          className="mt-0.5 shrink-0 text-zinc-600 hover:text-zinc-400 transition-colors"
-        >
-          {expanded ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
-        </button>
-        <div className="flex-1 min-w-0">
-          <p className={cn('text-xs leading-snug', completed ? 'line-through text-zinc-600' : 'text-zinc-200')}>
-            {issue.title}
-          </p>
-          {issue.labels.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1.5">
-              {issue.labels.map((lbl) => <GhLabelBadge key={lbl.name} label={lbl} />)}
-            </div>
-          )}
-          <AnimatePresence>
-            {expanded && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.15 }}
-                className="overflow-hidden"
-              >
-                <p className="text-[10px] text-zinc-600 mt-2 font-mono">
-                  #{issue.number} · {issue.user} opened {issue.daysAgo} {issue.daysAgo === 1 ? 'day' : 'days'} ago
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
+      <div className="flex items-start gap-3">
+        <ChevronRight className="mt-0.5 size-3.5 shrink-0 text-[#F9F7F7]/32 transition-colors group-hover:text-[#F9F7F7]/70" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm text-[#F9F7F7]/86">{issue.title}</p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {issue.labels.map((label) => (
+              <LabelBadge key={`${issue.number}-${label.name}`} label={label} />
+            ))}
+          </div>
         </div>
-        {completed && <CheckCircle2 className="size-3 text-emerald-400 shrink-0 mt-0.5" />}
+        <span className="font-mono text-[11px] text-[#F9F7F7]/34">#{issue.number}</span>
       </div>
-    </motion.div>
+    </button>
   );
 }
 
-/* ─── LaneColumn ─────────────────────────────────────── */
 function LaneColumn({
-  laneKey, issues, loading, dispatchingIssues, completedIssues, selectedNumber, onSelect,
+  laneKey,
+  issues,
+  loading,
+  selectedNumber,
+  dispatchingIssues,
+  onSelect,
 }: {
-  laneKey: LaneKey; issues: DashboardIssue[]; loading: boolean;
-  dispatchingIssues: Set<number>; completedIssues: Set<number>;
-  selectedNumber: number | null; onSelect: (i: DashboardIssue) => void;
+  laneKey: LaneKey;
+  issues: DashboardIssue[];
+  loading: boolean;
+  selectedNumber: number | null;
+  dispatchingIssues: Set<number>;
+  onSelect: (issue: DashboardIssue) => void;
 }) {
   const cfg = LANE_CONFIG[laneKey];
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: LANES.indexOf(laneKey) * 0.07 }}
-      className="rounded-xl border border-white/8 bg-[#080d14] overflow-hidden"
-    >
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-white/6">
-        <div className={cn('size-2 rounded-full shrink-0', cfg.tw.bg)} />
-        <span className={cn('font-heading font-semibold text-sm', cfg.tw.text)}>{cfg.label}</span>
-      </div>
-      <div className="p-3 space-y-2 min-h-[80px]">
-        {loading ? (
-          <div className="py-6 text-center text-[10px] text-zinc-700 font-mono animate-pulse">loading…</div>
-        ) : issues.length === 0 ? (
-          <div className="py-6 text-center text-[10px] text-zinc-700">No issues</div>
-        ) : issues.map((issue) => (
-          <IssueCard
-            key={issue.number}
-            issue={issue}
-            laneKey={laneKey}
-            dispatching={dispatchingIssues.has(issue.number)}
-            completed={completedIssues.has(issue.number)}
-            selected={selectedNumber === issue.number}
-            onSelect={() => onSelect(issue)}
-          />
-        ))}
-      </div>
-    </motion.div>
-  );
-}
-
-/* ─── DagPanel ───────────────────────────────────────── */
-function DagPanel({
-  selected, stepIndex, playing, onClose, onPlay, onPrev, onNext,
-}: {
-  selected: SelectedIssue; stepIndex: number; playing: boolean;
-  onClose: () => void; onPlay: () => void; onPrev: () => void; onNext: () => void;
-}) {
-  const { issue, laneKey } = selected;
-  const cfg = LANE_CONFIG[laneKey];
-  const atEnd = stepIndex >= DAG_STEPS.length - 1;
+  const meta = LANE_META[laneKey];
+  const Icon = meta.icon;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 8 }}
-      transition={{ duration: 0.2 }}
-      className="rounded-xl border border-white/8 bg-[#080d14] overflow-hidden"
-    >
-      {/* Header */}
-      <div className="flex items-center gap-2 px-5 py-3.5 border-b border-white/6">
-        <span className="font-mono text-[11px] text-zinc-600 shrink-0">#{issue.number}</span>
-        <span className="flex-1 text-sm text-zinc-200 truncate">{issue.title}</span>
-        <button onClick={onClose} className="text-zinc-600 hover:text-zinc-400 transition-colors ml-1">
-          <X className="size-3.5" />
-        </button>
-      </div>
-
-      {/* DAG step pills */}
-      <div className="px-4 pt-4 pb-2">
-        <div className="flex flex-wrap items-center gap-1">
-          {DAG_STEPS.map((step, i) => {
-            const done    = i < stepIndex;
-            const current = i === stepIndex;
-            return (
-              <div key={step.key} className="flex items-center gap-1">
-                {i > 0 && (
-                  <div className={cn('w-3 h-px shrink-0', done ? `${cfg.tw.bg} opacity-40` : 'bg-white/15')} />
-                )}
-                <span className={cn(
-                  'px-1.5 py-0.5 rounded border text-[9px] font-mono transition-colors',
-                  done    ? `${cfg.tw.bgFaint} ${cfg.tw.text} ${cfg.tw.border}` :
-                  current ? 'border-white/20 bg-white/6 text-zinc-200' :
-                            'border-white/6 text-zinc-700',
-                )}>
-                  {i + 1}. {step.label}
-                </span>
-              </div>
-            );
-          })}
+    <section className="rounded-lg border border-[#F9F7F7]/12 bg-[#0A111A]">
+      <div className="border-b border-[#F9F7F7]/10 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Icon className={cn('size-4', cfg.tw.text)} />
+            <h2 className="text-sm font-semibold text-white">{meta.title}</h2>
+          </div>
+          <span className={cn('font-mono text-xs', cfg.tw.text)}>{issues.length}</span>
         </div>
+        <p className="mt-1 text-xs text-[#F9F7F7]/45">{meta.copy}</p>
       </div>
 
-      {/* Current step detail */}
-      <div className={cn('mx-4 mb-3 rounded-lg border px-3 py-2', cfg.tw.border, cfg.tw.bgFaint)}>
-        <p className="text-[11px] text-zinc-400 leading-relaxed">
-          {getDagDetail(DAG_STEPS[stepIndex].key, issue, laneKey)}
-        </p>
-      </div>
-
-      {/* Controls */}
-      <div className="flex items-center gap-2 px-4 pb-4">
-        <button
-          onClick={onPlay}
-          className={cn(
-            'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[11px] font-medium transition-colors',
-            playing ? 'border-white/8 text-zinc-600' : `${cfg.tw.border} ${cfg.tw.bgFaint} ${cfg.tw.text}`,
-          )}
-        >
-          <RefreshCw className={cn('size-3', playing && 'animate-spin')} />
-          {playing ? 'Pause' : atEnd ? 'Replay' : 'Play'}
-        </button>
-        <button onClick={onPrev} disabled={stepIndex === 0}
-          className="p-1.5 rounded-lg border border-white/8 text-zinc-500 hover:text-zinc-300 disabled:opacity-30 transition-colors">
-          <ChevronLeft className="size-3.5" />
-        </button>
-        <button onClick={onNext} disabled={atEnd}
-          className="p-1.5 rounded-lg border border-white/8 text-zinc-500 hover:text-zinc-300 disabled:opacity-30 transition-colors">
-          <ChevronRight className="size-3.5" />
-        </button>
-        {atEnd && (
-          <span className="ml-auto text-[10px] font-mono text-emerald-400">✓ Resolved</span>
+      <div className="space-y-2 p-3">
+        {loading ? (
+          <div className="rounded-md border border-[#F9F7F7]/10 bg-black/15 px-3 py-8 text-center text-xs text-[#F9F7F7]/35">
+            Loading issues
+          </div>
+        ) : issues.length === 0 ? (
+          <div className="rounded-md border border-[#F9F7F7]/10 bg-black/15 px-3 py-8 text-center text-xs text-[#F9F7F7]/35">
+            No issues
+          </div>
+        ) : (
+          issues.map((issue) => (
+            <IssueRow
+              key={issue.number}
+              issue={issue}
+              laneKey={laneKey}
+              selected={selectedNumber === issue.number}
+              dispatching={dispatchingIssues.has(issue.number)}
+              onSelect={() => onSelect(issue)}
+            />
+          ))
         )}
       </div>
-    </motion.div>
+    </section>
   );
 }
 
-/* ─── ActivityFeedPanel ──────────────────────────────── */
-function ActivityFeedPanel({ items }: { items: ActivityEntry[] }) {
-  return (
-    <div className="rounded-xl border border-white/8 bg-[#080d14] overflow-hidden">
-      <div className="px-5 py-3.5 border-b border-white/6">
-        <span className="font-heading font-semibold text-sm text-white">Activity</span>
+function DetailPanel({ selected }: { selected: { issue: DashboardIssue; laneKey: LaneKey } | null }) {
+  if (!selected) {
+    return (
+      <div className="rounded-lg border border-[#F9F7F7]/12 bg-[#0A111A] p-5">
+        <p className="text-sm text-[#F9F7F7]/42">Select an issue to inspect its route proof.</p>
       </div>
-      <div className="divide-y divide-white/5 max-h-80 overflow-y-auto">
+    );
+  }
+
+  const cfg = LANE_CONFIG[selected.laneKey];
+  const meta = LANE_META[selected.laneKey];
+  const steps = [
+    'Imported from GitHub',
+    'Context bundle attached',
+    `${meta.title} lane selected`,
+    selected.laneKey === 'agent' ? 'Work order ready' : selected.laneKey === 'bounty' ? 'Bounty package ready' : 'Maintainer action queued',
+  ];
+
+  return (
+    <div className="rounded-lg border border-[#F9F7F7]/12 bg-[#0A111A]">
+      <div className="border-b border-[#F9F7F7]/10 px-5 py-4">
+        <p className="font-mono text-xs text-[#F9F7F7]/38">#{selected.issue.number}</p>
+        <h3 className="mt-1 text-base font-semibold leading-snug text-white">{selected.issue.title}</h3>
+      </div>
+      <div className="space-y-2 p-4">
+        {steps.map((step, index) => (
+          <div key={step} className="flex items-center gap-3 rounded-md border border-[#F9F7F7]/10 bg-black/15 px-3 py-2.5">
+            <span className={cn('size-1.5 rounded-full', index === steps.length - 1 ? cfg.tw.bg : 'bg-[#F9F7F7]/35')} />
+            <span className="text-sm text-[#F9F7F7]/78">{step}</span>
+            {index < steps.length - 1 ? (
+              <CheckCircle2 className="ml-auto size-4 text-[#F9F7F7]/32" />
+            ) : (
+              <ShieldCheck className={cn('ml-auto size-4', cfg.tw.text)} />
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ActivityFeed({ items }: { items: ActivityEntry[] }) {
+  return (
+    <div className="rounded-lg border border-[#F9F7F7]/12 bg-[#0A111A]">
+      <div className="border-b border-[#F9F7F7]/10 px-5 py-3">
+        <h2 className="text-sm font-semibold text-white">Activity</h2>
+      </div>
+      <div className="divide-y divide-[#F9F7F7]/8">
         <AnimatePresence initial={false}>
           {items.length === 0 ? (
-            <p className="py-8 text-center text-[11px] text-zinc-700">No activity · dispatch to begin</p>
-          ) : items.map((item) => (
-            <motion.div
-              key={item.id}
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2 }}
-              className="flex items-start gap-3 px-4 py-3"
-            >
-              <div className="size-5 rounded-full bg-white/[0.04] border border-white/8 flex items-center justify-center shrink-0 mt-0.5">
-                <item.Icon className={cn('size-2.5', item.color)} />
-              </div>
-              <p className="flex-1 text-xs text-zinc-300 leading-relaxed min-w-0 truncate">{item.label}</p>
-              <span className="text-[10px] text-zinc-700 shrink-0 pt-0.5">{item.time}</span>
-            </motion.div>
-          ))}
+            <p className="px-5 py-8 text-center text-xs text-[#F9F7F7]/35">No activity yet</p>
+          ) : (
+            items.map((item) => (
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center gap-3 px-4 py-3"
+              >
+                <div className="flex size-6 shrink-0 items-center justify-center rounded-md border border-[#F9F7F7]/10 bg-black/18">
+                  <item.Icon className={cn('size-3.5', item.color)} />
+                </div>
+                <p className="min-w-0 flex-1 truncate text-xs text-[#F9F7F7]/72">{item.label}</p>
+                <span className="shrink-0 text-[11px] text-[#F9F7F7]/32">{item.time}</span>
+              </motion.div>
+            ))
+          )}
         </AnimatePresence>
       </div>
     </div>
   );
 }
 
-/* ─── DashboardPage ──────────────────────────────────── */
 export function DashboardPage() {
-  const [repos, setRepos]               = useState<Repo[]>(FALLBACK_REPOS);
-  const [selectedRepo, setSelectedRepo] = useState<string>(FALLBACK_REPOS[0].id);
+  const [repos, setRepos] = useState<Repo[]>(FALLBACK_REPOS);
+  const [selectedRepo, setSelectedRepo] = useState(FALLBACK_REPOS[0].id);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [columnIssues, setColumnIssues] = useState<Record<LaneKey, DashboardIssue[]>>(FALLBACK_ISSUES);
-  const [loadingCols, setLoadingCols]   = useState<Set<LaneKey>>(new Set());
-  const dropdownRef                     = useRef<HTMLDivElement>(null);
-
-  // Dynamic state
+  const [loadingCols, setLoadingCols] = useState<Set<LaneKey>>(new Set());
   const [dispatchingIssues, setDispatchingIssues] = useState<Set<number>>(new Set());
-  const [completedIssues,   setCompletedIssues]   = useState<Set<number>>(new Set());
-  const [selectedIssue,     setSelectedIssue]     = useState<SelectedIssue | null>(null);
-  const [dagStepIndex,      setDagStepIndex]       = useState(0);
-  const [dagPlaying,        setDagPlaying]         = useState(false);
-  const [activity,          setActivity]           = useState<ActivityEntry[]>([]);
-  const [dispatching,       setDispatching]        = useState(false);
+  const [selectedIssue, setSelectedIssue] = useState<{ issue: DashboardIssue; laneKey: LaneKey } | null>(null);
+  const [activity, setActivity] = useState<ActivityEntry[]>([]);
+  const [dispatching, setDispatching] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const addActivity = useCallback((entry: Omit<ActivityEntry, 'id'>) => {
-    setActivity(prev => [
+    setActivity((prev) => [
       { ...entry, id: `${Date.now()}-${Math.random().toString(36).slice(2)}` },
-      ...prev.slice(0, 49),
+      ...prev.slice(0, 24),
     ]);
   }, []);
 
-  /* Repo & issue fetching ───────── */
   useEffect(() => {
     fetch('/api/dashboard/repos')
-      .then((r) => r.json())
-      .then((data: Repo[]) => { if (Array.isArray(data) && data.length > 0) { setRepos(data); setSelectedRepo(data[0].id); } })
+      .then((response) => response.json())
+      .then((data: Repo[]) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setRepos(data);
+          setSelectedRepo(data[0].id);
+        }
+      })
       .catch(() => {});
   }, []);
 
@@ -362,163 +351,140 @@ export function DashboardPage() {
     setLoadingCols(new Set(LANES));
     LANES.forEach((laneKey) => {
       fetch(`/api/dashboard/issues?lane=${laneKey}&repo=${encodeURIComponent(selectedRepo)}`)
-        .then((r) => r.json())
-        .then((data: DashboardIssue[]) => { if (Array.isArray(data)) setColumnIssues((p) => ({ ...p, [laneKey]: data })); })
-        .catch(() => { setColumnIssues((p) => ({ ...p, [laneKey]: FALLBACK_ISSUES[laneKey] })); })
-        .finally(() => { setLoadingCols((p) => { const n = new Set(p); n.delete(laneKey); return n; }); });
+        .then((response) => response.json())
+        .then((data: DashboardIssue[]) => {
+          if (Array.isArray(data)) {
+            setColumnIssues((current) => ({ ...current, [laneKey]: data }));
+          }
+        })
+        .catch(() => {
+          setColumnIssues((current) => ({ ...current, [laneKey]: FALLBACK_ISSUES[laneKey] }));
+        })
+        .finally(() => {
+          setLoadingCols((current) => {
+            const next = new Set(current);
+            next.delete(laneKey);
+            return next;
+          });
+        });
     });
   }, [selectedRepo]);
 
-  /* Close repo dropdown on outside click */
   useEffect(() => {
-    function handler(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setDropdownOpen(false);
+    function onMouseDown(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
     }
-    if (dropdownOpen) document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+
+    if (dropdownOpen) document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
   }, [dropdownOpen]);
 
-  /* Autonomous route on mount */
-  useEffect(() => {
-    const t = setTimeout(() => {
-      const issue = FALLBACK_ISSUES.agent[0];
-      addActivity({ Icon: Zap, color: 'text-emerald-400', label: `Autonomous route: #${issue.number} → Agent lane (87% conf)`, time: 'just now' });
-    }, 1500);
-    return () => clearTimeout(t);
-  }, [addActivity]);
+  const selectedLabel = repos.find((repo) => repo.id === selectedRepo)?.label ?? selectedRepo;
+  const totalIssues = LANES.reduce((sum, laneKey) => sum + (columnIssues[laneKey]?.length ?? 0), 0);
+  const isLoading = loadingCols.size > 0;
 
-  /* DAG auto-play */
-  useEffect(() => {
-    if (!dagPlaying || !selectedIssue) return;
-    if (dagStepIndex >= DAG_STEPS.length - 1) { setDagPlaying(false); return; }
-
-    const t = setTimeout(() => {
-      const nextIdx = dagStepIndex + 1;
-      const nextKey = DAG_STEPS[nextIdx].key;
-
-      if (nextKey === 'work_order') {
-        addActivity({ Icon: Zap, color: 'text-emerald-400', label: `Work order generated for #${selectedIssue.issue.number}`, time: 'just now' });
-      } else if (nextKey === 'pr') {
-        addActivity({ Icon: GitPullRequest, color: 'text-blue-400', label: `Agent opened PR #${selectedIssue.issue.number + 200} for #${selectedIssue.issue.number}`, time: 'just now' });
-      } else if (nextKey === 'verified') {
-        addActivity({ Icon: CheckCircle2, color: 'text-emerald-400', label: `Greptile: PR #${selectedIssue.issue.number + 200} verified · 0 findings`, time: 'just now' });
-      } else if (nextKey === 'done') {
-        setCompletedIssues(c => new Set([...c, selectedIssue.issue.number]));
-        addActivity({ Icon: CheckCircle2, color: 'text-emerald-400', label: `#${selectedIssue.issue.number} resolved · PR merged`, time: 'just now' });
-      }
-
-      setDagStepIndex(nextIdx);
-    }, 1600);
-
-    return () => clearTimeout(t);
-  }, [dagPlaying, dagStepIndex, selectedIssue, addActivity]);
-
-  /* Dispatch action */
   const startDispatch = useCallback(() => {
     if (dispatching) return;
     setDispatching(true);
-    const allIssues = LANES.flatMap(k => (columnIssues[k] ?? []).map(i => ({ issue: i, laneKey: k })));
 
-    allIssues.forEach(({ issue, laneKey }, idx) => {
-      setTimeout(() => {
-        setDispatchingIssues(p => new Set([...p, issue.number]));
+    const allIssues = LANES.flatMap((laneKey) =>
+      (columnIssues[laneKey] ?? []).map((issue) => ({ issue, laneKey })),
+    );
+
+    allIssues.forEach(({ issue, laneKey }, index) => {
+      window.setTimeout(() => {
         const cfg = LANE_CONFIG[laneKey];
-        addActivity({ Icon: Zap, color: 'text-emerald-400', label: `#${issue.number} dispatched → ${cfg.label} lane`, time: 'just now' });
-        setTimeout(() => setDispatchingIssues(p => { const n = new Set(p); n.delete(issue.number); return n; }), 700);
-      }, idx * 450);
+        setDispatchingIssues((current) => new Set([...current, issue.number]));
+        addActivity({
+          Icon: Zap,
+          color: cfg.tw.text,
+          label: `#${issue.number} routed to ${LANE_META[laneKey].title}`,
+          time: 'just now',
+        });
+        window.setTimeout(() => {
+          setDispatchingIssues((current) => {
+            const next = new Set(current);
+            next.delete(issue.number);
+            return next;
+          });
+        }, 700);
+      }, index * 420);
     });
 
-    const totalMs = allIssues.length * 450 + 300;
-    setTimeout(() => {
+    window.setTimeout(() => {
       setDispatching(false);
-      if (allIssues.length > 0) {
-        const { issue, laneKey } = allIssues[0];
-        setSelectedIssue({ issue, laneKey });
-        setDagStepIndex(0);
-        setTimeout(() => setDagPlaying(true), 400);
+      if (allIssues[0]) {
+        setSelectedIssue(allIssues[0]);
+        addActivity({
+          Icon: GitPullRequest,
+          color: 'text-[#3F72AF]',
+          label: `Work order opened for #${allIssues[0].issue.number}`,
+          time: 'just now',
+        });
       }
-    }, totalMs);
-  }, [dispatching, columnIssues, addActivity]);
-
-  /* Derived */
-  const selectedLabel = repos.find((r) => r.id === selectedRepo)?.label ?? selectedRepo;
-  const totalIssues   = LANES.reduce((s, k) => s + (columnIssues[k]?.length ?? 0), 0);
-  const isLoading     = loadingCols.size > 0;
-
-  const stats = [
-    { label: 'Total issues',   value: String(totalIssues),   sub: 'open'        },
-    { label: 'Routed',         value: '100%',                sub: 'classified'  },
-    { label: 'Avg confidence', value: '87%',                 sub: 'CLOD score'  },
-    { label: 'Repos',          value: String(repos.length),  sub: 'connected'   },
-  ];
+    }, allIssues.length * 420 + 300);
+  }, [addActivity, columnIssues, dispatching]);
 
   return (
-    <div className="min-h-screen bg-[#030509] font-sans text-white overflow-x-hidden">
+    <div className="min-h-screen bg-[#05070A] font-sans text-white">
       <SiteNav />
 
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -top-20 right-0 w-[600px] h-[600px] bg-emerald-500/5 blur-[130px] rounded-full" />
-        <div className="absolute top-1/2 left-0 w-[400px] h-[400px] bg-violet-500/4 blur-[100px] rounded-full" />
-      </div>
+      <main className="px-5 pb-12 pt-28">
+        <div className="mx-auto max-w-[1180px]">
+          <div className="flex flex-col gap-5 border-b border-[#F9F7F7]/10 pb-6 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-[0.24em] text-[#3F72AF]">Dashboard</p>
+              <h1 className="mt-3 text-4xl font-semibold tracking-[-0.05em] text-white sm:text-5xl">{selectedLabel}</h1>
+              <p className="mt-2 text-sm text-[#F9F7F7]/48">github.com - {totalIssues} open issues - live router</p>
+            </div>
 
-      <div className="relative pt-24 pb-0 px-6">
-        <div className="mx-auto max-w-6xl">
-
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pt-6 pb-5 border-b border-white/6">
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-              <p className="font-mono text-xs uppercase tracking-[0.25em] text-emerald-500/80 mb-2">Dashboard</p>
-              <h1 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-white leading-tight">
-                {selectedLabel}
-              </h1>
-              <p className="mt-1 text-zinc-600 text-sm font-mono">
-                github.com · {totalIssues} open issues · fixture
-              </p>
-            </motion.div>
-
-            <div className="flex items-center gap-3 mt-1 shrink-0">
-              {/* Dispatch button */}
-              <motion.button
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <button
                 onClick={startDispatch}
                 disabled={dispatching}
-                whileHover={{ scale: dispatching ? 1 : 1.02 }}
-                whileTap={{ scale: dispatching ? 1 : 0.98 }}
                 className={cn(
-                  'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all duration-200',
+                  'inline-flex h-10 items-center justify-center gap-2 rounded-md border px-4 text-sm font-semibold transition-colors',
                   dispatching
-                    ? 'border-white/8 bg-white/[0.03] text-zinc-600 cursor-default'
-                    : 'border-emerald-500/30 bg-emerald-500/8 text-emerald-400 hover:bg-emerald-500/15 hover:border-emerald-500/50',
+                    ? 'border-[#F9F7F7]/10 bg-[#F9F7F7]/5 text-[#F9F7F7]/35'
+                    : 'border-[#3F72AF]/30 bg-[#3F72AF]/10 text-[#3F72AF] hover:bg-[#3F72AF]/16',
                 )}
               >
                 <RefreshCw className={cn('size-4', dispatching && 'animate-spin')} />
-                {dispatching ? 'Dispatching…' : 'Dispatch issues'}
-              </motion.button>
+                {dispatching ? 'Dispatching' : 'Dispatch issues'}
+              </button>
 
-              {/* Repo dropdown */}
               <div ref={dropdownRef} className="relative">
                 <button
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 bg-white/[0.03] text-sm text-zinc-200 hover:border-white/20 hover:bg-white/[0.05] transition-all duration-200 min-w-[170px]"
+                  onClick={() => setDropdownOpen((open) => !open)}
+                  className="inline-flex h-10 min-w-[180px] items-center justify-between gap-3 rounded-md border border-[#F9F7F7]/12 bg-black/20 px-3 text-sm text-[#F9F7F7]/84 transition-colors hover:border-[#F9F7F7]/24"
                 >
-                  <span className="flex-1 text-left">{selectedLabel}</span>
-                  <ChevronDown className={cn('size-3.5 text-zinc-600 transition-transform duration-200', dropdownOpen && 'rotate-180')} />
+                  {selectedLabel}
+                  <ChevronDown className={cn('size-4 text-[#F9F7F7]/45 transition-transform', dropdownOpen && 'rotate-180')} />
                 </button>
                 <AnimatePresence>
                   {dropdownOpen && (
                     <motion.div
-                      initial={{ opacity: 0, y: 4, scale: 0.98 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 4, scale: 0.98 }}
-                      transition={{ duration: 0.12 }}
-                      className="absolute top-full right-0 mt-1.5 z-20 rounded-xl border border-white/10 bg-[#0d1520] shadow-2xl overflow-hidden min-w-full"
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 4 }}
+                      className="absolute right-0 top-full z-20 mt-2 min-w-full overflow-hidden rounded-md border border-[#F9F7F7]/12 bg-[#0A111A] shadow-2xl shadow-black/40"
                     >
                       {repos.map((repo) => (
-                        <button key={repo.id}
-                          onClick={() => { setSelectedRepo(repo.id); setDropdownOpen(false); }}
+                        <button
+                          key={repo.id}
+                          onClick={() => {
+                            setSelectedRepo(repo.id);
+                            setDropdownOpen(false);
+                          }}
                           className={cn(
-                            'w-full text-left px-4 py-2.5 text-sm transition-colors',
-                            repo.id === selectedRepo ? 'text-emerald-400 bg-emerald-500/8' : 'text-zinc-300 hover:text-white hover:bg-white/[0.04]',
-                          )}>
+                            'block w-full px-3 py-2.5 text-left text-sm transition-colors',
+                            repo.id === selectedRepo
+                              ? 'bg-[#3F72AF]/10 text-[#3F72AF]'
+                              : 'text-[#F9F7F7]/68 hover:bg-[#F9F7F7]/7 hover:text-white',
+                          )}
+                        >
                           {repo.label}
                         </button>
                       ))}
@@ -529,98 +495,42 @@ export function DashboardPage() {
             </div>
           </div>
 
-          {/* Stats row */}
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.15 }}
-            className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-white/6 border-b border-white/6"
-          >
-            {stats.map((s) => (
-              <div key={s.label} className="bg-[#030509] px-5 py-4">
-                <div className="font-heading font-bold text-2xl text-white">{s.value}</div>
-                <div className="text-[11px] text-zinc-600 mt-0.5">{s.label}</div>
+          <div className="grid grid-cols-2 border-b border-[#F9F7F7]/10 sm:grid-cols-4">
+            {[
+              { label: 'Total issues', value: isLoading ? '--' : String(totalIssues) },
+              { label: 'Routed', value: '100%' },
+              { label: 'Avg confidence', value: '87%' },
+              { label: 'Repos', value: String(repos.length) },
+            ].map((stat) => (
+              <div key={stat.label} className="border-r border-[#F9F7F7]/10 px-4 py-5 last:border-r-0">
+                <div className="text-2xl font-semibold tracking-tight text-white">{stat.value}</div>
+                <div className="mt-1 text-xs text-[#F9F7F7]/42">{stat.label}</div>
               </div>
             ))}
-          </motion.div>
+          </div>
 
-          {/* Lane count row */}
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, delay: 0.2 }}
-            className="grid grid-cols-4 gap-4 pt-6 pb-3"
-          >
-            {LANES.map((laneKey, i) => {
-              const cfg   = LANE_CONFIG[laneKey];
-              const count = columnIssues[laneKey]?.length ?? 0;
-              return (
-                <motion.div key={laneKey}
-                  initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.25 + i * 0.05 }}
-                  className="flex items-baseline gap-2"
-                >
-                  <span className={cn('font-heading font-bold text-2xl [font-variant-numeric:tabular-nums]', cfg.tw.text)}>
-                    {isLoading ? '—' : count}
-                  </span>
-                  <span className="text-[11px] text-zinc-600 font-mono">{cfg.label.toLowerCase()}</span>
-                </motion.div>
-              );
-            })}
-          </motion.div>
-
-          {/* Main area: 2×2 columns + right panel */}
-          <div className="flex gap-6 pb-12 items-start">
-
-            {/* Left: 2×2 Kanban grid */}
-            <div className="flex-1 min-w-0 grid grid-cols-2 gap-4">
+          <div className="mt-6 grid gap-5 lg:grid-cols-[1fr_340px]">
+            <div className="grid gap-4 md:grid-cols-2">
               {LANES.map((laneKey) => (
                 <LaneColumn
                   key={laneKey}
                   laneKey={laneKey}
                   issues={columnIssues[laneKey] ?? []}
                   loading={loadingCols.has(laneKey)}
-                  dispatchingIssues={dispatchingIssues}
-                  completedIssues={completedIssues}
                   selectedNumber={selectedIssue?.issue.number ?? null}
-                  onSelect={(issue) => {
-                    setSelectedIssue({ issue, laneKey });
-                    setDagStepIndex(0);
-                    setDagPlaying(false);
-                  }}
+                  dispatchingIssues={dispatchingIssues}
+                  onSelect={(issue) => setSelectedIssue({ issue, laneKey })}
                 />
               ))}
             </div>
 
-            {/* Right: DAG + activity */}
-            <div className="w-[340px] shrink-0 space-y-4">
-              <AnimatePresence>
-                {selectedIssue ? (
-                  <DagPanel
-                    key="dag"
-                    selected={selectedIssue}
-                    stepIndex={dagStepIndex}
-                    playing={dagPlaying}
-                    onClose={() => { setSelectedIssue(null); setDagPlaying(false); }}
-                    onPlay={() => {
-                      if (dagStepIndex >= DAG_STEPS.length - 1) { setDagStepIndex(0); setDagPlaying(true); }
-                      else setDagPlaying(p => !p);
-                    }}
-                    onPrev={() => { setDagPlaying(false); setDagStepIndex(s => Math.max(0, s - 1)); }}
-                    onNext={() => { setDagPlaying(false); setDagStepIndex(s => Math.min(DAG_STEPS.length - 1, s + 1)); }}
-                  />
-                ) : (
-                  <motion.div
-                    key="dag-placeholder"
-                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    className="rounded-xl border border-white/6 bg-[#080d14] px-5 py-8 text-center"
-                  >
-                    <p className="text-[11px] text-zinc-700">Select an issue to view its DAG progression</p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              <ActivityFeedPanel items={activity} />
+            <div className="space-y-4">
+              <DetailPanel selected={selectedIssue} />
+              <ActivityFeed items={activity} />
             </div>
-
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

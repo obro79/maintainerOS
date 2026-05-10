@@ -23,7 +23,7 @@ import { toVerificationQueueItem } from './verification';
 import { toClustlyBountyListItem } from './payments';
 import { listSponsorProofRuns } from './provider-runs';
 import { mergeSponsorProof } from './sponsor-proof';
-import { hidePayoutArtifactsForNonClustlyRoutes } from './payout';
+import { canReleasePayout, hidePayoutArtifactsForNonClustlyRoutes } from './payout';
 import { listPersistedTraceEvents, mergeTraceEvents } from './trace-events';
 import { buildDeterministicWorkOrder } from './work-orders';
 import { buildRouteHistoryFromTrace } from './route-history';
@@ -298,12 +298,10 @@ async function toIssueDetail(issue: IssueRow, persistedTrace: IssueTraceEventVie
     paymentArtifact: null,
     routeHistory: [],
     trace: [],
-    payoutGate: {
-      canRelease: false,
-      reasons: ['Live issue imported, but verification and Clustly release artifacts are not present yet.'],
-    },
+    payoutGate: emptyPayoutGate(),
   };
   const payoutVisibleBaseDetail = hidePayoutArtifactsForNonClustlyRoutes(baseDetail);
+  const payoutGate = canReleasePayout(payoutVisibleBaseDetail);
   const sandboxExecutions = buildSandboxExecutionsForIssue(payoutVisibleBaseDetail, issue.repository_id, 'live');
   const trace = [
     ...buildLiveTrace(issue, decision.route, modelRun.model, contextPack),
@@ -313,6 +311,7 @@ async function toIssueDetail(issue: IssueRow, persistedTrace: IssueTraceEventVie
 
   return hidePayoutArtifactsForNonClustlyRoutes({
     ...payoutVisibleBaseDetail,
+    payoutGate,
     sandboxExecutions,
     routeHistory: buildRouteHistoryFromTrace(payoutVisibleBaseDetail, trace),
     trace,
@@ -560,4 +559,13 @@ function suggestedFilesFor(issue: IssueRow) {
 function toIso(value: Date | string | null | undefined) {
   if (!value) return undefined;
   return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
+}
+
+function emptyPayoutGate(): IssueDetailViewModel['payoutGate'] {
+  return {
+    canRelease: false,
+    reasons: [],
+    reasonCodes: [],
+    reasonDetails: [],
+  };
 }

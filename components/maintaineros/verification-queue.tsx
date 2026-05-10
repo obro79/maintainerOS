@@ -47,6 +47,8 @@ export function VerificationQueue({ items }: { items: VerificationQueueItemViewM
               <p className="text-zinc-300">{item.verification.status}</p>
               <p className="mt-1 truncate">{item.verification.summary}</p>
               <p className="mt-1">Findings: {item.verification.blockingFindingsCount}</p>
+              <p className="mt-1 truncate">Verified: {item.verification.verifiedSha ?? 'pending'}</p>
+              <p className="mt-1 truncate">Current: {item.verification.currentSha ?? item.pullRequest?.headSha ?? 'unknown'}</p>
             </div>
             <p className="text-xs text-zinc-500">{item.blockingReason}</p>
             <div className="flex justify-end gap-2 text-xs">

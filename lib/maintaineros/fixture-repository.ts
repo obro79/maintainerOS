@@ -26,7 +26,7 @@ import { applyStoredClodArtifact } from './clod-artifacts';
 import { buildContextPackForIssue, buildNiaTraceEvent } from './nia-context';
 import { buildSandboxExecutionsForIssue, buildSandboxTraceEvents, toSandboxAttemptListItems } from './daytona';
 import { buildGreptileVerification, toVerificationQueueItem } from './verification';
-import { toClustlyBountyListItem } from './payments';
+import { buildFixtureClustlyTask, toClustlyBountyListItem } from './payments';
 import { listPersistedTraceEvents, mergeTraceEvents } from './trace-events';
 import { buildSponsorProofFromIssue } from './sponsor-proof';
 import { buildRouteHistoryFromTrace } from './route-history';
@@ -308,7 +308,7 @@ async function toIssueDetail(issue: FixtureIssue, sourceState: ArtifactSourceSta
         isStale: false,
       }
     : null;
-  const verification = pullRequest ? buildGreptileVerification({ ...card, body: issue.body, htmlUrl: issue.htmlUrl, author: issue.author, labels: issue.labels, modelRun, workOrder, routePolicy, contextPack: null, sandboxExecutions: [], pullRequest, verification: baseVerification, bounty: issue.bounty, paymentArtifact: null, routeHistory: [], trace: [], payoutGate: { canRelease: false, reasons: [] } }, pullRequest, sourceState) : null;
+  const verification = pullRequest ? buildGreptileVerification({ ...card, body: issue.body, htmlUrl: issue.htmlUrl, author: issue.author, labels: issue.labels, modelRun, workOrder, routePolicy, contextPack: null, sandboxExecutions: [], pullRequest, verification: baseVerification, bounty: issue.bounty, paymentArtifact: null, routeHistory: [], trace: [], payoutGate: emptyPayoutGate() }, pullRequest, sourceState) : null;
   const contextPack = await buildContextPackForIssue(
     {
       id: issue.id,
@@ -345,21 +345,25 @@ async function toIssueDetail(issue: FixtureIssue, sourceState: ArtifactSourceSta
     paymentArtifact: issue.paymentArtifact ? toClustlyTask(issue.paymentArtifact, sourceState) : null,
     routeHistory: [],
     trace: [],
-    payoutGate: { canRelease: false, reasons: [] },
+    payoutGate: emptyPayoutGate(),
   };
   const payoutVisibleBaseDetail = hidePayoutArtifactsForNonClustlyRoutes(baseDetail);
   const sandboxExecutions = buildSandboxExecutionsForIssue(payoutVisibleBaseDetail, repositoryId, sourceState);
   const payoutGate = canReleasePayout(payoutVisibleBaseDetail);
+  const paymentArtifact = buildFixtureClustlyTask({ ...payoutVisibleBaseDetail, payoutGate }, sourceState);
+  const detailForTrace = { ...payoutVisibleBaseDetail, paymentArtifact, payoutGate };
   const trace = [
     ...buildTrace(issue, modelRun, sourceState, contextPack, verification, card.route, workOrder),
-    ...buildSandboxTraceEvents(payoutVisibleBaseDetail, sandboxExecutions).map((event) => ({ ...event, route: card.route })),
+    ...buildSandboxTraceEvents(detailForTrace, sandboxExecutions).map((event) => ({ ...event, route: card.route })),
     ...buildPullRequestTraceEvents(issue, pullRequest, sourceState, card.route, workOrder),
-    ...buildPayoutGateTraceEvents(issue, payoutVisibleBaseDetail.paymentArtifact, payoutGate, sourceState, card.route),
+    ...buildPayoutGateTraceEvents(issue, paymentArtifact, payoutGate, sourceState, card.route),
   ].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
   const detail = hidePayoutArtifactsForNonClustlyRoutes({
     ...payoutVisibleBaseDetail,
+    paymentArtifact,
+    payoutGate,
     sandboxExecutions,
-    routeHistory: buildRouteHistoryFromTrace(payoutVisibleBaseDetail, trace),
+    routeHistory: buildRouteHistoryFromTrace(detailForTrace, trace),
     trace,
   });
 
@@ -473,7 +477,7 @@ function buildTrace(issue: FixtureIssue, modelRun: ModelRunViewModel, sourceStat
       provider: 'greptile',
       sourceState,
       title: `Verification ${verification.status}`,
-      detail: verification.summary,
+      detail: `${verification.summary} Verified SHA: ${verification.verifiedSha ?? 'pending'}. Current SHA: ${verification.currentSha ?? 'unknown'}.`,
       status: verification.status === 'passed' ? 'passed' : verification.status === 'failed' ? 'failed' : verification.status === 'stale' ? 'stale' : 'pending',
       relatedId: verification.verifiedSha ?? verification.currentSha ?? undefined,
       filesTouched: workOrder.suggestedFiles,
@@ -697,6 +701,15 @@ function toClustlyTask(artifact: FixturePaymentArtifact, sourceState: ArtifactSo
     fundingMode: 'manual-browser',
     claimerKind: 'human',
     releaseReason: 'Released only after funded Clustly task, linked PR, non-stale passed verification, and maintainer acceptance.',
+  };
+}
+
+function emptyPayoutGate(): IssueDetailViewModel['payoutGate'] {
+  return {
+    canRelease: false,
+    reasons: [],
+    reasonCodes: [],
+    reasonDetails: [],
   };
 }
 

@@ -1,4 +1,5 @@
 import type { ClustlyBountyListItemViewModel, IssueDetailViewModel, PaymentArtifactViewModel } from './types';
+import { deriveClustlyTaskStatus } from './bounty-lifecycle';
 import { canReleasePayout, isClustlyEligibleRoute } from './payout';
 
 export interface PaymentProvider {
@@ -17,25 +18,7 @@ export class FixtureClustlyProvider implements PaymentProvider, ClustlyProvider 
   }
 
   async createTask(issue: IssueDetailViewModel): Promise<PaymentArtifactViewModel | null> {
-    const gate = canReleasePayout(issue);
-    if (!isClustlyEligibleRoute(issue) || !issue.bounty) return null;
-
-    return {
-      provider: 'clustly',
-      sourceState: 'fixture',
-      status: gate.canRelease ? issue.bounty.status === 'paid' ? 'released' : 'approved' : issue.paymentArtifact?.status ?? 'funded',
-      taskId: issue.paymentArtifact?.taskId ?? `fixture-clustly-${issue.number}`,
-      taskUrl: issue.paymentArtifact?.taskUrl ?? `https://clustly.ai/tasks/fixture-clustly-${issue.number}`,
-      claimId: issue.paymentArtifact?.claimId ?? `claim-${issue.number}`,
-      amountCents: issue.bounty.amountCents,
-      currency: 'USDC',
-      artifactUrl: issue.paymentArtifact?.artifactUrl,
-      fundingMode: issue.paymentArtifact?.fundingMode ?? 'manual-browser',
-      claimerKind: 'human',
-      releaseReason: gate.canRelease
-        ? 'Release allowed: funded task, linked PR, fresh passed Greptile verification, and maintainer acceptance are present.'
-        : `Release blocked: ${gate.reasons.join(' ')}`,
-    };
+    return buildFixtureClustlyTask(issue, 'fixture');
   }
 
   async getTask(_taskId: string, issue: IssueDetailViewModel): Promise<PaymentArtifactViewModel | null> {
@@ -46,6 +29,29 @@ export class FixtureClustlyProvider implements PaymentProvider, ClustlyProvider 
     const task = await this.createTask(issue);
     return task ? { ...task, claimId, status: canReleasePayout(issue).canRelease ? 'released' : task.status } : null;
   }
+}
+
+export function buildFixtureClustlyTask(issue: IssueDetailViewModel, sourceState = issue.paymentArtifact?.sourceState ?? 'fixture'): PaymentArtifactViewModel | null {
+  const gate = canReleasePayout(issue);
+  if (!isClustlyEligibleRoute(issue) || !issue.bounty) return null;
+  const status = deriveClustlyTaskStatus(issue.bounty.status, gate.canRelease, issue.paymentArtifact?.status);
+
+  return {
+    provider: 'clustly',
+    sourceState,
+    status,
+    taskId: issue.paymentArtifact?.taskId ?? `fixture-clustly-${issue.number}`,
+    taskUrl: issue.paymentArtifact?.taskUrl ?? `https://clustly.ai/tasks/fixture-clustly-${issue.number}`,
+    claimId: issue.paymentArtifact?.claimId ?? (issue.bounty.status === 'proposed' ? undefined : `claim-${issue.number}`),
+    amountCents: issue.bounty.amountCents,
+    currency: issue.paymentArtifact?.currency ?? 'USDC',
+    artifactUrl: issue.paymentArtifact?.artifactUrl,
+    fundingMode: issue.paymentArtifact?.fundingMode ?? 'manual-browser',
+    claimerKind: issue.paymentArtifact?.claimerKind ?? (issue.bounty.status === 'proposed' ? null : 'human'),
+    releaseReason: gate.canRelease
+      ? 'Release allowed: funded task, linked PR, fresh passed Greptile verification, and maintainer acceptance are present.'
+      : `Release blocked: ${gate.reasons.join(' ')}`,
+  };
 }
 
 export function toClustlyBountyListItem(repositoryId: string, issue: IssueDetailViewModel): ClustlyBountyListItemViewModel | null {

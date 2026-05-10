@@ -23,14 +23,15 @@ import {
 import { NON_CLUSTLY_ROUTE_REASON, canReleasePayout, hidePayoutArtifactsForNonClustlyRoutes } from './payout';
 import { classifyComplexity, classifyRisk, estimatePremiumBaselineCents, evaluateRoutePolicy, scoreIssue, selectClodModel } from './routing';
 import { applyStoredClodArtifact } from './clod-artifacts';
+import { buildAiSandboxAttemptResult } from './ai-attempts';
 import { buildContextPackForIssue, buildNiaTraceEvent } from './nia-context';
-import { buildSandboxExecutionsForIssue, buildSandboxTraceEvents, toSandboxAttemptListItems } from './daytona';
+import { buildSandboxTraceEvents, toSandboxAttemptListItems } from './daytona';
 import { buildGreptileVerification, toVerificationQueueItem } from './verification';
 import { buildFixtureClustlyTask, toClustlyBountyListItem } from './payments';
 import { listPersistedTraceEvents, mergeTraceEvents } from './trace-events';
+import { buildDeterministicWorkOrder } from './work-orders';
 import { buildSponsorProofFromIssue } from './sponsor-proof';
 import { buildRouteHistoryFromTrace } from './route-history';
-import { buildDeterministicWorkOrder } from './work-orders';
 
 interface FixtureRepositoryFile {
   repository: {
@@ -87,7 +88,7 @@ interface FixtureIssue {
 }
 
 interface FixturePaymentArtifact {
-  provider: 'clustly';
+  provider: 'allscale' | 'clustly';
   status: 'draft' | 'ready' | 'released' | 'failed' | 'posted' | 'funded' | 'claimed' | 'submitted' | 'approved' | 'paid' | 'refunded';
   amountCents: number;
   currency: 'USD' | 'USDC';
@@ -221,7 +222,11 @@ async function toIssueDetailWithPersistedTrace(repositoryId: string, fixtureRepo
   if (persisted.length === 0 && repositoryId === fixtureRepositoryId) return detail;
   const fixturePersisted = repositoryId === fixtureRepositoryId ? [] : await listPersistedTraceEvents(fixtureRepositoryId, detail.number);
   const trace = mergeTraceEvents(detail.trace, [...persisted, ...fixturePersisted]);
-  return { ...detail, trace };
+  return {
+    ...detail,
+    routeHistory: buildRouteHistoryFromTrace(detail, trace),
+    trace,
+  };
 }
 
 export function getMaintainerOSRepository(): MaintainerOSRepository {
@@ -233,7 +238,10 @@ function loadFixture(repositoryId: string): FixtureRepositoryFile {
   if (existsSync(fixturePath)) {
     return JSON.parse(readFileSync(fixturePath, 'utf8')) as FixtureRepositoryFile;
   }
-  const fallbackPath = join(process.cwd(), 'data', 'mock-repos', `${process.env.MAINTAINEROS_DEMO_REPO_ID || 'maintaineros-demo-large'}.json`);
+  const configuredFallbackPath = join(process.cwd(), 'data', 'mock-repos', `${process.env.MAINTAINEROS_DEMO_REPO_ID || 'maintaineros-demo-large'}.json`);
+  const fallbackPath = existsSync(configuredFallbackPath)
+    ? configuredFallbackPath
+    : join(process.cwd(), 'data', 'mock-repos', 'maintaineros-demo-large.json');
   return JSON.parse(readFileSync(fallbackPath, 'utf8')) as FixtureRepositoryFile;
 }
 
@@ -348,21 +356,26 @@ async function toIssueDetail(issue: FixtureIssue, sourceState: ArtifactSourceSta
     payoutGate: emptyPayoutGate(),
   };
   const payoutVisibleBaseDetail = hidePayoutArtifactsForNonClustlyRoutes(baseDetail);
-  const sandboxExecutions = buildSandboxExecutionsForIssue(payoutVisibleBaseDetail, repositoryId, sourceState);
-  const payoutGate = canReleasePayout(payoutVisibleBaseDetail);
-  const paymentArtifact = buildFixtureClustlyTask({ ...payoutVisibleBaseDetail, payoutGate }, sourceState);
-  const detailForTrace = { ...payoutVisibleBaseDetail, paymentArtifact, payoutGate };
+  const aiAttemptResult = buildAiSandboxAttemptResult(payoutVisibleBaseDetail, repositoryId, sourceState);
+  const detailWithAiArtifacts = {
+    ...payoutVisibleBaseDetail,
+    pullRequest: pullRequest ?? aiAttemptResult.pullRequest,
+  };
+  const payoutGate = canReleasePayout(detailWithAiArtifacts);
+  const paymentArtifact = buildFixtureClustlyTask({ ...detailWithAiArtifacts, payoutGate }, sourceState);
+  const detailForTrace = { ...detailWithAiArtifacts, paymentArtifact, payoutGate };
   const trace = [
     ...buildTrace(issue, modelRun, sourceState, contextPack, verification, card.route, workOrder),
-    ...buildSandboxTraceEvents(detailForTrace, sandboxExecutions).map((event) => ({ ...event, route: card.route })),
-    ...buildPullRequestTraceEvents(issue, pullRequest, sourceState, card.route, workOrder),
+    ...aiAttemptResult.traceEvents,
+    ...buildSandboxTraceEvents(detailForTrace, aiAttemptResult.attempts).map((event) => ({ ...event, route: card.route })),
+    ...buildPullRequestTraceEvents(issue, pullRequest ?? aiAttemptResult.pullRequest, sourceState, card.route, workOrder),
     ...buildPayoutGateTraceEvents(issue, paymentArtifact, payoutGate, sourceState, card.route),
   ].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
   const detail = hidePayoutArtifactsForNonClustlyRoutes({
-    ...payoutVisibleBaseDetail,
+    ...detailWithAiArtifacts,
     paymentArtifact,
     payoutGate,
-    sandboxExecutions,
+    sandboxExecutions: aiAttemptResult.attempts,
     routeHistory: buildRouteHistoryFromTrace(detailForTrace, trace),
     trace,
   });
@@ -375,15 +388,23 @@ async function toIssueDetail(issue: FixtureIssue, sourceState: ArtifactSourceSta
 
 function buildPullRequest(issue: FixtureIssue) {
   if (!issue.verification && !issue.bounty) return null;
+  const automationOwned = issue.classification.route === 'agent-solvable';
   return {
     provider: 'github' as const,
+    id: `fixture-pr-${issue.number}`,
+    sourceState: 'fixture' as const,
+    issueId: issue.id,
+    workOrderId: `fixture-work-order-${issue.number}`,
     number: 900 + issue.number,
     title: `Fix #${issue.number}: ${issue.title}`,
+    baseBranch: 'main',
     branchName: `maintaineros/issue-${issue.number}`,
     headSha: `sha-${issue.number.toString(16).padStart(6, '0')}`,
     status: issue.verification?.status === 'passed' ? 'merged' as const : 'open' as const,
     htmlUrl: `${issue.htmlUrl.replace('/issues/', '/pull/')}`.replace(String(issue.number), String(900 + issue.number)),
     authorLogin: issue.classification.route === 'bounty-worthy' ? 'external-contributor' : 'agent-runner',
+    authorOwnerType: automationOwned ? 'automation' as const : 'human' as const,
+    automationOwned,
     linkedAt: '2026-05-08T20:45:00.000Z',
   };
 }
@@ -438,7 +459,7 @@ function buildTrace(issue: FixtureIssue, modelRun: ModelRunViewModel, sourceStat
     },
   ];
 
-  if (issue.number === 41 || issue.number === 5 || route === 'bounty-worthy') {
+  if (issue.number === 5 || issue.number === 41 || route === 'bounty-worthy') {
     trace.push(
       {
         id: `${issue.id}-cheap-attempt`,
@@ -463,7 +484,7 @@ function buildTrace(issue: FixtureIssue, modelRun: ModelRunViewModel, sourceStat
         title: 'Escalated after failed proof',
         detail: 'MaintainerOS preserved the failed attempt and selected a stronger route based on verification evidence.',
         status: 'escalated',
-        model: route === 'bounty-worthy' ? 'bounty' : 'balanced',
+        model: route === 'bounty-worthy' ? 'clustly' : route === 'agent-solvable' ? 'balanced' : 'dev',
         costCents: route === 'bounty-worthy' ? issue.bounty?.amountCents ? Math.round(issue.bounty.amountCents / 100) : 150 : 7,
       },
     );
@@ -501,7 +522,7 @@ function buildTrace(issue: FixtureIssue, modelRun: ModelRunViewModel, sourceStat
     trace.push(buildNiaTraceEvent({ id: issue.id, number: issue.number }, contextPack));
   }
 
-  if (issue.classification.route !== 'bounty-worthy' && issue.paymentArtifact) {
+  if (route !== 'bounty-worthy' && issue.paymentArtifact) {
     trace.push({
       id: `${issue.id}-payout-suppressed`,
       at: base,
@@ -513,7 +534,7 @@ function buildTrace(issue: FixtureIssue, modelRun: ModelRunViewModel, sourceStat
     });
   }
 
-  if (issue.classification.route === 'bounty-worthy' && issue.paymentArtifact) {
+  if (route === 'bounty-worthy' && issue.paymentArtifact) {
     trace.push(
       {
         id: `${issue.id}-clustly-posted`,
@@ -550,7 +571,7 @@ function buildTrace(issue: FixtureIssue, modelRun: ModelRunViewModel, sourceStat
     );
   }
 
-  return trace.map((event) => ({ ...event, route }));
+  return trace.map((event) => ({ route, ...event }));
 }
 
 function buildPullRequestTraceEvents(issue: FixtureIssue, pullRequest: IssueDetailViewModel['pullRequest'], sourceState: ArtifactSourceState, route: ExecutionRoute, workOrder: IssueDetailViewModel['workOrder']): IssueTraceEventViewModel[] {
@@ -564,7 +585,7 @@ function buildPullRequestTraceEvents(issue: FixtureIssue, pullRequest: IssueDeta
       sourceState,
       route,
       title: `PR #${pullRequest.number} linked`,
-      detail: `${pullRequest.authorLogin} opened ${pullRequest.branchName}; MaintainerOS tied the PR back to issue #${issue.number}.`,
+      detail: `${pullRequest.authorLogin} opened ${pullRequest.branchName}; owner=${pullRequest.authorOwnerType}; automationOwned=${pullRequest.automationOwned}; MaintainerOS tied the PR back to issue #${issue.number}.`,
       status: pullRequest.status === 'closed' ? 'blocked' : 'succeeded',
       artifactUrl: pullRequest.htmlUrl,
       relatedId: pullRequest.headSha,
@@ -580,7 +601,7 @@ function buildPayoutGateTraceEvents(
   sourceState: ArtifactSourceState,
   route: ExecutionRoute,
 ): IssueTraceEventViewModel[] {
-  if (issue.classification.route !== 'bounty-worthy' || (!issue.bounty && !paymentArtifact)) return [];
+  if (route !== 'bounty-worthy' || (!issue.bounty && !paymentArtifact)) return [];
   return [
     {
       id: `${issue.id}-payout-gate`,
@@ -690,11 +711,6 @@ function buildEvaluationSummary(sourceState: ArtifactSourceState = 'fixture'): E
 }
 
 function toClustlyTask(artifact: FixturePaymentArtifact, sourceState: ArtifactSourceState): IssueDetailViewModel['paymentArtifact'] {
-  const rawUrl = artifact.artifactUrl;
-  const taskUrl =
-    rawUrl && rawUrl.includes('allscale.example/payments')
-      ? rawUrl.replace('allscale.example/payments', 'clustly.ai/tasks')
-      : rawUrl;
   return {
     provider: 'clustly',
     sourceState,
@@ -702,7 +718,7 @@ function toClustlyTask(artifact: FixturePaymentArtifact, sourceState: ArtifactSo
     amountCents: artifact.amountCents,
     currency: artifact.currency === 'USD' ? 'USDC' : artifact.currency,
     taskId: `fixture-${artifact.amountCents}`,
-    taskUrl,
+    taskUrl: artifact.artifactUrl?.replace('allscale.example/payments', 'clustly.ai/tasks'),
     fundingMode: 'manual-browser',
     claimerKind: 'human',
     releaseReason: 'Released only after funded Clustly task, linked PR, non-stale passed verification, and maintainer acceptance.',

@@ -148,7 +148,7 @@ function buildAttempt(
 }
 
 function shouldAttemptSandbox(issue: IssueDetailViewModel) {
-  return issue.routePolicy?.sandboxAllowed ?? issue.route === 'agent-solvable';
+  return issue.route === 'agent-solvable' && issue.routePolicy?.automationAllowed === true && issue.routePolicy?.sandboxAllowed === true;
 }
 
 function shouldShowEscalatedRetry(issue: IssueDetailViewModel) {

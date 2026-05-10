@@ -64,6 +64,7 @@ export function buildSponsorProofFromProviderRun(input: {
   occurredAt: string;
 }): SponsorProofViewModel {
   const detail = typeof input.responseMeta?.detail === 'string' ? input.responseMeta.detail : null;
+  const clodSummary = input.provider === 'clod' ? clodProviderRunSummary(input.responseMeta) : null;
   const runLabel = input.runId ?? input.id;
   return {
     provider: input.provider,
@@ -75,7 +76,7 @@ export function buildSponsorProofFromProviderRun(input: {
     logUrl: input.logUrl ?? undefined,
     screenshotUrl: input.screenshotUrl ?? undefined,
     occurredAt: input.occurredAt,
-    summary: input.errorMessage ?? detail ?? `${input.provider} ${input.purpose} proof run recorded ${input.status}.`,
+    summary: input.errorMessage ?? clodSummary ?? detail ?? `${input.provider} ${input.purpose} proof run recorded ${input.status}.`,
   };
 }
 
@@ -156,6 +157,17 @@ function providerRunStatusToArtifactStatus(status: ProviderRunStatus): ArtifactS
 
 function formatCost(value: number | null) {
   return value == null ? 'unknown' : `${value}c`;
+}
+
+function clodProviderRunSummary(meta: Record<string, unknown> | null | undefined) {
+  if (!meta) return null;
+  const model = typeof meta.model === 'string' ? meta.model : null;
+  const tier = typeof meta.tier === 'string' ? meta.tier : null;
+  if (!model || !tier) return null;
+  const estimatedCost = typeof meta.estimatedCostCents === 'number' ? meta.estimatedCostCents : null;
+  const premiumBaseline = typeof meta.premiumBaselineCents === 'number' ? meta.premiumBaselineCents : null;
+  const latency = typeof meta.latencyMs === 'number' ? `${meta.latencyMs}ms` : 'unknown latency';
+  return `${model} selected ${tier}; cost ${formatCost(estimatedCost)}, premium baseline ${formatCost(premiumBaseline)}, latency ${latency}.`;
 }
 
 function clustlyStatusToProofStatus(status: NonNullable<IssueDetailViewModel['paymentArtifact']>['status'] | undefined): ArtifactStatus {

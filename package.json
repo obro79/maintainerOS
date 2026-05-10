@@ -10,13 +10,15 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test:verification-payout": "tsc --module CommonJS --moduleResolution Node --target ES2022 --lib ES2022,DOM --skipLibCheck --outDir /tmp/maintaineross-verification-payout-test scripts/verification-payout-smoke.ts && node /tmp/maintaineross-verification-payout-test/scripts/verification-payout-smoke.js",
+    "test:ai-execution-artifacts": "tsc --module CommonJS --moduleResolution Node --target ES2022 --lib ES2022,DOM --skipLibCheck --outDir /tmp/maintaineross-ai-execution-test scripts/ai-execution-artifacts-smoke.ts && node /tmp/maintaineross-ai-execution-test/scripts/ai-execution-artifacts-smoke.js",
+    "test:connect-oauth": "node scripts/connect-oauth-smoke.mjs",
     "fixtures:generate": "node scripts/generate-mock-backlog.mjs",
     "github:seed-demo": "node scripts/seed-github-demo-repos.mjs",
     "neon:smoke-import": "node scripts/neon-smoke-import.mjs",
     "preview:styles": "node scripts/preview-style-prototypes.mjs",
     "prep:check": "node scripts/validate-prep.mjs",
     "backend:check": "node scripts/validate-backend-policy.mjs",
-    "ci": "npm run lint && npm run typecheck && npm run test:verification-payout && npm run prep:check && npm run backend:check && npm run build"
+    "ci": "npm run lint && npm run typecheck && npm run test:verification-payout && npm run test:ai-execution-artifacts && npm run test:connect-oauth && npm run prep:check && npm run backend:check && npm run build"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",

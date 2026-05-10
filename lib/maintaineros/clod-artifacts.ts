@@ -1,6 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import type { ClodRouteResult } from './clod';
+import { buildClodRunEvidenceMeta } from './clod-run-evidence';
 import { buildInitialRouteAttempt, mergeRouteHistory } from './route-history';
 import type { ExecutionRoute, IssueDetailViewModel, IssueTraceEventViewModel, RouteAttemptViewModel, WorkOrderViewModel } from './types';
 
@@ -12,6 +13,7 @@ interface StoredClodArtifact {
   createdAt: string;
   artifact: ClodRouteResult['artifact'];
   modelRun: IssueDetailViewModel['modelRun'];
+  runEvidence: ReturnType<typeof buildClodRunEvidenceMeta>;
   workOrder: WorkOrderViewModel;
   traceEvent: IssueTraceEventViewModel;
   routeAttempt?: RouteAttemptViewModel;
@@ -42,7 +44,7 @@ export function persistClodArtifact(repositoryId: string, issue: IssueDetailView
     provider: 'clod',
     sourceState: result.modelRun.sourceState ?? (result.modelRun.status === 'succeeded' ? 'live' : 'fixture'),
     title: result.modelRun.status === 'succeeded' ? 'CLōD work order generated' : 'CLōD fallback work order generated',
-    detail: result.fallbackReason ?? result.artifact.rationale,
+    detail: result.fallbackReason ?? `${result.artifact.rationale} Model ${result.modelRun.model} selected ${result.modelRun.tier}; cost ${formatCost(result.modelRun.estimatedCostCents)}.`,
     status: result.modelRun.status === 'succeeded' ? 'passed' : 'succeeded',
     relatedId: result.modelRun.runId ?? result.modelRun.id,
     model: result.modelRun.model,
@@ -67,6 +69,7 @@ export function persistClodArtifact(repositoryId: string, issue: IssueDetailView
     createdAt,
     artifact: result.artifact,
     modelRun: result.modelRun,
+    runEvidence: buildClodRunEvidenceMeta({ issue, modelRun: result.modelRun }),
     workOrder,
     traceEvent,
     routeAttempt,
@@ -133,4 +136,8 @@ function readStore(): ClodArtifactFile {
 function writeStore(file: ClodArtifactFile) {
   mkdirSync(dirname(STORE_PATH), { recursive: true });
   writeFileSync(STORE_PATH, `${JSON.stringify(file, null, 2)}\n`);
+}
+
+function formatCost(value: number | null) {
+  return value == null ? 'unknown' : `${value}c`;
 }

@@ -229,10 +229,15 @@ hero_prs AS (
     work_order_id,
     number,
     title,
+    base_branch,
     branch_name,
+    head_sha,
     html_url,
     author_login,
+    author_owner_type,
+    automation_owned,
     status,
+    linked_at,
     merged_at
   )
   SELECT
@@ -240,10 +245,15 @@ hero_prs AS (
     inserted_work_orders.id,
     9000 + row_number() OVER (),
     'Fix seeded MaintainerOS issue ' || inserted_work_orders.issue_id,
+    'main',
     'maintaineros/' || inserted_work_orders.issue_id,
+    'demo-sha-' || inserted_work_orders.issue_id,
     'https://github.com/maintaineros/demo/pull/' || (9000 + row_number() OVER ()),
     CASE WHEN seed_issues.route = 'agent-solvable' THEN 'codex-agent' ELSE 'bounty-contributor' END,
+    CASE WHEN seed_issues.route = 'agent-solvable' THEN 'automation' ELSE 'human' END,
+    seed_issues.route = 'agent-solvable',
     'merged',
+    now(),
     now()
   FROM inserted_work_orders
   JOIN seed_issues
@@ -257,8 +267,15 @@ hero_verifications AS (
     provider,
     status,
     summary,
-    checks,
-    source_sha,
+    criteria,
+    files_touched,
+    files_inspected,
+    blocking_findings,
+    verified_sha,
+    current_sha,
+    risk_summary,
+    source_state,
+    verified_at,
     completed_at
   )
   SELECT
@@ -267,7 +284,14 @@ hero_verifications AS (
     'passed',
     'Seeded Greptile verification passed acceptance checks.',
     '["tests passed", "acceptance checks matched", "no risky diff detected"]'::jsonb,
+    '["src/demo.ts", "tests/demo.test.ts"]'::jsonb,
+    '["src/demo.ts", "tests/demo.test.ts"]'::jsonb,
+    '[]'::jsonb,
     'demo-sha-' || hero_prs.issue_id,
+    'demo-sha-' || hero_prs.issue_id,
+    'No blocking risk found in seeded verification.',
+    'fixture',
+    now(),
     now()
   FROM hero_prs
   RETURNING id

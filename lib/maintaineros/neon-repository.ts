@@ -1,6 +1,7 @@
 import {
   ROUTE_LABEL,
   ROUTE_TO_LANE,
+  type ArtifactSourceState,
   type ClustlyBountyListItemViewModel,
   type DashboardViewModel,
   type EvaluationSummaryViewModel,
@@ -10,24 +11,28 @@ import {
   type IssueDetailViewModel,
   type IssueTraceEventViewModel,
   type MaintainerOSRepository,
+  type PullRequestViewModel,
   type RouteBucketViewModel,
   type SandboxAttemptListItemViewModel,
   type VerificationQueueItemViewModel,
+  type VerificationViewModel,
 } from './types';
 import { classifyComplexity, classifyRisk, estimatePremiumBaselineCents, evaluateRoutePolicy, scoreIssue, selectClodModel } from './routing';
 import { withPostgres, type PgClient } from './postgres';
 import { applyStoredClodArtifact } from './clod-artifacts';
+import { buildAiSandboxAttemptResult } from './ai-attempts';
 import { buildContextPackForIssue, buildNiaTraceEvent } from './nia-context';
-import { buildSandboxExecutionsForIssue, buildSandboxTraceEvents, toSandboxAttemptListItems } from './daytona';
-import { toVerificationQueueItem } from './verification';
+import { buildSandboxTraceEvents, toSandboxAttemptListItems } from './daytona';
+import { buildGreptileVerificationAdapterResult, toVerificationQueueItem } from './verification';
 import { toClustlyBountyListItem } from './payments';
+import { buildDeterministicWorkOrder } from './work-orders';
 import { listSponsorProofRuns } from './provider-runs';
 import { mergeSponsorProof } from './sponsor-proof';
 import { canReleasePayout, hidePayoutArtifactsForNonClustlyRoutes } from './payout';
-import { listPersistedTraceEvents, mergeTraceEvents } from './trace-events';
-import { buildDeterministicWorkOrder } from './work-orders';
 import { buildRouteHistoryFromTrace } from './route-history';
+import { listTraceEvents, mergeTraceEvents } from './trace-events';
 import { getProviderHealth } from './provider-runtime';
+import { getWorkflowArtifacts, type WorkflowArtifacts } from './workflow-state';
 
 interface RepositoryRow {
   id: string;
@@ -67,6 +72,45 @@ interface ImportRunRow {
   error_message: string | null;
 }
 
+interface PullRequestRow {
+  id: string;
+  repository_id: string;
+  issue_number: number;
+  issue_id: string | null;
+  work_order_id: string | null;
+  provider: 'github';
+  number: number;
+  title: string;
+  base_branch: string | null;
+  branch_name: string;
+  head_sha: string;
+  html_url: string;
+  author_login: string;
+  author_owner_type: PullRequestViewModel['authorOwnerType'];
+  automation_owned: boolean;
+  status: PullRequestViewModel['status'];
+  linked_at: Date | string | null;
+  source_state: ArtifactSourceState;
+}
+
+interface VerificationRunRow {
+  id: string;
+  pull_request_id: string;
+  provider: 'greptile';
+  status: VerificationViewModel['status'];
+  summary: string;
+  criteria: string[] | string;
+  files_touched: string[] | string;
+  files_inspected: string[] | string;
+  blocking_findings: string[] | string;
+  verified_sha: string | null;
+  current_sha: string | null;
+  risk_summary: string;
+  failure_reason: string | null;
+  verified_at: Date | string | null;
+  source_state: ArtifactSourceState;
+}
+
 export class NeonMaintainerOSRepository implements MaintainerOSRepository {
   async getDashboard(repositoryId = process.env.MAINTAINEROS_DEMO_REPO_ID || ''): Promise<DashboardViewModel> {
     return withPostgres(async (client) => {
@@ -76,7 +120,7 @@ export class NeonMaintainerOSRepository implements MaintainerOSRepository {
         [repository.id],
       );
       const cards = issues.rows.map(toIssueCard);
-      const details = await Promise.all(issues.rows.map((issue) => toIssueDetailWithPersistedTrace(repository.id, issue)));
+      const details = await Promise.all(issues.rows.map((issue) => toIssueDetailWithPersistedTrace(client, repository.id, issue)));
       const selectedIssue = details[0] ?? emptyIssueDetail(repository.id);
       const latestImportRun = await getLatestImportRun(client, repository.owner, repository.name);
       const sponsorProof = mergeSponsorProof(await listSponsorProofRuns(client, repository.id));
@@ -115,8 +159,8 @@ export class NeonMaintainerOSRepository implements MaintainerOSRepository {
           { provider: 'clod', sourceState: 'planned', status: 'planned', label: 'CLōD', detail: 'Routing artifacts land in Phase 2.' },
           buildNiaProviderStatus(),
           { provider: 'daytona', sourceState: 'planned', status: 'planned', label: 'Daytona', detail: 'Sandbox dispatch lands in Phase 4.' },
-          { provider: 'greptile', sourceState: 'planned', status: 'planned', label: 'Greptile', detail: 'Verification lands in Phase 5.' },
-          { provider: 'clustly', sourceState: 'planned', status: 'planned', label: 'Clustly', detail: 'Bounty rail lands in Phase 6.' },
+          buildWorkflowProviderStatus('greptile', 'Greptile', 'Greptile verification endpoints are available; configure GREPTILE_API_KEY for live proof runs.'),
+          buildWorkflowProviderStatus('clustly', 'Clustly', 'Clustly task endpoints are available; configure CLUSTLY_AGENT_KEY for live task lifecycle.'),
         ],
         sponsorProof,
       };
@@ -130,7 +174,8 @@ export class NeonMaintainerOSRepository implements MaintainerOSRepository {
         `select * from maintaineros_issues where repository_id = $1 and number = $2 limit 1`,
         [repository.id, issueNumber],
       );
-      return result.rows[0] ? toIssueDetailWithPersistedTrace(repository.id, result.rows[0]) : null;
+      if (!result.rows[0]) return null;
+      return toIssueDetailWithPersistedTrace(client, repository.id, result.rows[0]);
     });
   }
 
@@ -162,14 +207,12 @@ export class NeonMaintainerOSRepository implements MaintainerOSRepository {
   }
 }
 
-async function toIssueDetailWithPersistedTrace(repositoryId: string, issue: IssueRow) {
-  const detail = applyStoredClodArtifact(repositoryId, await toIssueDetail(issue));
-  const persisted = await listPersistedTraceEvents(repositoryId, detail.number);
-  if (persisted.length === 0) return detail;
-  return {
-    ...detail,
-    trace: mergeTraceEvents(detail.trace, persisted),
-  };
+async function toIssueDetailWithPersistedTrace(client: PgClient, repositoryId: string, issue: IssueRow) {
+  const [persistedTrace, workflowArtifacts] = await Promise.all([
+    listTraceEvents(client, repositoryId, issue.number),
+    getWorkflowArtifacts(client, repositoryId, issue.number),
+  ]);
+  return applyStoredClodArtifact(repositoryId, await toIssueDetail(client, issue, persistedTrace, workflowArtifacts));
 }
 
 async function findRepository(client: PgClient, repositoryId: string): Promise<RepositoryRow> {
@@ -220,7 +263,7 @@ function toIssueCard(issue: IssueRow): IssueCardViewModel {
   };
 }
 
-async function toIssueDetail(issue: IssueRow, persistedTrace: IssueTraceEventViewModel[] = []): Promise<IssueDetailViewModel> {
+async function toIssueDetail(client: PgClient, issue: IssueRow, persistedTrace: IssueTraceEventViewModel[] = [], workflowArtifacts: WorkflowArtifacts | null = null): Promise<IssueDetailViewModel> {
   const card = toIssueCard(issue);
   const labels = normalizeLabels(issue.labels);
   const decision = scoreIssue({
@@ -273,6 +316,8 @@ async function toIssueDetail(issue: IssueRow, persistedTrace: IssueTraceEventVie
     },
     'live',
   );
+  const persistedPullRequest = await getLatestPullRequest(client, issue.repository_id, issue.number);
+  const verification = persistedPullRequest ? await getLatestVerification(client, persistedPullRequest) : null;
   const baseDetail: IssueDetailViewModel = {
     ...card,
     body: issue.body,
@@ -284,9 +329,9 @@ async function toIssueDetail(issue: IssueRow, persistedTrace: IssueTraceEventVie
     routePolicy,
     contextPack,
     sandboxExecutions: [],
-    pullRequest: null,
-    verification: null,
-    bounty: decision.route === 'bounty-worthy'
+    pullRequest: persistedPullRequest,
+    verification,
+    bounty: workflowArtifacts?.bounty ?? (decision.route === 'bounty-worthy'
       ? {
           status: 'proposed',
           amountCents: 15000,
@@ -294,28 +339,131 @@ async function toIssueDetail(issue: IssueRow, persistedTrace: IssueTraceEventVie
           rationale: 'Live import heuristic marked this as bounty-worthy; Clustly task creation lands in Phase 6.',
           maintainerAccepted: false,
         }
-      : null,
-    paymentArtifact: null,
+      : null),
+    paymentArtifact: workflowArtifacts?.paymentArtifact ?? null,
     routeHistory: [],
     trace: [],
     payoutGate: emptyPayoutGate(),
   };
   const payoutVisibleBaseDetail = hidePayoutArtifactsForNonClustlyRoutes(baseDetail);
-  const payoutGate = canReleasePayout(payoutVisibleBaseDetail);
-  const sandboxExecutions = buildSandboxExecutionsForIssue(payoutVisibleBaseDetail, issue.repository_id, 'live');
-  const trace = [
+  const aiAttemptResult = buildAiSandboxAttemptResult(payoutVisibleBaseDetail, issue.repository_id, 'live');
+  const issueWithAiArtifacts = {
+    ...payoutVisibleBaseDetail,
+    pullRequest: persistedPullRequest ?? aiAttemptResult.pullRequest,
+  };
+  const payoutGate = canReleasePayout(issueWithAiArtifacts);
+  const hydratedDetail = { ...issueWithAiArtifacts, payoutGate };
+  const derivedTrace = [
     ...buildLiveTrace(issue, decision.route, modelRun.model, contextPack),
-    ...buildSandboxTraceEvents(payoutVisibleBaseDetail, sandboxExecutions).map((event) => ({ ...event, route: decision.route })),
-    ...persistedTrace,
-  ].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
+    ...buildLivePullRequestTraceEvents(issue, persistedPullRequest, decision.route),
+    ...buildLiveVerificationTraceEvents(issue, verification, decision.route),
+    ...aiAttemptResult.traceEvents,
+    ...buildSandboxTraceEvents(hydratedDetail, aiAttemptResult.attempts).map((event) => ({ ...event, route: decision.route })),
+  ];
+  const trace = mergeTraceEvents(derivedTrace, persistedTrace);
 
   return hidePayoutArtifactsForNonClustlyRoutes({
-    ...payoutVisibleBaseDetail,
+    ...hydratedDetail,
     payoutGate,
-    sandboxExecutions,
-    routeHistory: buildRouteHistoryFromTrace(payoutVisibleBaseDetail, trace),
+    sandboxExecutions: aiAttemptResult.attempts,
+    routeHistory: buildRouteHistoryFromTrace(hydratedDetail, trace),
     trace,
   });
+}
+
+async function getLatestPullRequest(client: PgClient, repositoryId: string, issueNumber: number): Promise<PullRequestViewModel | null> {
+  const result = await client.query<PullRequestRow>(
+    `select * from maintaineros_pull_requests
+     where repository_id = $1 and issue_number = $2
+     order by linked_at desc nulls last, updated_at desc
+     limit 1`,
+    [repositoryId, issueNumber],
+  );
+  const row = result.rows[0];
+  if (!row) return null;
+  return {
+    provider: 'github',
+    id: row.id,
+    sourceState: row.source_state,
+    issueId: row.issue_id ?? undefined,
+    workOrderId: row.work_order_id,
+    number: row.number,
+    title: row.title,
+    baseBranch: row.base_branch,
+    branchName: row.branch_name,
+    headSha: row.head_sha,
+    status: row.status,
+    htmlUrl: row.html_url,
+    authorLogin: row.author_login,
+    authorOwnerType: row.author_owner_type,
+    automationOwned: row.automation_owned,
+    linkedAt: toIso(row.linked_at),
+  };
+}
+
+async function getLatestVerification(client: PgClient, pullRequest: PullRequestViewModel): Promise<VerificationViewModel | null> {
+  if (!pullRequest.id) return null;
+  const result = await client.query<VerificationRunRow>(
+    `select * from maintaineros_verification_runs
+     where pull_request_id = $1
+     order by verified_at desc nulls last, updated_at desc
+     limit 1`,
+    [pullRequest.id],
+  );
+  const row = result.rows[0];
+  if (!row) return null;
+  return buildGreptileVerificationAdapterResult({
+    sourceState: row.source_state,
+    status: row.status,
+    summary: row.summary,
+    criteria: normalizeStringArray(row.criteria),
+    filesTouched: normalizeStringArray(row.files_touched),
+    filesInspected: normalizeStringArray(row.files_inspected),
+    blockingFindings: normalizeStringArray(row.blocking_findings),
+    verifiedSha: row.verified_sha,
+    currentSha: row.current_sha ?? pullRequest.headSha,
+    riskSummary: row.risk_summary,
+    failureReason: row.failure_reason,
+    verifiedAt: toIso(row.verified_at) ?? null,
+  });
+}
+
+function buildLivePullRequestTraceEvents(issue: IssueRow, pullRequest: PullRequestViewModel | null, route: ExecutionRoute): IssueTraceEventViewModel[] {
+  if (!pullRequest) return [];
+  return [
+    {
+      id: `${issue.id}-pr-${pullRequest.number}`,
+      at: pullRequest.linkedAt ?? toIso(issue.updated_at) ?? new Date().toISOString(),
+      actor: 'GitHub pull request',
+      provider: 'github',
+      sourceState: pullRequest.sourceState ?? 'live',
+      route,
+      title: `PR #${pullRequest.number} linked`,
+      detail: `${pullRequest.authorLogin} opened ${pullRequest.branchName}; owner=${pullRequest.authorOwnerType}; automationOwned=${pullRequest.automationOwned}.`,
+      status: pullRequest.status === 'closed' ? 'blocked' : pullRequest.status === 'merged' ? 'passed' : 'succeeded',
+      artifactUrl: pullRequest.htmlUrl,
+      relatedId: pullRequest.headSha,
+    },
+  ];
+}
+
+function buildLiveVerificationTraceEvents(issue: IssueRow, verification: VerificationViewModel | null, route: ExecutionRoute): IssueTraceEventViewModel[] {
+  if (!verification) return [];
+  return [
+    {
+      id: `${issue.id}-greptile-${verification.verifiedSha ?? verification.currentSha ?? 'pending'}`,
+      at: verification.verifiedAt ?? toIso(issue.updated_at) ?? new Date().toISOString(),
+      actor: 'Greptile verification',
+      provider: 'greptile',
+      sourceState: verification.sourceState ?? 'live',
+      route,
+      title: `Verification ${verification.status}`,
+      detail: `${verification.summary} Verified SHA: ${verification.verifiedSha ?? 'pending'}. Current SHA: ${verification.currentSha ?? 'unknown'}.`,
+      status: verification.status === 'passed' ? 'passed' : verification.status,
+      relatedId: verification.verifiedSha ?? verification.currentSha ?? undefined,
+      filesTouched: verification.filesTouched,
+    },
+  ];
 }
 
 function buildLiveTrace(issue: IssueRow, route: ExecutionRoute, model: string, contextPack: IssueDetailViewModel['contextPack']): IssueTraceEventViewModel[] {
@@ -420,6 +568,26 @@ function emptyIssueDetail(repositoryId: string): IssueDetailViewModel {
     routeHistory: [],
     trace: [],
     payoutGate: emptyPayoutGate(),
+  };
+}
+
+function buildWorkflowProviderStatus(provider: 'greptile' | 'clustly', label: string, fallbackDetail: string): NonNullable<DashboardViewModel['providerStatuses']>[number] {
+  const health = getProviderHealth(provider);
+  if (health?.configured) {
+    return {
+      provider,
+      sourceState: health.sourceState,
+      status: 'connected',
+      label,
+      detail: 'Live workflow endpoint is configured and can record durable artifacts.',
+    };
+  }
+  return {
+    provider,
+    sourceState: health?.sourceState ?? 'planned',
+    status: 'planned',
+    label,
+    detail: health?.detail ?? fallbackDetail,
   };
 }
 
@@ -540,6 +708,17 @@ function normalizeLabels(labels: IssueRow['labels']) {
   try {
     const parsed = JSON.parse(labels);
     return Array.isArray(parsed) ? parsed.filter((label): label is string => typeof label === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function normalizeStringArray(value: string[] | string | null | undefined) {
+  if (Array.isArray(value)) return value.filter((item): item is string => typeof item === 'string');
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : [];
   } catch {
     return [];
   }

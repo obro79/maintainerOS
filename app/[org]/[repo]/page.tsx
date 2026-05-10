@@ -13,7 +13,6 @@ export default async function RepoPage({ params }: Props) {
   const scenario = getDemoScenario(cookieStore.get(DEMO_SCENARIO_COOKIE)?.value);
   const repository = getMaintainerOSRepository();
   const dashboard = await repository.getDashboard(`${org}/${repo}`);
-  const issueDetail =
-    (await repository.getIssueDetail(`${org}/${repo}`, scenario.targetIssueNumber)) ?? dashboard.selectedIssue;
-  return <RepoDashboard org={org} repo={repo} dashboard={{ ...dashboard, selectedIssue: issueDetail }} />;
+  const selectedIssue = await repository.getIssueDetail(`${org}/${repo}`, scenario.targetIssueNumber);
+  return <RepoDashboard org={org} repo={repo} dashboard={selectedIssue ? { ...dashboard, selectedIssue } : dashboard} />;
 }

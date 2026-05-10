@@ -1,4 +1,5 @@
 import { EvidenceBadge } from './evidence-badge';
+import { ContextPackPanel } from './context-pack-panel';
 import type React from 'react';
 import { ROUTE_LABEL } from '@/lib/maintaineros/types';
 import type { IssueDetailViewModel } from '@/lib/maintaineros/types';
@@ -102,54 +103,13 @@ export function IssueArtifactStack({ issue }: { issue: IssueDetailViewModel | nu
       </ArtifactSection>
 
       <ArtifactSection title="Nia context pack" sourceState={issue.contextPack?.sourceState}>
-        {issue.contextPack ? (
-          <div>
-            <p className="text-sm text-zinc-300">{issue.contextPack.summary}</p>
-            <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-zinc-500">
-              <span>Status: {issue.contextPack.status}</span>
-              <span>Sources: {issue.contextPack.sourceCount}</span>
-              <span>Confidence: {Math.round(issue.contextPack.confidence * 100)}%</span>
-            </div>
-            {issue.contextPack.errorMessage && <p className="mt-2 text-xs text-amber-300">{issue.contextPack.errorMessage}</p>}
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-700">Top citations</p>
-                <div className="mt-2 space-y-2">
-                  {issue.contextPack.citations.slice(0, 4).map((citation) => (
-                    <div key={citation.id} className="rounded-lg border border-white/6 p-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="truncate text-xs font-medium text-zinc-300">{citation.title}</p>
-                        <span className="text-[10px] uppercase text-zinc-600">{citation.kind}</span>
-                      </div>
-                      {citation.pathOrUrl && <p className="mt-1 truncate text-[10px] text-zinc-600">{citation.pathOrUrl}</p>}
-                      <p className="mt-1 text-xs leading-relaxed text-zinc-500">{citation.snippet}</p>
-                    </div>
-                  ))}
-                  {issue.contextPack.citations.length === 0 && <p className="text-xs text-zinc-600">No citations returned.</p>}
-                </div>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-700">Suggested commands</p>
-                <div className="mt-2 space-y-2">
-                  {issue.contextPack.suggestedCommands.map((command) => (
-                    <code key={command} className="block rounded-lg border border-white/6 bg-white/[0.02] px-2 py-1.5 text-xs text-zinc-400">
-                      {command}
-                    </code>
-                  ))}
-                  {issue.contextPack.suggestedCommands.length === 0 && <p className="text-xs text-zinc-600">No commands suggested.</p>}
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <p className="text-sm text-zinc-300">No context pack is attached because this issue route does not need repo-grounding context yet.</p>
-        )}
+        <ContextPackPanel contextPack={issue.contextPack} />
       </ArtifactSection>
 
       <ArtifactSection title="Daytona sandbox" sourceState={issue.sandboxExecutions[0]?.sourceState}>
         {issue.sandboxExecutions.length > 0 ? (
-          <div className="space-y-4">
-            <p className="text-xs text-amber-300">Sandbox output is execution evidence only. Greptile verification decides correctness in Phase 5.</p>
+          <div className="space-y-3">
+            <p className="mt-2 text-xs text-amber-300">Sandbox output is execution evidence only. Greptile verification decides correctness in Phase 5.</p>
             {issue.sandboxExecutions.map((attempt, index) => (
               <div key={attempt.id} className="rounded-lg border border-white/6 p-3">
                 <p className="text-sm text-zinc-300">{attempt.logSummary}</p>
@@ -246,6 +206,7 @@ export function IssueArtifactStack({ issue }: { issue: IssueDetailViewModel | nu
                   <span>Claim: {issue.paymentArtifact.claimId ?? 'pending'}</span>
                 </div>
                 {issue.paymentArtifact.taskUrl && <a className="mt-2 inline-flex text-xs text-blue-300" href={issue.paymentArtifact.taskUrl}>Open Clustly task</a>}
+                {issue.paymentArtifact.artifactUrl && <a className="ml-3 mt-2 inline-flex text-xs text-blue-300" href={issue.paymentArtifact.artifactUrl}>Release artifact</a>}
               </>
             ) : (
               <p className="text-sm text-zinc-300">Bounty route selected, but no Clustly task artifact is attached yet.</p>

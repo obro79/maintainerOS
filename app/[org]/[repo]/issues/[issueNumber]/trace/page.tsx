@@ -20,6 +20,7 @@ export default async function IssueTracePage({ params }: Props) {
       eyebrow={`${org}/${repo} · trace`}
       title={`Issue #${issueNumber} Trace`}
       description="Historical ledger for import, route, model run, context pack, sandbox attempts, verification, payout gates, and reroutes."
+      repository={dashboard.repository}
       providerStatuses={dashboard.providerStatuses}
     >
       <Link className="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-zinc-400" href={`/${org}/${repo}/issues/${issueNumber}`}>

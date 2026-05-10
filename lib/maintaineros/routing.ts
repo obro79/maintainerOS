@@ -28,6 +28,13 @@ export interface ModelSelection {
   reason: string;
 }
 
+export interface ModelSelectionOptions {
+  priorFailures?: number;
+  verificationStatus?: 'pending' | 'passed' | 'failed' | 'stale' | null;
+  fallbackReason?: string | null;
+  routePolicy?: Pick<RoutePolicyViewModel, 'automationAllowed' | 'requiresHumanReview' | 'requiresPaidWork'> | null;
+}
+
 export interface RoutePolicyInput {
   route: ExecutionRoute;
   complexityScore: number;
@@ -173,7 +180,18 @@ export function isAiSafe(input: RoutePolicyInput) {
   return evaluateRoutePolicy(input).automationAllowed;
 }
 
-export function selectClodModel(decision: RouteDecision, priorFailures = 0): ModelSelection {
+export function selectClodModel(decision: RouteDecision, options: number | ModelSelectionOptions = 0): ModelSelection {
+  const selection = typeof options === 'number' ? { priorFailures: options } : options;
+  const priorFailures = selection.priorFailures ?? 0;
+
+  if (selection.fallbackReason) {
+    return {
+      tier: 'premium-fallback',
+      model: process.env.CLOD_PREMIUM_FALLBACK_MODEL || 'Claude Opus 4.5',
+      reason: `Explicit fallback requested after provider/runtime failure: ${selection.fallbackReason}`,
+    };
+  }
+
   if (priorFailures >= 2 || decision.riskScore >= 8) {
     return {
       tier: 'deep',
@@ -182,11 +200,17 @@ export function selectClodModel(decision: RouteDecision, priorFailures = 0): Mod
     };
   }
 
-  if (decision.complexityScore >= 6 || decision.confidence < 0.8) {
+  if (
+    decision.complexityScore >= 6 ||
+    decision.confidence < 0.8 ||
+    selection.verificationStatus === 'failed' ||
+    selection.verificationStatus === 'stale' ||
+    selection.routePolicy?.requiresPaidWork === true
+  ) {
     return {
       tier: 'balanced',
       model: process.env.CLOD_BALANCED_MODEL || 'GPT 4o',
-      reason: 'Moderate complexity or lower confidence needs a balanced model for routing rationale.',
+      reason: 'Moderate complexity, lower confidence, failed verification, stale verification, or paid-work routing needs a balanced model for routing rationale.',
     };
   }
 

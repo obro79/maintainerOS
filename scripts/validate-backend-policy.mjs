@@ -7,8 +7,19 @@ const files = {
   nia: readFileSync('lib/maintaineros/nia-context.ts', 'utf8'),
   daytona: readFileSync('lib/maintaineros/daytona.ts', 'utf8'),
   neonRepository: readFileSync('lib/maintaineros/neon-repository.ts', 'utf8'),
+  postgres: readFileSync('lib/maintaineros/postgres.ts', 'utf8'),
+  workflowState: readFileSync('lib/maintaineros/workflow-state.ts', 'utf8'),
+  greptile: readFileSync('lib/maintaineros/greptile.ts', 'utf8'),
+  payments: readFileSync('lib/maintaineros/payments.ts', 'utf8'),
   verification: readFileSync('lib/maintaineros/verification.ts', 'utf8'),
   payout: readFileSync('lib/maintaineros/payout.ts', 'utf8'),
+  linkPrRoute: readFileSync('app/api/maintaineros/link-pr/route.ts', 'utf8'),
+  verifyPrRoute: readFileSync('app/api/maintaineros/verify-pr/route.ts', 'utf8'),
+  clustlyReleaseRoute: readFileSync('app/api/maintaineros/clustly/release/route.ts', 'utf8'),
+  prGates: readFileSync('lib/maintaineros/pr-gates.ts', 'utf8'),
+  clod: readFileSync('lib/maintaineros/clod.ts', 'utf8'),
+  clodRunEvidence: readFileSync('lib/maintaineros/clod-run-evidence.ts', 'utf8'),
+  aiAttempts: readFileSync('lib/maintaineros/ai-attempts.ts', 'utf8'),
 };
 
 assertIncludes(files.routing, 'evaluateRoutePolicy', 'routing exports the central route policy evaluator');
@@ -50,6 +61,56 @@ assertIncludes(files.verification, 'verification.verifiedSha !== verification.cu
 assertIncludes(files.verification, "verification.status === 'stale'", 'explicit stale verification status remains blocking');
 assertIncludes(files.verification, "effectiveStatus = isStale ? 'stale' : status", 'stale verification forces stale effective status');
 assertIncludes(files.payout, 'isVerificationStale(issue.verification)', 'payout gate blocks stale verification');
+for (const table of ['maintaineros_pull_requests', 'maintaineros_verification_runs', 'maintaineros_bounties', 'maintaineros_payment_artifacts']) {
+  assertIncludes(files.postgres, table, `runtime schema includes ${table}`);
+}
+assertIncludes(files.workflowState, 'getWorkflowArtifacts', 'live repository can hydrate durable workflow artifacts');
+assertIncludes(files.neonRepository, 'getWorkflowArtifacts', 'live issue detail reads durable workflow artifacts');
+assertIncludes(files.linkPrRoute, 'persistPullRequest', 'PR linking persists a durable PR artifact');
+assertIncludes(files.linkPrRoute, 'authorizeWorkflowMutation', 'PR linking requires workflow mutation authorization');
+assertIncludes(files.linkPrRoute, 'must belong to the requested repositoryId', 'PR linking rejects cross-repository PR references');
+assertIncludes(files.verifyPrRoute, 'verifyPullRequestWithGreptile', 'verification endpoint uses the Greptile provider adapter');
+assertIncludes(files.verifyPrRoute, 'persistVerification', 'verification endpoint persists Greptile results');
+assertIncludes(files.verifyPrRoute, 'authorizeWorkflowMutation', 'verification endpoint requires workflow mutation authorization');
+assertIncludes(files.greptile, 'GREPTILE_API_KEY', 'Greptile adapter blocks when credentials are missing');
+assertIncludes(files.payments, 'LiveClustlyProvider', 'Clustly live provider exists');
+assertIncludes(files.clustlyReleaseRoute, 'authorizeWorkflowMutation', 'Clustly release endpoint requires workflow mutation authorization');
+assertIncludes(files.clustlyReleaseRoute, 'canReleasePayout', 'Clustly release endpoint checks payout gate before provider release');
+assertIncludes(files.clustlyReleaseRoute, 'blocked: true', 'Clustly release endpoint returns blocked state without release when gate fails');
+
+assertIncludes(files.types, 'authorOwnerType', 'PR link model distinguishes automation, human, and unknown owners');
+assertIncludes(files.types, 'automationOwned: boolean', 'PR link model exposes automation ownership');
+assertIncludes(files.postgres, 'maintaineros_pull_requests', 'runtime schema stores durable PR links');
+assertIncludes(files.postgres, 'author_owner_type text not null default', 'runtime PR schema stores owner type');
+assertIncludes(files.postgres, 'automation_owned boolean not null default false', 'runtime PR schema stores automation ownership');
+assertIncludes(files.postgres, 'maintaineros_verification_runs', 'runtime schema stores durable Greptile verification runs');
+assertIncludes(files.postgres, 'files_inspected jsonb not null default', 'Greptile schema stores inspected files');
+assertIncludes(files.postgres, 'blocking_findings jsonb not null default', 'Greptile schema stores findings');
+assertIncludes(files.verification, 'buildGreptileVerificationAdapterResult', 'Greptile adapter normalizes durable verification runs');
+assertIncludes(files.neonRepository, 'getLatestPullRequest', 'live repository hydrates persisted PR links');
+assertIncludes(files.neonRepository, 'getLatestVerification', 'live repository hydrates persisted Greptile runs');
+
+assertIncludes(files.prGates, 'evaluateSafeSquashMerge', 'safe squash merge decision helper exists');
+assertIncludes(files.prGates, 'not_automation_owned', 'safe merge blocks human and unknown PRs');
+assertIncludes(files.prGates, 'required_checks_not_passed', 'safe merge explains required check failures');
+assertIncludes(files.prGates, 'human_commits_present', 'safe merge blocks human commits on automation branches');
+assertIncludes(files.prGates, 'branch_protection_blocks_squash', 'safe merge respects branch protection');
+assertIncludes(files.prGates, 'planFailedPrReroute', 'failed PR reroute decision helper exists');
+assertIncludes(files.prGates, 'human_pr_untouched', 'failed PR reroute leaves human PRs untouched');
+assertIncludes(files.prGates, 'preserve_trace', 'failed PR reroute preserves trace evidence');
+assertIncludes(files.prGates, 'reroute_clustly', 'failed PR reroute can target CLUSTLY');
+assertIncludes(files.prGates, 'reroute_dev', 'failed PR reroute can target DEV');
+
+assertIncludes(files.routing, 'fallbackReason?: string | null', 'CLŌD model policy has explicit fallback selection input');
+assertIncludes(files.routing, "tier: 'premium-fallback'", 'premium fallback tier is explicit, not default');
+assertIncludes(files.clodRunEvidence, 'buildClodRunEvidenceMeta', 'CLŌD run metadata builder exists');
+assertIncludes(files.clodRunEvidence, 'estimatedCostCents', 'CLŌD run evidence includes estimated cost');
+assertIncludes(files.clodRunEvidence, 'premiumBaselineCents', 'CLŌD run evidence includes premium baseline');
+assertIncludes(files.clodRunEvidence, 'inputTokens', 'CLŌD run evidence includes token counts');
+assertIncludes(files.aiAttempts, 'buildAiSandboxAttemptResult', 'AI sandbox attempt recorder exists');
+assertIncludes(files.aiAttempts, "status: 'blocked'", 'AI attempt recorder returns structured blocked results');
+assertIncludes(files.aiAttempts, 'automationOwned: true', 'AI attempt recorder creates automation-owned PR artifacts');
+assertIncludes(files.neonRepository, 'buildAiSandboxAttemptResult', 'live repository uses AI attempt recorder');
 
 console.log('MaintainerOS backend policy check passed.');
 

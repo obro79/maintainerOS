@@ -28,3 +28,12 @@ export function getAuthConfig(): AuthConfig {
     serverKeyConfigured,
   };
 }
+
+export function authorizeWorkflowMutation(request: Request) {
+  if (process.env.AUTH_BYPASS_DEV === 'true') return null;
+  const expected = process.env.MAINTAINEROS_WORKFLOW_API_TOKEN;
+  if (!expected) return 'MAINTAINEROS_WORKFLOW_API_TOKEN is required for workflow mutation endpoints.';
+  const authorization = request.headers.get('authorization') ?? '';
+  const token = authorization.replace(/^Bearer\s+/i, '').trim();
+  return token && token === expected ? null : 'Invalid workflow mutation token.';
+}

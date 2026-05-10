@@ -1,6 +1,7 @@
 import { strict as assert } from 'node:assert';
-import { FixtureClustlyProvider } from '../lib/maintaineros/payments.js';
+import { FixtureClustlyProvider, LiveClustlyProvider } from '../lib/maintaineros/payments.js';
 import { canReleasePayout } from '../lib/maintaineros/payout.js';
+import { evaluateSafeSquashMerge, planFailedPrReroute } from '../lib/maintaineros/pr-gates.js';
 import { isVerificationStale } from '../lib/maintaineros/verification.js';
 import type { IssueDetailViewModel, VerificationViewModel } from '../lib/maintaineros/types.js';
 
@@ -77,11 +78,14 @@ function issue(overrides: Partial<IssueDetailViewModel> = {}): IssueDetailViewMo
       provider: 'github',
       number: 44,
       title: 'Fix issue',
+      baseBranch: 'main',
       branchName: 'fix/issue',
       headSha: 'sha-current',
       status: 'open',
       htmlUrl: 'https://github.com/acme/repo/pull/44',
-      authorLogin: 'contributor',
+      authorLogin: 'codex-agent',
+      authorOwnerType: 'automation',
+      automationOwned: true,
     },
     verification: verification(),
     bounty: {
@@ -128,6 +132,65 @@ assert.ok(canReleasePayout(unfunded).reasonCodes.includes('bounty_not_funded'));
 const noMaintainerAcceptance = issue({ bounty: { ...issue().bounty!, maintainerAccepted: false } });
 assert.ok(canReleasePayout(noMaintainerAcceptance).reasonCodes.includes('maintainer_not_accepted'));
 
+const mergeReady = evaluateSafeSquashMerge({
+  pullRequest: releasable.pullRequest,
+  verification: releasable.verification,
+  requiredChecks: [{ name: 'ci', status: 'passed' }],
+  branchCurrent: true,
+  hasHumanCommits: false,
+  branchProtectionAllowsSquash: true,
+});
+assert.equal(mergeReady.canSquashMerge, true);
+assert.equal(mergeReady.action, 'squash-merge');
+
+const humanPr = issue({
+  pullRequest: {
+    ...issue().pullRequest!,
+    authorLogin: 'human-maintainer',
+    authorOwnerType: 'human',
+    automationOwned: false,
+  },
+});
+const humanMerge = evaluateSafeSquashMerge({
+  pullRequest: humanPr.pullRequest,
+  verification: humanPr.verification,
+  requiredChecks: [{ name: 'ci', status: 'passed' }],
+  branchCurrent: true,
+  hasHumanCommits: false,
+  branchProtectionAllowsSquash: true,
+});
+assert.ok(humanMerge.reasonCodes.includes('not_automation_owned'));
+
+const staleMerge = evaluateSafeSquashMerge({
+  pullRequest: stale.pullRequest,
+  verification: stale.verification,
+  requiredChecks: [{ name: 'ci', status: 'passed' }],
+  branchCurrent: true,
+  hasHumanCommits: false,
+  branchProtectionAllowsSquash: true,
+});
+assert.ok(staleMerge.reasonCodes.includes('verification_stale'));
+
+const failedPrReroute = planFailedPrReroute({
+  issue: failedVerification,
+  pullRequest: failedVerification.pullRequest,
+  verification: failedVerification.verification,
+  branchDeletionAllowed: true,
+});
+assert.equal(failedPrReroute.action, 'close-and-reroute');
+assert.equal(failedPrReroute.shouldClosePullRequest, true);
+assert.ok(failedPrReroute.reasonCodes.includes('preserve_trace'));
+
+const humanReroute = planFailedPrReroute({
+  issue: humanPr,
+  pullRequest: humanPr.pullRequest,
+  verification: verification({ status: 'failed', blockingFindings: ['Human PR failed checks.'], blockingFindingsCount: 1 }),
+  branchDeletionAllowed: true,
+});
+assert.equal(humanReroute.action, 'untouched');
+assert.equal(humanReroute.shouldClosePullRequest, false);
+assert.ok(humanReroute.reasonCodes.includes('human_pr_untouched'));
+
 async function main() {
   const provider = new FixtureClustlyProvider();
   const releasedTask = await provider.createTask(releasable);
@@ -152,6 +215,23 @@ async function main() {
     paymentArtifact: null,
   });
   assert.equal(await provider.createTask(nonBounty), null);
+
+  let liveCalls = 0;
+  const liveProvider = new LiveClustlyProvider(async () => {
+    liveCalls += 1;
+    return new Response(JSON.stringify({ id: 'task-live-1', status: 'posted', url: 'https://clustly.ai/tasks/task-live-1' }), { status: 200 });
+  });
+  await assert.rejects(
+    () => liveProvider.approveClaim('task-live-1', 'claim-live-1', stale),
+    /Clustly release blocked/,
+  );
+  assert.equal(liveCalls, 0);
+
+  process.env.CLUSTLY_AGENT_KEY = 'test-agent-key';
+  const liveTask = await liveProvider.createTask(releasable);
+  assert.equal(liveTask?.taskId, 'task-live-1');
+  assert.equal(liveTask?.status, 'posted');
+  assert.equal(liveCalls, 1);
 
   console.log('Verification and payout smoke checks passed.');
 }

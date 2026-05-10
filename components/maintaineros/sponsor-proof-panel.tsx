@@ -2,6 +2,16 @@ import { EvidenceBadge } from './evidence-badge';
 import type React from 'react';
 import type { SponsorProofViewModel } from '@/lib/maintaineros/types';
 
+const DEMO_RELEVANCE: Record<SponsorProofViewModel['provider'], string> = {
+  github: 'Shows the source issue and PR evidence MaintainerOS routes from.',
+  neon: 'Shows whether the demo is reading durable live data or falling back to fixtures.',
+  clod: 'Shows the model, tier, cost, and routing artifact behind the work order.',
+  nia: 'Shows the context citations that explain why the retry has better evidence.',
+  daytona: 'Shows sandbox execution, command output, touched files, and PR handoff.',
+  greptile: 'Shows the verification boundary for completion, stale proof, and payout.',
+  clustly: 'Shows task funding, claim state, release readiness, and payout gate state.',
+};
+
 export function SponsorProofPanel({ proof }: { proof: SponsorProofViewModel }) {
   return (
     <section className="rounded-xl border border-white/8 bg-[#080d14] p-4">
@@ -13,6 +23,9 @@ export function SponsorProofPanel({ proof }: { proof: SponsorProofViewModel }) {
         <EvidenceBadge sourceState={proof.sourceState} />
       </div>
       <p className="mt-3 text-sm leading-relaxed text-zinc-500">{proof.summary}</p>
+      <p className="mt-2 rounded-lg border border-white/6 bg-white/[0.02] px-3 py-2 text-xs leading-relaxed text-zinc-500">
+        Demo relevance: {DEMO_RELEVANCE[proof.provider]}
+      </p>
       <p className="mt-3 text-xs text-zinc-600">
         Status: {proof.status}{proof.runId ? ` · Run: ${proof.runId}` : ''}{proof.occurredAt ? ` · ${new Date(proof.occurredAt).toISOString()}` : ''}
       </p>

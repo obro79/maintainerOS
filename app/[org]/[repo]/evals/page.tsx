@@ -23,6 +23,7 @@ export default async function EvalsPage({ params }: Props) {
       eyebrow={`${org}/${repo} · evals`}
       title="Evals"
       description="Baseline versus Nia-enriched completion, verification pass rate, retries, escalation, and cost per verified fix."
+      repository={dashboard.repository}
       providerStatuses={dashboard.providerStatuses}
     >
       <div className="grid gap-3 md:grid-cols-4">
@@ -78,7 +79,10 @@ export default async function EvalsPage({ params }: Props) {
               <div key={row.id} className="grid grid-cols-[1.3fr_0.9fr_0.8fr_0.8fr_0.8fr_1fr_0.8fr] items-center gap-3 px-3 py-3 text-sm">
                 <div className="min-w-0">
                   <p className="truncate text-zinc-200">{row.label}</p>
-                  <p className="mt-1 text-xs text-zinc-600">{row.issueNumber ? `#${row.issueNumber}` : row.sampleId ?? row.id} · {row.pairState ?? 'unpaired'}</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <p className="text-xs text-zinc-600">{row.issueNumber ? `#${row.issueNumber}` : row.sampleId ?? row.id} · {row.pairState ?? 'unpaired'}</p>
+                    {row.sourceState && <EvidenceBadge sourceState={row.sourceState} />}
+                  </div>
                 </div>
                 <div>
                   <p className="text-xs text-zinc-400">{row.contextMode}</p>
@@ -98,7 +102,12 @@ export default async function EvalsPage({ params }: Props) {
                   <Link className="text-zinc-400 hover:text-white" href={resolveEvidenceHref(row.traceUrl, org, repo, row)}>
                     Trace
                   </Link>
-                  <Link className="text-zinc-400 hover:text-white" href={resolveEvidenceHref(row.verificationUrl, org, repo, row)}>
+                  {row.contextPackId && (
+                    <Link className="text-zinc-400 hover:text-white" href={resolveEvidenceHref(row.traceUrl, org, repo, row)}>
+                      Context
+                    </Link>
+                  )}
+                  <Link className="text-zinc-400 hover:text-white" href={resolveVerificationHref(row.verificationUrl, org, repo, row)}>
                     Verify
                   </Link>
                 </div>
@@ -157,6 +166,18 @@ function resolveEvidenceHref(
   repo: string,
   row: EvaluationRow,
 ) {
-  if (!href) return `/${org}/${repo}/issues/${row.issueNumber ?? 41}/trace`;
+  if (!href && row.issueNumber) return `/${org}/${repo}/issues/${row.issueNumber}/trace`;
+  if (!href) return `/${org}/${repo}/evals`;
+  return href.replace('/maintaineros-demo-large/', `/${org}/${repo}/`);
+}
+
+function resolveVerificationHref(
+  href: string | undefined,
+  org: string,
+  repo: string,
+  row: EvaluationRow,
+) {
+  if (!href && row.issueNumber) return `/${org}/${repo}/issues/${row.issueNumber}/trace`;
+  if (!href) return `/${org}/${repo}/verification`;
   return href.replace('/maintaineros-demo-large/', `/${org}/${repo}/`);
 }

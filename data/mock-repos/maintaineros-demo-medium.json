@@ -1,0 +1,1071 @@
+{
+  "repository": {
+    "id": "maintaineros-demo-medium",
+    "provider": "github",
+    "owner": "maintaineros",
+    "name": "hooksmith",
+    "fullName": "maintaineros/hooksmith",
+    "defaultBranch": "main",
+    "visibility": "public",
+    "htmlUrl": "https://github.com/maintaineros/hooksmith",
+    "description": "React hooks utility repo with mixed bugs, docs gaps, and feature requests.",
+    "generatedAt": "2026-05-07T00:00:00.000Z"
+  },
+  "summary": {
+    "issueCount": 20,
+    "routes": {
+      "agent-solvable": 9,
+      "maintainer-review": 7,
+      "bounty-worthy": 2,
+      "close-or-clarify": 2
+    }
+  },
+  "issues": [
+    {
+      "id": "maintaineros-demo-medium-1",
+      "repositoryId": "maintaineros-demo-medium",
+      "number": 1,
+      "title": "Incorrect cache invalidation when webhook replay changes",
+      "body": "Seeded issue for maintaineros/hooksmith.\nArea: webhook replay.\nMaintainerOS route target: agent-solvable.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-1",
+      "labels": [
+        "bug",
+        "cache"
+      ],
+      "commentsCount": 0,
+      "htmlUrl": "https://github.com/maintaineros/hooksmith/issues/1",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-04-01T00:00:00.000Z",
+      "classification": {
+        "route": "agent-solvable",
+        "complexityScore": 3,
+        "riskScore": 3,
+        "confidence": 0.72,
+        "rationale": "agent-solvable because complexity=3, risk=3, labels=bug, cache."
+      },
+      "workOrder": {
+        "title": "Work order for #1",
+        "status": "ready",
+        "assigneeKind": "agent",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/webhook-replay.ts",
+          "tests/webhook-replay.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": {
+        "provider": "greptile",
+        "status": "pending",
+        "summary": "Fixture verification result for demo proof panel."
+      },
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "fast-small",
+        "purpose": "routing",
+        "estimatedCostCents": 1,
+        "latencyMs": 790,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-medium-2",
+      "repositoryId": "maintaineros-demo-medium",
+      "number": 2,
+      "title": "Document invoice sync setup for new contributors",
+      "body": "Seeded issue for maintaineros/hooksmith.\nArea: invoice sync.\nMaintainerOS route target: agent-solvable.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-2",
+      "labels": [
+        "documentation",
+        "good first issue"
+      ],
+      "commentsCount": 7,
+      "htmlUrl": "https://github.com/maintaineros/hooksmith/issues/2",
+      "createdAt": "2026-01-02T00:00:00.000Z",
+      "updatedAt": "2026-04-02T00:00:00.000Z",
+      "classification": {
+        "route": "agent-solvable",
+        "complexityScore": 2,
+        "riskScore": 2,
+        "confidence": 0.73,
+        "rationale": "agent-solvable because complexity=2, risk=2, labels=documentation, good first issue."
+      },
+      "workOrder": {
+        "title": "Work order for #2",
+        "status": "ready",
+        "assigneeKind": "agent",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/invoice-sync.ts",
+          "tests/invoice-sync.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": {
+        "provider": "greptile",
+        "status": "passed",
+        "summary": "Fixture verification result for demo proof panel."
+      },
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "fast-small",
+        "purpose": "routing",
+        "estimatedCostCents": 1,
+        "latencyMs": 660,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-medium-3",
+      "repositoryId": "maintaineros-demo-medium",
+      "number": 3,
+      "title": "Add regression coverage for pagination edge cases",
+      "body": "Seeded issue for maintaineros/hooksmith.\nArea: pagination.\nMaintainerOS route target: agent-solvable.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-3",
+      "labels": [
+        "tests",
+        "help wanted"
+      ],
+      "commentsCount": 14,
+      "htmlUrl": "https://github.com/maintaineros/hooksmith/issues/3",
+      "createdAt": "2026-01-03T00:00:00.000Z",
+      "updatedAt": "2026-04-03T00:00:00.000Z",
+      "classification": {
+        "route": "agent-solvable",
+        "complexityScore": 4,
+        "riskScore": 2,
+        "confidence": 0.74,
+        "rationale": "agent-solvable because complexity=4, risk=2, labels=tests, help wanted."
+      },
+      "workOrder": {
+        "title": "Work order for #3",
+        "status": "ready",
+        "assigneeKind": "agent",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/pagination.ts",
+          "tests/pagination.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": {
+        "provider": "greptile",
+        "status": "passed",
+        "summary": "Fixture verification result for demo proof panel."
+      },
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "balanced",
+        "purpose": "routing",
+        "estimatedCostCents": 4,
+        "latencyMs": 920,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-medium-4",
+      "repositoryId": "maintaineros-demo-medium",
+      "number": 4,
+      "title": "Untangle rate limits dependency boundary",
+      "body": "Seeded issue for maintaineros/hooksmith.\nArea: rate limits.\nMaintainerOS route target: maintainer-review.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-4",
+      "labels": [
+        "refactor",
+        "maintainer-review"
+      ],
+      "commentsCount": 21,
+      "htmlUrl": "https://github.com/maintaineros/hooksmith/issues/4",
+      "createdAt": "2026-01-04T00:00:00.000Z",
+      "updatedAt": "2026-04-04T00:00:00.000Z",
+      "classification": {
+        "route": "maintainer-review",
+        "complexityScore": 7,
+        "riskScore": 8,
+        "confidence": 0.75,
+        "rationale": "maintainer-review because complexity=7, risk=8, labels=refactor, maintainer-review."
+      },
+      "workOrder": {
+        "title": "Work order for #4",
+        "status": "ready",
+        "assigneeKind": "maintainer",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/rate-limits.ts",
+          "tests/rate-limits.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": null,
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "deep-reasoner",
+        "purpose": "routing",
+        "estimatedCostCents": 12,
+        "latencyMs": 1310,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-medium-5",
+      "repositoryId": "maintaineros-demo-medium",
+      "number": 5,
+      "title": "Support configurable token refresh policies",
+      "body": "Seeded issue for maintaineros/hooksmith.\nArea: token refresh.\nMaintainerOS route target: maintainer-review.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-5",
+      "labels": [
+        "enhancement",
+        "needs design"
+      ],
+      "commentsCount": 5,
+      "htmlUrl": "https://github.com/maintaineros/hooksmith/issues/5",
+      "createdAt": "2026-01-05T00:00:00.000Z",
+      "updatedAt": "2026-04-05T00:00:00.000Z",
+      "classification": {
+        "route": "maintainer-review",
+        "complexityScore": 9,
+        "riskScore": 6,
+        "confidence": 0.76,
+        "rationale": "maintainer-review because complexity=9, risk=6, labels=enhancement, needs design."
+      },
+      "workOrder": {
+        "title": "Work order for #5",
+        "status": "ready",
+        "assigneeKind": "maintainer",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/token-refresh.ts",
+          "tests/token-refresh.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": null,
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "deep-reasoner",
+        "purpose": "routing",
+        "estimatedCostCents": 12,
+        "latencyMs": 1570,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-medium-6",
+      "repositoryId": "maintaineros-demo-medium",
+      "number": 6,
+      "title": "Review branch previews permissions after dependency upgrade",
+      "body": "Seeded issue for maintaineros/hooksmith.\nArea: branch previews.\nMaintainerOS route target: maintainer-review.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-6",
+      "labels": [
+        "security",
+        "priority"
+      ],
+      "commentsCount": 12,
+      "htmlUrl": "https://github.com/maintaineros/hooksmith/issues/6",
+      "createdAt": "2026-01-06T00:00:00.000Z",
+      "updatedAt": "2026-04-06T00:00:00.000Z",
+      "classification": {
+        "route": "maintainer-review",
+        "complexityScore": 8,
+        "riskScore": 10,
+        "confidence": 0.77,
+        "rationale": "maintainer-review because complexity=8, risk=10, labels=security, priority."
+      },
+      "workOrder": {
+        "title": "Work order for #6",
+        "status": "ready",
+        "assigneeKind": "maintainer",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/branch-previews.ts",
+          "tests/branch-previews.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": null,
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "deep-reasoner",
+        "purpose": "routing",
+        "estimatedCostCents": 12,
+        "latencyMs": 1440,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-medium-7",
+      "repositoryId": "maintaineros-demo-medium",
+      "number": 7,
+      "title": "Implement schema migrations adapter with acceptance test suite",
+      "body": "Seeded issue for maintaineros/hooksmith.\nArea: schema migrations.\nMaintainerOS route target: bounty-worthy.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-7",
+      "labels": [
+        "bounty",
+        "integration"
+      ],
+      "commentsCount": 19,
+      "htmlUrl": "https://github.com/maintaineros/hooksmith/issues/7",
+      "createdAt": "2026-01-07T00:00:00.000Z",
+      "updatedAt": "2026-04-07T00:00:00.000Z",
+      "classification": {
+        "route": "bounty-worthy",
+        "complexityScore": 6,
+        "riskScore": 5,
+        "confidence": 0.78,
+        "rationale": "bounty-worthy because complexity=6, risk=5, labels=bounty, integration."
+      },
+      "workOrder": {
+        "title": "Work order for #7",
+        "status": "ready",
+        "assigneeKind": "contributor",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/schema-migrations.ts",
+          "tests/schema-migrations.test.ts"
+        ]
+      },
+      "bounty": {
+        "status": "paid",
+        "amountCents": 45000,
+        "currency": "USD",
+        "rationale": "Integration-shaped work with bounded acceptance checks."
+      },
+      "verification": {
+        "provider": "greptile",
+        "status": "passed",
+        "summary": "Fixture verification result for demo proof panel."
+      },
+      "paymentArtifact": {
+        "provider": "allscale",
+        "status": "released",
+        "amountCents": 45000,
+        "currency": "USD",
+        "artifactUrl": "https://allscale.example/payments/maintaineros-demo-medium-7"
+      },
+      "modelRun": {
+        "provider": "clod",
+        "model": "balanced",
+        "purpose": "routing",
+        "estimatedCostCents": 4,
+        "latencyMs": 1180,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-medium-8",
+      "repositoryId": "maintaineros-demo-medium",
+      "number": 8,
+      "title": "Clarify vague report about worker retries failures",
+      "body": "Seeded issue for maintaineros/hooksmith.\nArea: worker retries.\nMaintainerOS route target: close-or-clarify.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-8",
+      "labels": [
+        "needs reproduction",
+        "triage"
+      ],
+      "commentsCount": 3,
+      "htmlUrl": "https://github.com/maintaineros/hooksmith/issues/8",
+      "createdAt": "2026-01-08T00:00:00.000Z",
+      "updatedAt": "2026-04-08T00:00:00.000Z",
+      "classification": {
+        "route": "close-or-clarify",
+        "complexityScore": 5,
+        "riskScore": 5,
+        "confidence": 0.79,
+        "rationale": "close-or-clarify because complexity=5, risk=5, labels=needs reproduction, triage."
+      },
+      "workOrder": {
+        "title": "Work order for #8",
+        "status": "blocked",
+        "assigneeKind": "unassigned",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/worker-retries.ts",
+          "tests/worker-retries.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": null,
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "balanced",
+        "purpose": "routing",
+        "estimatedCostCents": 4,
+        "latencyMs": 1050,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-medium-9",
+      "repositoryId": "maintaineros-demo-medium",
+      "number": 9,
+      "title": "Incorrect cache invalidation when error reporting changes",
+      "body": "Seeded issue for maintaineros/hooksmith.\nArea: error reporting.\nMaintainerOS route target: agent-solvable.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-9",
+      "labels": [
+        "bug",
+        "cache"
+      ],
+      "commentsCount": 10,
+      "htmlUrl": "https://github.com/maintaineros/hooksmith/issues/9",
+      "createdAt": "2026-01-09T00:00:00.000Z",
+      "updatedAt": "2026-04-09T00:00:00.000Z",
+      "classification": {
+        "route": "agent-solvable",
+        "complexityScore": 5,
+        "riskScore": 3,
+        "confidence": 0.8,
+        "rationale": "agent-solvable because complexity=5, risk=3, labels=bug, cache."
+      },
+      "workOrder": {
+        "title": "Work order for #9",
+        "status": "ready",
+        "assigneeKind": "agent",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/error-reporting.ts",
+          "tests/error-reporting.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": {
+        "provider": "greptile",
+        "status": "passed",
+        "summary": "Fixture verification result for demo proof panel."
+      },
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "balanced",
+        "purpose": "routing",
+        "estimatedCostCents": 4,
+        "latencyMs": 1050,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-medium-10",
+      "repositoryId": "maintaineros-demo-medium",
+      "number": 10,
+      "title": "Document typed exports setup for new contributors",
+      "body": "Seeded issue for maintaineros/hooksmith.\nArea: typed exports.\nMaintainerOS route target: agent-solvable.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-10",
+      "labels": [
+        "documentation",
+        "good first issue"
+      ],
+      "commentsCount": 17,
+      "htmlUrl": "https://github.com/maintaineros/hooksmith/issues/10",
+      "createdAt": "2026-01-10T00:00:00.000Z",
+      "updatedAt": "2026-04-10T00:00:00.000Z",
+      "classification": {
+        "route": "agent-solvable",
+        "complexityScore": 1,
+        "riskScore": 2,
+        "confidence": 0.81,
+        "rationale": "agent-solvable because complexity=1, risk=2, labels=documentation, good first issue."
+      },
+      "workOrder": {
+        "title": "Work order for #10",
+        "status": "ready",
+        "assigneeKind": "agent",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/typed-exports.ts",
+          "tests/typed-exports.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": {
+        "provider": "greptile",
+        "status": "passed",
+        "summary": "Fixture verification result for demo proof panel."
+      },
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "fast-small",
+        "purpose": "routing",
+        "estimatedCostCents": 1,
+        "latencyMs": 530,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-medium-11",
+      "repositoryId": "maintaineros-demo-medium",
+      "number": 11,
+      "title": "Add regression coverage for CLI bootstrap edge cases",
+      "body": "Seeded issue for maintaineros/hooksmith.\nArea: CLI bootstrap.\nMaintainerOS route target: agent-solvable.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-11",
+      "labels": [
+        "tests",
+        "help wanted"
+      ],
+      "commentsCount": 1,
+      "htmlUrl": "https://github.com/maintaineros/hooksmith/issues/11",
+      "createdAt": "2026-01-11T00:00:00.000Z",
+      "updatedAt": "2026-04-11T00:00:00.000Z",
+      "classification": {
+        "route": "agent-solvable",
+        "complexityScore": 3,
+        "riskScore": 2,
+        "confidence": 0.82,
+        "rationale": "agent-solvable because complexity=3, risk=2, labels=tests, help wanted."
+      },
+      "workOrder": {
+        "title": "Work order for #11",
+        "status": "ready",
+        "assigneeKind": "agent",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/CLI-bootstrap.ts",
+          "tests/CLI-bootstrap.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": {
+        "provider": "greptile",
+        "status": "passed",
+        "summary": "Fixture verification result for demo proof panel."
+      },
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "fast-small",
+        "purpose": "routing",
+        "estimatedCostCents": 1,
+        "latencyMs": 790,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-medium-12",
+      "repositoryId": "maintaineros-demo-medium",
+      "number": 12,
+      "title": "Untangle fixture loading dependency boundary",
+      "body": "Seeded issue for maintaineros/hooksmith.\nArea: fixture loading.\nMaintainerOS route target: maintainer-review.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-12",
+      "labels": [
+        "refactor",
+        "maintainer-review"
+      ],
+      "commentsCount": 8,
+      "htmlUrl": "https://github.com/maintaineros/hooksmith/issues/12",
+      "createdAt": "2026-01-12T00:00:00.000Z",
+      "updatedAt": "2026-04-12T00:00:00.000Z",
+      "classification": {
+        "route": "maintainer-review",
+        "complexityScore": 9,
+        "riskScore": 8,
+        "confidence": 0.83,
+        "rationale": "maintainer-review because complexity=9, risk=8, labels=refactor, maintainer-review."
+      },
+      "workOrder": {
+        "title": "Work order for #12",
+        "status": "ready",
+        "assigneeKind": "maintainer",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/fixture-loading.ts",
+          "tests/fixture-loading.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": null,
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "deep-reasoner",
+        "purpose": "routing",
+        "estimatedCostCents": 12,
+        "latencyMs": 1570,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-medium-13",
+      "repositoryId": "maintaineros-demo-medium",
+      "number": 13,
+      "title": "Support configurable authorization policies",
+      "body": "Seeded issue for maintaineros/hooksmith.\nArea: authorization.\nMaintainerOS route target: maintainer-review.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-13",
+      "labels": [
+        "enhancement",
+        "needs design"
+      ],
+      "commentsCount": 15,
+      "htmlUrl": "https://github.com/maintaineros/hooksmith/issues/13",
+      "createdAt": "2026-01-13T00:00:00.000Z",
+      "updatedAt": "2026-04-13T00:00:00.000Z",
+      "classification": {
+        "route": "maintainer-review",
+        "complexityScore": 8,
+        "riskScore": 6,
+        "confidence": 0.84,
+        "rationale": "maintainer-review because complexity=8, risk=6, labels=enhancement, needs design."
+      },
+      "workOrder": {
+        "title": "Work order for #13",
+        "status": "ready",
+        "assigneeKind": "maintainer",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/authorization.ts",
+          "tests/authorization.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": null,
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "deep-reasoner",
+        "purpose": "routing",
+        "estimatedCostCents": 12,
+        "latencyMs": 1440,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-medium-14",
+      "repositoryId": "maintaineros-demo-medium",
+      "number": 14,
+      "title": "Review search indexing permissions after dependency upgrade",
+      "body": "Seeded issue for maintaineros/hooksmith.\nArea: search indexing.\nMaintainerOS route target: maintainer-review.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-14",
+      "labels": [
+        "security",
+        "priority"
+      ],
+      "commentsCount": 22,
+      "htmlUrl": "https://github.com/maintaineros/hooksmith/issues/14",
+      "createdAt": "2026-01-14T00:00:00.000Z",
+      "updatedAt": "2026-04-14T00:00:00.000Z",
+      "classification": {
+        "route": "maintainer-review",
+        "complexityScore": 7,
+        "riskScore": 10,
+        "confidence": 0.85,
+        "rationale": "maintainer-review because complexity=7, risk=10, labels=security, priority."
+      },
+      "workOrder": {
+        "title": "Work order for #14",
+        "status": "ready",
+        "assigneeKind": "maintainer",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/search-indexing.ts",
+          "tests/search-indexing.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": null,
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "deep-reasoner",
+        "purpose": "routing",
+        "estimatedCostCents": 12,
+        "latencyMs": 1310,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-medium-15",
+      "repositoryId": "maintaineros-demo-medium",
+      "number": 15,
+      "title": "Implement queue draining adapter with acceptance test suite",
+      "body": "Seeded issue for maintaineros/hooksmith.\nArea: queue draining.\nMaintainerOS route target: bounty-worthy.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-15",
+      "labels": [
+        "bounty",
+        "integration"
+      ],
+      "commentsCount": 6,
+      "htmlUrl": "https://github.com/maintaineros/hooksmith/issues/15",
+      "createdAt": "2026-01-15T00:00:00.000Z",
+      "updatedAt": "2026-04-15T00:00:00.000Z",
+      "classification": {
+        "route": "bounty-worthy",
+        "complexityScore": 8,
+        "riskScore": 5,
+        "confidence": 0.86,
+        "rationale": "bounty-worthy because complexity=8, risk=5, labels=bounty, integration."
+      },
+      "workOrder": {
+        "title": "Work order for #15",
+        "status": "ready",
+        "assigneeKind": "contributor",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/queue-draining.ts",
+          "tests/queue-draining.test.ts"
+        ]
+      },
+      "bounty": {
+        "status": "funded",
+        "amountCents": 45000,
+        "currency": "USD",
+        "rationale": "Integration-shaped work with bounded acceptance checks."
+      },
+      "verification": {
+        "provider": "greptile",
+        "status": "passed",
+        "summary": "Fixture verification result for demo proof panel."
+      },
+      "paymentArtifact": {
+        "provider": "allscale",
+        "status": "ready",
+        "amountCents": 45000,
+        "currency": "USD",
+        "artifactUrl": "https://allscale.example/payments/maintaineros-demo-medium-15"
+      },
+      "modelRun": {
+        "provider": "clod",
+        "model": "deep-reasoner",
+        "purpose": "routing",
+        "estimatedCostCents": 12,
+        "latencyMs": 1440,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-medium-16",
+      "repositoryId": "maintaineros-demo-medium",
+      "number": 16,
+      "title": "Clarify vague report about dependency scanning failures",
+      "body": "Seeded issue for maintaineros/hooksmith.\nArea: dependency scanning.\nMaintainerOS route target: close-or-clarify.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-16",
+      "labels": [
+        "needs reproduction",
+        "triage"
+      ],
+      "commentsCount": 13,
+      "htmlUrl": "https://github.com/maintaineros/hooksmith/issues/16",
+      "createdAt": "2026-01-16T00:00:00.000Z",
+      "updatedAt": "2026-04-16T00:00:00.000Z",
+      "classification": {
+        "route": "close-or-clarify",
+        "complexityScore": 4,
+        "riskScore": 5,
+        "confidence": 0.87,
+        "rationale": "close-or-clarify because complexity=4, risk=5, labels=needs reproduction, triage."
+      },
+      "workOrder": {
+        "title": "Work order for #16",
+        "status": "blocked",
+        "assigneeKind": "unassigned",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/dependency-scanning.ts",
+          "tests/dependency-scanning.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": null,
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "balanced",
+        "purpose": "routing",
+        "estimatedCostCents": 4,
+        "latencyMs": 920,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-medium-17",
+      "repositoryId": "maintaineros-demo-medium",
+      "number": 17,
+      "title": "Incorrect cache invalidation when webhook replay changes",
+      "body": "Seeded issue for maintaineros/hooksmith.\nArea: webhook replay.\nMaintainerOS route target: agent-solvable.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-17",
+      "labels": [
+        "bug",
+        "cache"
+      ],
+      "commentsCount": 20,
+      "htmlUrl": "https://github.com/maintaineros/hooksmith/issues/17",
+      "createdAt": "2026-01-17T00:00:00.000Z",
+      "updatedAt": "2026-04-17T00:00:00.000Z",
+      "classification": {
+        "route": "agent-solvable",
+        "complexityScore": 4,
+        "riskScore": 3,
+        "confidence": 0.88,
+        "rationale": "agent-solvable because complexity=4, risk=3, labels=bug, cache."
+      },
+      "workOrder": {
+        "title": "Work order for #17",
+        "status": "ready",
+        "assigneeKind": "agent",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/webhook-replay.ts",
+          "tests/webhook-replay.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": {
+        "provider": "greptile",
+        "status": "passed",
+        "summary": "Fixture verification result for demo proof panel."
+      },
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "balanced",
+        "purpose": "routing",
+        "estimatedCostCents": 4,
+        "latencyMs": 920,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-medium-18",
+      "repositoryId": "maintaineros-demo-medium",
+      "number": 18,
+      "title": "Document invoice sync setup for new contributors",
+      "body": "Seeded issue for maintaineros/hooksmith.\nArea: invoice sync.\nMaintainerOS route target: agent-solvable.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-18",
+      "labels": [
+        "documentation",
+        "good first issue"
+      ],
+      "commentsCount": 4,
+      "htmlUrl": "https://github.com/maintaineros/hooksmith/issues/18",
+      "createdAt": "2026-01-18T00:00:00.000Z",
+      "updatedAt": "2026-04-18T00:00:00.000Z",
+      "classification": {
+        "route": "agent-solvable",
+        "complexityScore": 3,
+        "riskScore": 2,
+        "confidence": 0.89,
+        "rationale": "agent-solvable because complexity=3, risk=2, labels=documentation, good first issue."
+      },
+      "workOrder": {
+        "title": "Work order for #18",
+        "status": "ready",
+        "assigneeKind": "agent",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/invoice-sync.ts",
+          "tests/invoice-sync.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": {
+        "provider": "greptile",
+        "status": "passed",
+        "summary": "Fixture verification result for demo proof panel."
+      },
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "fast-small",
+        "purpose": "routing",
+        "estimatedCostCents": 1,
+        "latencyMs": 790,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-medium-19",
+      "repositoryId": "maintaineros-demo-medium",
+      "number": 19,
+      "title": "Add regression coverage for pagination edge cases",
+      "body": "Seeded issue for maintaineros/hooksmith.\nArea: pagination.\nMaintainerOS route target: agent-solvable.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-19",
+      "labels": [
+        "tests",
+        "help wanted"
+      ],
+      "commentsCount": 11,
+      "htmlUrl": "https://github.com/maintaineros/hooksmith/issues/19",
+      "createdAt": "2026-01-19T00:00:00.000Z",
+      "updatedAt": "2026-04-19T00:00:00.000Z",
+      "classification": {
+        "route": "agent-solvable",
+        "complexityScore": 2,
+        "riskScore": 2,
+        "confidence": 0.9,
+        "rationale": "agent-solvable because complexity=2, risk=2, labels=tests, help wanted."
+      },
+      "workOrder": {
+        "title": "Work order for #19",
+        "status": "ready",
+        "assigneeKind": "agent",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/pagination.ts",
+          "tests/pagination.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": {
+        "provider": "greptile",
+        "status": "passed",
+        "summary": "Fixture verification result for demo proof panel."
+      },
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "fast-small",
+        "purpose": "routing",
+        "estimatedCostCents": 1,
+        "latencyMs": 660,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-medium-20",
+      "repositoryId": "maintaineros-demo-medium",
+      "number": 20,
+      "title": "Untangle rate limits dependency boundary",
+      "body": "Seeded issue for maintaineros/hooksmith.\nArea: rate limits.\nMaintainerOS route target: maintainer-review.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-20",
+      "labels": [
+        "refactor",
+        "maintainer-review"
+      ],
+      "commentsCount": 18,
+      "htmlUrl": "https://github.com/maintaineros/hooksmith/issues/20",
+      "createdAt": "2026-01-20T00:00:00.000Z",
+      "updatedAt": "2026-04-20T00:00:00.000Z",
+      "classification": {
+        "route": "maintainer-review",
+        "complexityScore": 8,
+        "riskScore": 8,
+        "confidence": 0.91,
+        "rationale": "maintainer-review because complexity=8, risk=8, labels=refactor, maintainer-review."
+      },
+      "workOrder": {
+        "title": "Work order for #20",
+        "status": "ready",
+        "assigneeKind": "maintainer",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/rate-limits.ts",
+          "tests/rate-limits.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": null,
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "deep-reasoner",
+        "purpose": "routing",
+        "estimatedCostCents": 12,
+        "latencyMs": 1440,
+        "status": "succeeded"
+      }
+    }
+  ]
+}

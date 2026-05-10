@@ -18,6 +18,7 @@ export default async function VerificationPage({ params }: Props) {
       eyebrow={`${org}/${repo} · verification`}
       title="Greptile Verification"
       description="Verification queue for pending, passed, failed, and stale PR proof bundles."
+      repository={dashboard.repository}
       providerStatuses={dashboard.providerStatuses}
     >
       <p className="rounded-xl border border-blue-500/20 bg-blue-500/8 p-3 text-xs leading-relaxed text-blue-200">

@@ -201,13 +201,20 @@ export interface VerificationViewModel {
 
 export interface PullRequestViewModel {
   provider: 'github';
+  id?: string;
+  sourceState?: ArtifactSourceState;
+  issueId?: string;
+  workOrderId?: string | null;
   number: number;
   title: string;
+  baseBranch?: string | null;
   branchName: string;
   headSha: string;
   status: 'open' | 'draft' | 'merged' | 'closed';
   htmlUrl: string;
   authorLogin: string;
+  authorOwnerType: 'automation' | 'human' | 'unknown';
+  automationOwned: boolean;
   linkedAt?: string;
 }
 

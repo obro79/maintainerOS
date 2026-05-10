@@ -237,7 +237,10 @@ function loadFixture(repositoryId: string): FixtureRepositoryFile {
   if (existsSync(fixturePath)) {
     return JSON.parse(readFileSync(fixturePath, 'utf8')) as FixtureRepositoryFile;
   }
-  const fallbackPath = join(process.cwd(), 'data', 'mock-repos', `${process.env.MAINTAINEROS_DEMO_REPO_ID || 'maintaineros-demo-large'}.json`);
+  const configuredFallbackPath = join(process.cwd(), 'data', 'mock-repos', `${process.env.MAINTAINEROS_DEMO_REPO_ID || 'maintaineros-demo-large'}.json`);
+  const fallbackPath = existsSync(configuredFallbackPath)
+    ? configuredFallbackPath
+    : join(process.cwd(), 'data', 'mock-repos', 'maintaineros-demo-large.json');
   return JSON.parse(readFileSync(fallbackPath, 'utf8')) as FixtureRepositoryFile;
 }
 
@@ -379,15 +382,23 @@ async function toIssueDetail(issue: FixtureIssue, sourceState: ArtifactSourceSta
 
 function buildPullRequest(issue: FixtureIssue) {
   if (!issue.verification && !issue.bounty) return null;
+  const automationOwned = issue.classification.route === 'agent-solvable';
   return {
     provider: 'github' as const,
+    id: `fixture-pr-${issue.number}`,
+    sourceState: 'fixture' as const,
+    issueId: issue.id,
+    workOrderId: `fixture-work-order-${issue.number}`,
     number: 900 + issue.number,
     title: `Fix #${issue.number}: ${issue.title}`,
+    baseBranch: 'main',
     branchName: `maintaineros/issue-${issue.number}`,
     headSha: `sha-${issue.number.toString(16).padStart(6, '0')}`,
     status: issue.verification?.status === 'passed' ? 'merged' as const : 'open' as const,
     htmlUrl: `${issue.htmlUrl.replace('/issues/', '/pull/')}`.replace(String(issue.number), String(900 + issue.number)),
     authorLogin: issue.classification.route === 'bounty-worthy' ? 'external-contributor' : 'agent-runner',
+    authorOwnerType: automationOwned ? 'automation' as const : 'human' as const,
+    automationOwned,
     linkedAt: '2026-05-08T20:45:00.000Z',
   };
 }
@@ -568,7 +579,7 @@ function buildPullRequestTraceEvents(issue: FixtureIssue, pullRequest: IssueDeta
       sourceState,
       route,
       title: `PR #${pullRequest.number} linked`,
-      detail: `${pullRequest.authorLogin} opened ${pullRequest.branchName}; MaintainerOS tied the PR back to issue #${issue.number}.`,
+      detail: `${pullRequest.authorLogin} opened ${pullRequest.branchName}; owner=${pullRequest.authorOwnerType}; automationOwned=${pullRequest.automationOwned}; MaintainerOS tied the PR back to issue #${issue.number}.`,
       status: pullRequest.status === 'closed' ? 'blocked' : 'succeeded',
       artifactUrl: pullRequest.htmlUrl,
       relatedId: pullRequest.headSha,

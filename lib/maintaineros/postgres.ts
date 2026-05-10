@@ -173,6 +173,96 @@ async function ensureMaintainerSchema(client: PgClient) {
   `);
 
   await client.query(`
+    create table if not exists maintaineros_pull_requests (
+      id text primary key,
+      repository_id text not null,
+      issue_number integer not null,
+      issue_id text,
+      work_order_id text,
+      provider text not null default 'github',
+      number integer not null,
+      title text not null,
+      base_branch text,
+      branch_name text not null,
+      head_sha text not null,
+      html_url text not null,
+      author_login text not null,
+      author_owner_type text not null default 'unknown',
+      automation_owned boolean not null default false,
+      status text not null default 'open',
+      linked_at timestamptz,
+      merged_at timestamptz,
+      closed_at timestamptz,
+      source_state text not null default 'live',
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now(),
+      unique(repository_id, number)
+    )
+  `);
+
+  await client.query(`
+    alter table maintaineros_pull_requests
+      add column if not exists issue_id text,
+      add column if not exists work_order_id text,
+      add column if not exists base_branch text,
+      add column if not exists head_sha text not null default 'unknown',
+      add column if not exists author_owner_type text not null default 'unknown',
+      add column if not exists automation_owned boolean not null default false,
+      add column if not exists linked_at timestamptz,
+      add column if not exists merged_at timestamptz,
+      add column if not exists closed_at timestamptz,
+      add column if not exists source_state text not null default 'live'
+  `);
+
+  await client.query(`
+    create index if not exists idx_maintaineros_pull_requests_issue
+    on maintaineros_pull_requests(repository_id, issue_number, updated_at desc)
+  `);
+
+  await client.query(`
+    create table if not exists maintaineros_verification_runs (
+      id text primary key,
+      pull_request_id text not null,
+      provider text not null default 'greptile',
+      status text not null,
+      summary text not null,
+      criteria jsonb not null default '[]'::jsonb,
+      files_touched jsonb not null default '[]'::jsonb,
+      files_inspected jsonb not null default '[]'::jsonb,
+      blocking_findings jsonb not null default '[]'::jsonb,
+      verified_sha text,
+      current_sha text,
+      risk_summary text not null default '',
+      failure_reason text,
+      verified_at timestamptz,
+      artifact_url text,
+      source_state text not null default 'live',
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    )
+  `);
+
+  await client.query(`
+    alter table maintaineros_verification_runs
+      add column if not exists criteria jsonb not null default '[]'::jsonb,
+      add column if not exists files_touched jsonb not null default '[]'::jsonb,
+      add column if not exists files_inspected jsonb not null default '[]'::jsonb,
+      add column if not exists blocking_findings jsonb not null default '[]'::jsonb,
+      add column if not exists verified_sha text,
+      add column if not exists current_sha text,
+      add column if not exists risk_summary text not null default '',
+      add column if not exists failure_reason text,
+      add column if not exists verified_at timestamptz,
+      add column if not exists artifact_url text,
+      add column if not exists source_state text not null default 'live'
+  `);
+
+  await client.query(`
+    create index if not exists idx_maintaineros_verification_runs_pr
+    on maintaineros_verification_runs(pull_request_id, updated_at desc)
+  `);
+
+  await client.query(`
     create table if not exists maintaineros_trace_events (
       id text primary key,
       repository_id text not null,
@@ -192,63 +282,6 @@ async function ensureMaintainerSchema(client: PgClient) {
   await client.query(`
     create index if not exists idx_maintaineros_trace_events_issue
     on maintaineros_trace_events(repository_id, issue_number, occurred_at desc)
-  `);
-
-  await client.query(`
-    create table if not exists maintaineros_pull_requests (
-      id text primary key,
-      repository_id text not null references maintaineros_repositories(id) on delete cascade,
-      issue_number integer not null,
-      provider text not null default 'github',
-      number integer not null,
-      title text not null,
-      branch_name text not null,
-      head_sha text not null,
-      status text not null,
-      html_url text not null,
-      author_login text not null,
-      linked_at timestamptz not null default now(),
-      created_at timestamptz not null default now(),
-      updated_at timestamptz not null default now(),
-      unique(repository_id, issue_number)
-    )
-  `);
-
-  await client.query(`
-    create index if not exists idx_maintaineros_pull_requests_issue
-    on maintaineros_pull_requests(repository_id, issue_number)
-  `);
-
-  await client.query(`
-    create table if not exists maintaineros_verification_runs (
-      id text primary key,
-      repository_id text not null references maintaineros_repositories(id) on delete cascade,
-      issue_number integer not null,
-      pull_request_id text not null references maintaineros_pull_requests(id) on delete cascade,
-      provider text not null default 'greptile',
-      source_state text not null default 'live',
-      status text not null,
-      summary text not null,
-      criteria jsonb not null default '[]'::jsonb,
-      files_touched jsonb not null default '[]'::jsonb,
-      files_inspected jsonb not null default '[]'::jsonb,
-      verified_sha text,
-      current_sha text,
-      blocking_findings_count integer not null default 0,
-      blocking_findings jsonb not null default '[]'::jsonb,
-      risk_summary text not null,
-      failure_reason text,
-      artifact_url text,
-      log_url text,
-      verified_at timestamptz,
-      raw_response jsonb not null default '{}'::jsonb,
-      created_at timestamptz not null default now()
-    )
-  `);
-
-  await client.query(`
-    create index if not exists idx_maintaineros_verification_runs_latest
-    on maintaineros_verification_runs(repository_id, issue_number, created_at desc)
   `);
 
   await client.query(`

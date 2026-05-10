@@ -20,6 +20,9 @@ interface GitHubPullRequestResponse {
     ref: string;
     sha: string;
   };
+  base: {
+    ref: string;
+  };
   user: {
     login: string;
   } | null;
@@ -55,11 +58,14 @@ export async function POST(request: Request) {
       issueNumber,
       number: pullRequest.number,
       title: pullRequest.title,
+      baseBranch: pullRequest.base.ref,
       branchName: pullRequest.head.ref,
       headSha: pullRequest.head.sha,
       status: prStatus,
       htmlUrl: pullRequest.html_url,
       authorLogin: pullRequest.user?.login ?? 'unknown',
+      authorOwnerType: 'human',
+      automationOwned: false,
     }));
 
     await recordProviderRun({

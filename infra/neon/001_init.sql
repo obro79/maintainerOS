@@ -142,7 +142,7 @@ CREATE TABLE IF NOT EXISTS bounties (
 CREATE TABLE IF NOT EXISTS payment_artifacts (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   bounty_id uuid NOT NULL REFERENCES bounties(id) ON DELETE CASCADE,
-  provider text NOT NULL DEFAULT 'allscale',
+  provider text NOT NULL DEFAULT 'clustly',
   status text NOT NULL CHECK (status IN ('draft', 'ready', 'released', 'failed')),
   amount_cents integer NOT NULL CHECK (amount_cents >= 0),
   currency text NOT NULL DEFAULT 'USD',

@@ -1,23 +1,16 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, DM_Sans, JetBrains_Mono } from "next/font/google";
+import { Lora, Inter } from "next/font/google";
 import "./globals.css";
 
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-heading",
+const lora = Lora({
+  variable: "--font-serif",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
 });
 
-const dmSans = DM_Sans({
+const inter = Inter({
   variable: "--font-sans",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-mono",
-  subsets: ["latin"],
-  weight: ["400", "500"],
 });
 
 export const metadata: Metadata = {
@@ -33,9 +26,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${spaceGrotesk.variable} ${dmSans.variable} ${jetbrainsMono.variable} h-full antialiased dark`}
+      className={`${lora.variable} ${inter.variable} h-full antialiased dark`}
     >
-      <body className="min-h-full flex flex-col bg-[#030509] text-white">{children}</body>
+      <body className="min-h-full flex flex-col bg-[#05070A] text-white">{children}</body>
     </html>
   );
 }

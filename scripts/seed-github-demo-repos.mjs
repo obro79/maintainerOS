@@ -58,7 +58,7 @@ const labelColors = new Map([
   ["bounty-worthy", ["8250df", "MaintainerOS route: bounded paid work"]],
   ["close-or-clarify", ["57606a", "MaintainerOS route: clarify, reproduce, or close"]],
   ["maintaineros-demo", ["0969da", "Seeded MaintainerOS demo issue"]],
-  ["allscale-bounty", ["a371f7", "AllScale payout lane demo issue"]],
+  ["clustly-bounty", ["a371f7", "Clustly task / payout lane demo issue"]],
   ["greptile-verify", ["1f883d", "Greptile verification lane demo issue"]],
   ["clod-routed", ["0a7ea4", "CLOD model-routing demo issue"]]
 ]);
@@ -81,7 +81,7 @@ for (const [fixtureId, githubRepo] of repoMap) {
     allLabels.add("clod-routed");
     for (const label of issue.labels) allLabels.add(label);
     if (issue.classification.route === "bounty-worthy") {
-      allLabels.add("allscale-bounty");
+      allLabels.add("clustly-bounty");
       allLabels.add("greptile-verify");
     }
     if (issue.classification.route === "agent-solvable") {
@@ -109,7 +109,7 @@ for (const [fixtureId, githubRepo] of repoMap) {
       ...issue.labels
     ];
 
-    if (route === "bounty-worthy") labels.push("allscale-bounty", "greptile-verify");
+    if (route === "bounty-worthy") labels.push("clustly-bounty", "greptile-verify");
     if (route === "agent-solvable") labels.push("greptile-verify");
 
     const body = [
@@ -122,7 +122,7 @@ for (const [fixtureId, githubRepo] of repoMap) {
       `- Risk: ${issue.classification.riskScore}/10`,
       `- Confidence: ${issue.classification.confidence}`,
       `- CLOD model: \`${issue.modelRun.model}\``,
-      issue.bounty ? `- AllScale bounty: $${(issue.bounty.amountCents / 100).toFixed(2)} ${issue.bounty.currency}` : "- AllScale bounty: none",
+      issue.bounty ? `- Clustly bounty: $${(issue.bounty.amountCents / 100).toFixed(2)} ${issue.bounty.currency}` : "- Clustly bounty: none",
       "",
       "## Acceptance Checks",
       ...issue.workOrder.acceptanceChecks.map((check) => `- [ ] ${check}`),

@@ -208,6 +208,20 @@ export function IssueArtifactStack({ issue }: { issue: IssueDetailViewModel | nu
             </div>
             <p className="mt-2 text-xs text-zinc-500">{issue.verification.riskSummary}</p>
             {issue.verification.failureReason && <p className="mt-2 text-xs text-red-300">{issue.verification.failureReason}</p>}
+            {(issue.verification.comments ?? []).length > 0 && (
+              <div className="mt-4 rounded-lg border border-white/6 p-3">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-700">Greptile comments</p>
+                <div className="mt-2 space-y-2">
+                  {(issue.verification.comments ?? []).slice(0, 4).map((comment) => (
+                    <a key={comment.id} className="block rounded-lg border border-white/6 p-2 text-xs text-zinc-400 hover:border-blue-500/30 hover:text-blue-200" href={comment.htmlUrl}>
+                      <span className="text-zinc-300">{comment.authorLogin}</span>
+                      {comment.path && <span className="text-zinc-600"> · {comment.path}{comment.line ? `:${comment.line}` : ''}</span>}
+                      <span className="mt-1 block leading-relaxed">{comment.body}</span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               <div>
                 <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-700">Criteria</p>

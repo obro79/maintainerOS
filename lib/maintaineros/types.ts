@@ -39,6 +39,7 @@ export interface ImportRunViewModel {
   repo: string;
   requestedLimit: number;
   importedIssueCount: number;
+  importedPullRequestCount?: number;
   skippedPullRequestCount: number;
   status: 'pending' | 'succeeded' | 'failed' | 'partial';
   sourceState: ArtifactSourceState;
@@ -193,6 +194,7 @@ export interface VerificationViewModel {
   currentSha: string | null;
   blockingFindingsCount: number;
   blockingFindings?: string[];
+  comments?: GreptileCommentViewModel[];
   riskSummary: string;
   failureReason?: string | null;
   verifiedAt: string | null;
@@ -204,15 +206,25 @@ export interface PullRequestViewModel {
   number: number;
   title: string;
   branchName: string;
-  headSha: string;
+  headSha: string | null;
   status: 'open' | 'draft' | 'merged' | 'closed';
   htmlUrl: string;
   authorLogin: string;
   linkedAt?: string;
 }
 
+export interface GreptileCommentViewModel {
+  id: string;
+  authorLogin: string;
+  body: string;
+  htmlUrl: string;
+  path?: string | null;
+  line?: number | null;
+  createdAt: string;
+}
+
 export interface VerificationQueueItemViewModel {
-  issueNumber: number;
+  issueNumber: number | null;
   issueTitle: string;
   route: ExecutionRoute;
   detailUrl: string;

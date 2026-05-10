@@ -447,7 +447,7 @@ export function DemoPage({ dashboard }: { dashboard: DashboardViewModel }) {
                           <span className="text-[10px] font-mono text-zinc-500">{selectedDetail.pullRequest.status}</span>
                         </div>
                         <p className="text-[12px] text-zinc-300 mb-1">#{selectedDetail.pullRequest.number} {selectedDetail.pullRequest.title}</p>
-                        <p className="text-[11px] text-zinc-600">{selectedDetail.pullRequest.branchName} · {selectedDetail.pullRequest.headSha}</p>
+                        <p className="text-[11px] text-zinc-600">{selectedDetail.pullRequest.branchName} · {selectedDetail.pullRequest.headSha ?? 'head sha unknown'}</p>
                       </div>
                     )}
 

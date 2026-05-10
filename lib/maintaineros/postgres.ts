@@ -117,6 +117,7 @@ async function ensureMaintainerSchema(client: PgClient) {
       repo text not null,
       requested_limit integer not null,
       imported_issue_count integer not null default 0,
+      imported_pull_request_count integer not null default 0,
       skipped_pull_request_count integer not null default 0,
       status text not null,
       source_state text not null default 'live',
@@ -131,12 +132,77 @@ async function ensureMaintainerSchema(client: PgClient) {
       add column if not exists provider text not null default 'github',
       add column if not exists requested_limit integer not null default 0,
       add column if not exists imported_issue_count integer not null default 0,
+      add column if not exists imported_pull_request_count integer not null default 0,
       add column if not exists skipped_pull_request_count integer not null default 0,
       add column if not exists status text not null default 'pending',
       add column if not exists source_state text not null default 'live',
       add column if not exists started_at timestamptz not null default now(),
       add column if not exists finished_at timestamptz,
       add column if not exists error_message text
+  `);
+
+  await client.query(`
+    create table if not exists maintaineros_pull_requests (
+      id text primary key,
+      repository_id text not null references maintaineros_repositories(id) on delete cascade,
+      number integer not null,
+      title text not null,
+      body text not null default '',
+      author text not null default 'unknown',
+      branch_name text not null default '',
+      head_sha text,
+      base_branch text not null default '',
+      html_url text not null,
+      state text not null default 'open',
+      draft boolean not null default false,
+      merged_at timestamptz,
+      linked_issue_number integer,
+      created_at timestamptz,
+      updated_at timestamptz,
+      closed_at timestamptz,
+      unique(repository_id, number)
+    )
+  `);
+
+  await client.query(`
+    alter table maintaineros_pull_requests
+      add column if not exists body text not null default '',
+      add column if not exists author text not null default 'unknown',
+      add column if not exists branch_name text not null default '',
+      add column if not exists head_sha text,
+      add column if not exists base_branch text not null default '',
+      add column if not exists state text not null default 'open',
+      add column if not exists draft boolean not null default false,
+      add column if not exists merged_at timestamptz,
+      add column if not exists linked_issue_number integer,
+      add column if not exists closed_at timestamptz
+  `);
+
+  await client.query(`
+    create table if not exists maintaineros_pull_request_comments (
+      id text primary key,
+      repository_id text not null references maintaineros_repositories(id) on delete cascade,
+      pull_request_number integer not null,
+      provider text not null default 'greptile',
+      author text not null default 'unknown',
+      body text not null default '',
+      html_url text not null,
+      path text,
+      line integer,
+      created_at timestamptz,
+      updated_at timestamptz,
+      unique(repository_id, pull_request_number, id)
+    )
+  `);
+
+  await client.query(`
+    create index if not exists idx_maintaineros_pull_requests_repository
+    on maintaineros_pull_requests(repository_id, updated_at desc, number desc)
+  `);
+
+  await client.query(`
+    create index if not exists idx_maintaineros_pull_request_comments_pr
+    on maintaineros_pull_request_comments(repository_id, pull_request_number)
   `);
 
   await client.query(`

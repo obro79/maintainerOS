@@ -4,6 +4,21 @@ export interface VerificationObserver {
   getVerification(issue: IssueDetailViewModel, pullRequest: PullRequestViewModel): Promise<VerificationViewModel>;
 }
 
+export interface GreptileVerificationRunInput {
+  sourceState: ArtifactSourceState;
+  status: VerificationViewModel['status'];
+  summary: string;
+  criteria: string[];
+  filesTouched: string[];
+  filesInspected: string[];
+  blockingFindings: string[];
+  verifiedSha: string | null;
+  currentSha: string | null;
+  riskSummary: string;
+  failureReason: string | null;
+  verifiedAt: string | null;
+}
+
 export class FixtureGreptileObserver implements VerificationObserver {
   async getVerification(issue: IssueDetailViewModel, pullRequest: PullRequestViewModel): Promise<VerificationViewModel> {
     return buildGreptileVerification(issue, pullRequest, issue.verification?.sourceState ?? 'fixture');
@@ -13,6 +28,28 @@ export class FixtureGreptileObserver implements VerificationObserver {
 export function isVerificationStale(verification: VerificationViewModel) {
   if (!verification.verifiedSha || !verification.currentSha) return false;
   return verification.verifiedSha !== verification.currentSha;
+}
+
+export function buildGreptileVerificationAdapterResult(input: GreptileVerificationRunInput): VerificationViewModel {
+  const isStale = input.status === 'stale' || Boolean(input.verifiedSha && input.currentSha && input.verifiedSha !== input.currentSha);
+  const status = isStale ? 'stale' : input.status;
+  return {
+    provider: 'greptile',
+    sourceState: input.sourceState,
+    status,
+    summary: input.summary,
+    criteria: input.criteria,
+    filesTouched: input.filesTouched,
+    filesInspected: input.filesInspected,
+    verifiedSha: input.verifiedSha,
+    currentSha: input.currentSha,
+    blockingFindingsCount: input.blockingFindings.length,
+    blockingFindings: input.blockingFindings,
+    riskSummary: input.riskSummary,
+    failureReason: input.failureReason ?? input.blockingFindings[0] ?? null,
+    verifiedAt: input.verifiedAt,
+    isStale,
+  };
 }
 
 export function parsePullRequestReference(input: string) {

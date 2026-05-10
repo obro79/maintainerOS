@@ -123,6 +123,9 @@ export function RepoBounties({ bounties, providerStatuses }: { bounties?: Clustl
                   <p className={item.gate.canRelease ? 'mt-1 text-xs text-emerald-300' : 'mt-1 text-xs text-amber-300'}>
                     {item.gate.canRelease ? 'Release allowed' : `Blocked: ${item.gate.reasons[0] ?? 'waiting on gate'}`}
                   </p>
+                  {!item.gate.canRelease && item.gate.reasonCodes[0] && (
+                    <p className="mt-1 font-mono text-[10px] uppercase text-zinc-700">{item.gate.reasonCodes[0]}</p>
+                  )}
                 </div>
                 <div className="flex items-center gap-3 pr-4 shrink-0">
                   <div className="text-right">

@@ -193,4 +193,102 @@ async function ensureMaintainerSchema(client: PgClient) {
     create index if not exists idx_maintaineros_trace_events_issue
     on maintaineros_trace_events(repository_id, issue_number, occurred_at desc)
   `);
+
+  await client.query(`
+    create table if not exists maintaineros_pull_requests (
+      id text primary key,
+      repository_id text not null references maintaineros_repositories(id) on delete cascade,
+      issue_number integer not null,
+      provider text not null default 'github',
+      number integer not null,
+      title text not null,
+      branch_name text not null,
+      head_sha text not null,
+      status text not null,
+      html_url text not null,
+      author_login text not null,
+      linked_at timestamptz not null default now(),
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now(),
+      unique(repository_id, issue_number)
+    )
+  `);
+
+  await client.query(`
+    create index if not exists idx_maintaineros_pull_requests_issue
+    on maintaineros_pull_requests(repository_id, issue_number)
+  `);
+
+  await client.query(`
+    create table if not exists maintaineros_verification_runs (
+      id text primary key,
+      repository_id text not null references maintaineros_repositories(id) on delete cascade,
+      issue_number integer not null,
+      pull_request_id text not null references maintaineros_pull_requests(id) on delete cascade,
+      provider text not null default 'greptile',
+      source_state text not null default 'live',
+      status text not null,
+      summary text not null,
+      criteria jsonb not null default '[]'::jsonb,
+      files_touched jsonb not null default '[]'::jsonb,
+      files_inspected jsonb not null default '[]'::jsonb,
+      verified_sha text,
+      current_sha text,
+      blocking_findings_count integer not null default 0,
+      blocking_findings jsonb not null default '[]'::jsonb,
+      risk_summary text not null,
+      failure_reason text,
+      artifact_url text,
+      log_url text,
+      verified_at timestamptz,
+      raw_response jsonb not null default '{}'::jsonb,
+      created_at timestamptz not null default now()
+    )
+  `);
+
+  await client.query(`
+    create index if not exists idx_maintaineros_verification_runs_latest
+    on maintaineros_verification_runs(repository_id, issue_number, created_at desc)
+  `);
+
+  await client.query(`
+    create table if not exists maintaineros_bounties (
+      id text primary key,
+      repository_id text not null references maintaineros_repositories(id) on delete cascade,
+      issue_number integer not null,
+      status text not null default 'proposed',
+      amount_cents integer not null,
+      currency text not null default 'USD',
+      rationale text not null,
+      maintainer_accepted boolean not null default false,
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now(),
+      unique(repository_id, issue_number)
+    )
+  `);
+
+  await client.query(`
+    create table if not exists maintaineros_payment_artifacts (
+      id text primary key,
+      repository_id text not null references maintaineros_repositories(id) on delete cascade,
+      issue_number integer not null,
+      bounty_id text not null references maintaineros_bounties(id) on delete cascade,
+      provider text not null default 'clustly',
+      source_state text not null default 'live',
+      status text not null,
+      task_id text,
+      task_url text,
+      claim_id text,
+      claimer_kind text,
+      funding_mode text,
+      amount_cents integer not null,
+      currency text not null default 'USDC',
+      artifact_url text,
+      release_reason text not null,
+      raw_response jsonb not null default '{}'::jsonb,
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now(),
+      unique(repository_id, issue_number)
+    )
+  `);
 }

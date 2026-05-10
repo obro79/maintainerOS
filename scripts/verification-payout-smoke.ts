@@ -1,5 +1,5 @@
 import { strict as assert } from 'node:assert';
-import { FixtureClustlyProvider } from '../lib/maintaineros/payments.js';
+import { FixtureClustlyProvider, LiveClustlyProvider } from '../lib/maintaineros/payments.js';
 import { canReleasePayout } from '../lib/maintaineros/payout.js';
 import { isVerificationStale } from '../lib/maintaineros/verification.js';
 import type { IssueDetailViewModel, VerificationViewModel } from '../lib/maintaineros/types.js';
@@ -152,6 +152,23 @@ async function main() {
     paymentArtifact: null,
   });
   assert.equal(await provider.createTask(nonBounty), null);
+
+  let liveCalls = 0;
+  const liveProvider = new LiveClustlyProvider(async () => {
+    liveCalls += 1;
+    return new Response(JSON.stringify({ id: 'task-live-1', status: 'posted', url: 'https://clustly.ai/tasks/task-live-1' }), { status: 200 });
+  });
+  await assert.rejects(
+    () => liveProvider.approveClaim('task-live-1', 'claim-live-1', stale),
+    /Clustly release blocked/,
+  );
+  assert.equal(liveCalls, 0);
+
+  process.env.CLUSTLY_AGENT_KEY = 'test-agent-key';
+  const liveTask = await liveProvider.createTask(releasable);
+  assert.equal(liveTask?.taskId, 'task-live-1');
+  assert.equal(liveTask?.status, 'posted');
+  assert.equal(liveCalls, 1);
 
   console.log('Verification and payout smoke checks passed.');
 }

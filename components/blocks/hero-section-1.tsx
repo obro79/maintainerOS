@@ -277,10 +277,10 @@ function ProofArtifact({ kind }: { kind: 'ingest' | 'route' | 'verify' | 'releas
 
 const menuItems = [
   { name: 'How it works', href: '#how-it-works' },
-  { name: 'Dashboard',    href: '/dashboard'    },
-  { name: 'Routes',       href: '#routes'       },
-  { name: 'Demo',         href: '#demo'         },
-  { name: 'GitHub',       href: '#'             },
+  { name: 'Dashboard', href: '/dashboard' },
+  { name: 'Routes', href: '#routes' },
+  { name: 'Demo', href: '#demo' },
+  { name: 'GitHub', href: '#' },
 ];
 
 /* ─── Animated pipeline dot ──────────────────────── */

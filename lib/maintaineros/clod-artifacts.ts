@@ -1,7 +1,8 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import type { ClodRouteResult } from './clod';
-import type { ExecutionRoute, IssueDetailViewModel, IssueTraceEventViewModel, WorkOrderViewModel } from './types';
+import { buildInitialRouteAttempt, mergeRouteHistory } from './route-history';
+import type { ExecutionRoute, IssueDetailViewModel, IssueTraceEventViewModel, RouteAttemptViewModel, WorkOrderViewModel } from './types';
 
 interface StoredClodArtifact {
   repositoryId: string;
@@ -13,6 +14,7 @@ interface StoredClodArtifact {
   modelRun: IssueDetailViewModel['modelRun'];
   workOrder: WorkOrderViewModel;
   traceEvent: IssueTraceEventViewModel;
+  routeAttempt?: RouteAttemptViewModel;
 }
 
 interface ClodArtifactFile {
@@ -47,6 +49,16 @@ export function persistClodArtifact(repositoryId: string, issue: IssueDetailView
     costCents: result.modelRun.estimatedCostCents ?? undefined,
     filesTouched: issue.workOrder.suggestedFiles,
   };
+  const routeAttempt = buildInitialRouteAttempt(
+    {
+      id: `${issue.id}-${result.modelRun.runId ?? result.modelRun.id ?? createdAt}`,
+      route: issue.route,
+      rationale: result.fallbackReason ?? result.artifact.rationale,
+      modelRun: result.modelRun,
+    },
+    createdAt,
+    [traceEvent.id],
+  );
   const stored: StoredClodArtifact = {
     repositoryId,
     issueNumber: issue.number,
@@ -57,33 +69,57 @@ export function persistClodArtifact(repositoryId: string, issue: IssueDetailView
     modelRun: result.modelRun,
     workOrder,
     traceEvent,
+    routeAttempt,
   };
   const file = readStore();
   file.artifacts = [
     stored,
-    ...file.artifacts.filter((artifact) => artifact.repositoryId !== repositoryId || artifact.issueNumber !== issue.number),
+    ...file.artifacts.filter((artifact) => artifact.traceEvent.id !== traceEvent.id),
   ].slice(0, 200);
   writeStore(file);
   return stored;
 }
 
 export function applyStoredClodArtifact(repositoryId: string, issue: IssueDetailViewModel): IssueDetailViewModel {
-  const stored = getStoredClodArtifact(repositoryId, issue.number);
+  const storedArtifacts = getStoredClodArtifacts(repositoryId, issue.number);
+  const stored = storedArtifacts[0];
   if (!stored) return issue;
 
-  const trace = [stored.traceEvent, ...issue.trace.filter((event) => event.id !== stored.traceEvent.id)]
+  const storedTraceEvents = storedArtifacts.map((artifact) => artifact.traceEvent);
+  const storedTraceIds = new Set(storedTraceEvents.map((event) => event.id));
+  const trace = [...storedTraceEvents, ...issue.trace.filter((event) => !storedTraceIds.has(event.id))]
     .sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
+  const routeHistory = mergeRouteHistory(
+    issue.routeHistory,
+    storedArtifacts.map((artifact) => artifact.routeAttempt ?? buildInitialRouteAttempt(
+      {
+        id: `${artifact.issueId}-${artifact.traceEvent.id}`,
+        route: artifact.route,
+        rationale: artifact.traceEvent.detail,
+        modelRun: artifact.modelRun,
+      },
+      artifact.createdAt,
+      [artifact.traceEvent.id],
+    )),
+  );
 
   return {
     ...issue,
     modelRun: stored.modelRun,
     workOrder: stored.workOrder,
+    routeHistory,
     trace,
   };
 }
 
 export function getStoredClodArtifact(repositoryId: string, issueNumber: number) {
-  return readStore().artifacts.find((artifact) => artifact.repositoryId === repositoryId && artifact.issueNumber === issueNumber) ?? null;
+  return getStoredClodArtifacts(repositoryId, issueNumber)[0] ?? null;
+}
+
+export function getStoredClodArtifacts(repositoryId: string, issueNumber: number) {
+  return readStore().artifacts
+    .filter((artifact) => artifact.repositoryId === repositoryId && artifact.issueNumber === issueNumber)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
 function readStore(): ClodArtifactFile {

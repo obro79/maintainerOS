@@ -27,6 +27,7 @@ import { buildContextPackForIssue, buildNiaTraceEvent } from './nia-context';
 import { buildSandboxExecutionsForIssue, buildSandboxTraceEvents, toSandboxAttemptListItems } from './daytona';
 import { buildGreptileVerification, toVerificationQueueItem } from './verification';
 import { toClustlyBountyListItem } from './payments';
+import { listPersistedTraceEvents, mergeTraceEvents } from './trace-events';
 
 interface FixtureRepositoryFile {
   repository: {
@@ -104,8 +105,8 @@ export class FixtureMaintainerOSRepository implements MaintainerOSRepository {
     const fixture = loadFixture(repositoryId);
     const sourceState = this.sourceState;
     const issues = fixture.issues.slice(0, 40).map(toIssueCard);
-    const issueDetails = fixture.issues.slice(0, 40).map((issue) => applyStoredClodArtifact(repositoryId, applyStoredClodArtifact(fixture.repository.id, toIssueDetail(issue, sourceState, repositoryId))));
-    const selectedIssue = applyStoredClodArtifact(repositoryId, applyStoredClodArtifact(fixture.repository.id, toIssueDetail(fixture.issues.find((issue) => issue.number === 41) ?? fixture.issues[0], sourceState, repositoryId)));
+    const issueDetails = await Promise.all(fixture.issues.slice(0, 40).map((issue) => toIssueDetailWithPersistedTrace(repositoryId, fixture.repository.id, issue, sourceState)));
+    const selectedIssue = await toIssueDetailWithPersistedTrace(repositoryId, fixture.repository.id, fixture.issues.find((issue) => issue.number === 41) ?? fixture.issues[0], sourceState);
 
     return {
       repository: {
@@ -151,7 +152,7 @@ export class FixtureMaintainerOSRepository implements MaintainerOSRepository {
   async getIssueDetail(repositoryId: string, issueNumber: number): Promise<IssueDetailViewModel | null> {
     const fixture = loadFixture(repositoryId);
     const issue = fixture.issues.find((candidate) => candidate.number === issueNumber);
-    return issue ? applyStoredClodArtifact(repositoryId, applyStoredClodArtifact(fixture.repository.id, toIssueDetail(issue, this.sourceState, repositoryId))) : null;
+    return issue ? toIssueDetailWithPersistedTrace(repositoryId, fixture.repository.id, issue, this.sourceState) : null;
   }
 
   async getIssueTrace(repositoryId: string, issueNumber: number): Promise<IssueTraceEventViewModel[]> {
@@ -205,6 +206,15 @@ export class FixtureMaintainerOSRepository implements MaintainerOSRepository {
       checkedAt: new Date().toISOString(),
     };
   }
+}
+
+async function toIssueDetailWithPersistedTrace(repositoryId: string, fixtureRepositoryId: string, issue: FixtureIssue, sourceState: ArtifactSourceState) {
+  const detail = applyStoredClodArtifact(repositoryId, applyStoredClodArtifact(fixtureRepositoryId, toIssueDetail(issue, sourceState, repositoryId)));
+  const persisted = await listPersistedTraceEvents(repositoryId, detail.number);
+  if (persisted.length === 0 && repositoryId === fixtureRepositoryId) return detail;
+  const fixturePersisted = repositoryId === fixtureRepositoryId ? [] : await listPersistedTraceEvents(fixtureRepositoryId, detail.number);
+  const trace = mergeTraceEvents(detail.trace, [...persisted, ...fixturePersisted]);
+  return { ...detail, trace };
 }
 
 export function getMaintainerOSRepository(): MaintainerOSRepository {

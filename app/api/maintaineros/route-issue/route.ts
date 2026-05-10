@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { generateClodRoutingArtifact } from '@/lib/maintaineros/clod';
 import { persistClodArtifact } from '@/lib/maintaineros/clod-artifacts';
 import { getMaintainerOSRepository } from '@/lib/maintaineros/repository';
+import { recordTraceEvent } from '@/lib/maintaineros/trace-events';
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
@@ -39,6 +40,27 @@ export async function POST(request: Request) {
   }
 
   const stored = persistClodArtifact(repositoryId, issue, result);
+  await recordTraceEvent({
+    id: stored.traceEvent.id,
+    repositoryId,
+    issueNumber: issue.number,
+    actor: stored.traceEvent.actor,
+    provider: 'clod',
+    sourceState: stored.traceEvent.sourceState ?? 'rehearsal',
+    route: issue.route,
+    title: stored.traceEvent.title,
+    detail: stored.traceEvent.detail,
+    status: stored.traceEvent.status,
+    relatedId: stored.traceEvent.relatedId,
+    model: stored.traceEvent.model,
+    costCents: stored.traceEvent.costCents,
+    filesTouched: stored.traceEvent.filesTouched,
+    at: stored.traceEvent.at,
+    payload: {
+      workOrderTitle: stored.workOrder.title,
+      generatedBy: stored.workOrder.generatedBy,
+    },
+  });
   const { ok: providerOk, ...artifactResult } = result;
   return NextResponse.json({
     ok: true,

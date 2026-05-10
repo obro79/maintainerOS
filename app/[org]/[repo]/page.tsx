@@ -1,4 +1,6 @@
+import { cookies } from 'next/headers';
 import { RepoDashboard } from '@/components/blocks/repo-dashboard';
+import { DEMO_SCENARIO_COOKIE, getDemoScenario } from '@/lib/maintaineros/demo-scenarios';
 import { getMaintainerOSRepository } from '@/lib/maintaineros/repository';
 
 interface Props {
@@ -7,6 +9,10 @@ interface Props {
 
 export default async function RepoPage({ params }: Props) {
   const { org, repo } = await params;
-  const dashboard = await getMaintainerOSRepository().getDashboard(`${org}/${repo}`);
-  return <RepoDashboard org={org} repo={repo} dashboard={dashboard} />;
+  const cookieStore = await cookies();
+  const scenario = getDemoScenario(cookieStore.get(DEMO_SCENARIO_COOKIE)?.value);
+  const repository = getMaintainerOSRepository();
+  const dashboard = await repository.getDashboard(`${org}/${repo}`);
+  const selectedIssue = await repository.getIssueDetail(`${org}/${repo}`, scenario.targetIssueNumber);
+  return <RepoDashboard org={org} repo={repo} dashboard={selectedIssue ? { ...dashboard, selectedIssue } : dashboard} />;
 }

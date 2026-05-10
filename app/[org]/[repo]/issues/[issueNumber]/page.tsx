@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { IssueArtifactStack } from '@/components/maintaineros/issue-artifact-stack';
 import { PhaseShell } from '@/components/maintaineros/phase-shell';
 import { RouteIssueButton } from '@/components/maintaineros/route-issue-button';
+import { WorkflowControls } from '@/components/maintaineros/workflow-controls';
 import { getMaintainerOSRepository } from '@/lib/maintaineros/repository';
 
 interface Props {
@@ -33,6 +34,7 @@ export default async function IssuePage({ params }: Props) {
         </Link>
       </div>
       {issue && <RouteIssueButton repositoryId={`${org}/${repo}`} issueNumber={Number(issueNumber)} />}
+      {issue && <WorkflowControls repositoryId={`${org}/${repo}`} issue={issue} />}
       <IssueArtifactStack issue={issue} />
     </PhaseShell>
   );

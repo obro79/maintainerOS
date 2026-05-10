@@ -25,6 +25,8 @@ const files = {
 assertIncludes(files.routing, 'evaluateRoutePolicy', 'routing exports the central route policy evaluator');
 assertIncludes(files.routing, 'AI_CONFIDENCE_THRESHOLD', 'AI routing has a confidence gate');
 assertIncludes(files.routing, 'HARD_BLOCK_LABELS', 'AI routing has hard-block labels');
+assertIncludes(files.routing, 'SAFE_AGENT_LABELS', 'AI routing has explicit safe-label signals');
+assertIncludes(files.routing, 'decision-needed', 'AI routing treats decision-needed as a hard blocker');
 assertIncludes(files.routing, "route = 'maintainer-review'", 'unsafe AI candidates reroute to DEV/maintainer review');
 
 assertIncludes(files.workOrders, 'buildDeterministicWorkOrder', 'deterministic work-order builder exists');

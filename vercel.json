@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/maintaineros/import-github/cron",
-      "schedule": "0 * * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }

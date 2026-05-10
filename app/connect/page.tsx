@@ -4,7 +4,7 @@ import { Suspense, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { AlertCircle, CheckCircle2, ChevronRight, Clock, CreditCard, GitMerge, Loader2, ShieldCheck } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, CreditCard, GitMerge, Loader2, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 function GitHubMark() {
@@ -169,7 +169,6 @@ function ConnectContent() {
                 : 'OAuth uses public GitHub access only. Private repos require a GitHub App installation.'}
             </span>
           </div>
-
           <form onSubmit={importRepository} className="space-y-2.5">
             <div className="grid gap-2.5 sm:grid-cols-2">
               <label className="block">
@@ -222,11 +221,6 @@ function ConnectContent() {
           </form>
 
           <div className="flex items-center justify-between pt-1">
-            <Link href="/demo" className="inline-flex items-center gap-1 text-xs text-[#F9F7F7]/40 transition-colors hover:text-[#F9F7F7]/70">
-              Explore first?
-              <span className="text-[#3F72AF]">View demo</span>
-              <ChevronRight className="size-3 text-[#3F72AF]" />
-            </Link>
             <p className="text-[10px] text-[#F9F7F7]/28">Public repos only</p>
           </div>
         </motion.div>

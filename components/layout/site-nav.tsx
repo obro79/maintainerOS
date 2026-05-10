@@ -10,8 +10,6 @@ import { cn } from '@/lib/utils';
 
 const navItems = [
   { name: 'Product', href: '/#product' },
-  { name: 'Dashboard', href: '/dashboard' },
-  { name: 'Demo', href: '/demo' },
   { name: 'Pricing',      href: '/pricing'       },
   { name: 'Docs',         href: '/docs'          },
   { name: 'Changelog',    href: '/changelog'     },
@@ -49,10 +47,6 @@ export function SiteNav() {
           </nav>
 
           <div className="hidden lg:flex items-center gap-3">
-            <Link href="/demo"
-              className="rounded-md border border-[#F9F7F7]/12 px-4 py-2 text-sm font-medium text-[#F9F7F7]/80 transition-colors duration-150 hover:border-[#F9F7F7]/25 hover:bg-[#F9F7F7]/7 hover:text-white">
-              See demo
-            </Link>
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <Link href="/connect"
                 className="inline-block rounded-md bg-[#3F72AF] px-4 py-2 text-sm font-semibold text-black shadow-lg shadow-[#3F72AF]/20 transition-colors duration-150 hover:bg-[#F9F7F7]">

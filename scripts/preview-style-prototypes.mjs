@@ -55,7 +55,7 @@ function page(theme, title, subtitle, content) {
           <h1>${title}</h1>
           <p class="lead">${subtitle}</p>
         </div>
-        <div class="statusRail"><span>GitHub</span><span>Neon</span><span>CLOD</span><span>Greptile</span><span>AllScale</span></div>
+        <div class="statusRail"><span>GitHub</span><span>Neon</span><span>CLOD</span><span>Greptile</span><span>Clustly</span></div>
       </header>
       ${content}
     </main>`
@@ -75,7 +75,7 @@ function calmOperator() {
       <div class="split">
         <div class="lane agent"><b>Agent lane</b><span>#41 cache invalidation</span><small>Work order ready · PR pending</small></div>
         <div class="lane human"><b>Maintainer lane</b><span>#52 auth boundary</span><small>Decision brief ready</small></div>
-        <div class="lane bounty"><b>Bounty lane</b><span>#77 adapter integration</span><small>$350 · AllScale release gated</small></div>
+        <div class="lane bounty"><b>Bounty lane</b><span>#77 adapter integration</span><small>$350 · Clustly release gated</small></div>
         <div class="lane clarify"><b>Clarify lane</b><span>#88 vague timeout</span><small>Draft response ready</small></div>
       </div>
       <div class="artifact">Selected route: CLOD rationale → work order → PR proof → verification → release gate</div>
@@ -99,10 +99,10 @@ function darkLedger() {
   return `<section class="ledgerHero">
     <div class="proofScore"><span>Trust gates passed</span><b>31</b><small>work items have proof attached</small></div>
     <div class="proofScore warn"><span>Payout blocked</span><b>8</b><small>waiting on verification or maintainer acceptance</small></div>
-    <div class="proofScore good"><span>Release ready</span><b>4</b><small>AllScale artifact can be released</small></div>
+    <div class="proofScore good"><span>Release ready</span><b>4</b><small>Clustly task can be released</small></div>
   </section>
   <section class="ledger">
-    <div class="ledgerHead"><span>Issue</span><span>Route</span><span>Action</span><span>Code</span><span>Greptile</span><span>AllScale</span></div>
+    <div class="ledgerHead"><span>Issue</span><span>Route</span><span>Action</span><span>Code</span><span>Greptile</span><span>Clustly</span></div>
     ${rows.map((row) => `<div class="ledgerRow">${row.map((cell) => `<span>${cell}</span>`).join("")}</div>`).join("")}
   </section>`;
 }
@@ -120,7 +120,7 @@ function neonDeck() {
     </div>
     <div class="deckCard">
       <p>NEXT DEMO BEAT</p>
-      <h2>Greptile passed. AllScale release unblocked.</h2>
+      <h2>Greptile passed. Clustly release unblocked.</h2>
       <span>#77 adapter integration · $350</span>
     </div>
   </section>`;
@@ -137,7 +137,7 @@ function frostedCockpit() {
     <div class="glassStack">
       <article><span>CLOD</span><b>Route confidence 86%</b><p>#41 is low-risk, bounded, and testable.</p></article>
       <article><span>Greptile</span><b>Verification pending</b><p>PR #9001 waiting for acceptance check scan.</p></article>
-      <article><span>AllScale</span><b>Release gate locked</b><p>Payment appears only after merge + verification.</p></article>
+      <article><span>Clustly</span><b>Release gate locked</b><p>Payout appears only after merge + verification.</p></article>
     </div>
   </section>`;
 }

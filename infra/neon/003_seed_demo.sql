@@ -309,12 +309,12 @@ INSERT INTO payment_artifacts (
 )
 SELECT
   inserted_bounties.id,
-  'allscale',
+  'clustly',
   CASE WHEN inserted_bounties.issue_id LIKE '%-7' THEN 'released' ELSE 'ready' END,
   inserted_bounties.amount_cents,
   inserted_bounties.currency,
-  'https://allscale.example/payments/' || inserted_bounties.issue_id,
-  'allscale-demo-' || inserted_bounties.issue_id,
+  'https://clustly.ai/tasks/' || inserted_bounties.issue_id,
+  'clustly-demo-' || inserted_bounties.issue_id,
   CASE WHEN inserted_bounties.issue_id LIKE '%-7' THEN 'Merged PR passed verification and maintainer accepted bounty.' ELSE NULL END,
   CASE WHEN inserted_bounties.issue_id LIKE '%-7' THEN now() ELSE NULL END
 FROM inserted_bounties;

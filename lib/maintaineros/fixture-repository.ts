@@ -87,7 +87,7 @@ interface FixtureIssue {
 }
 
 interface FixturePaymentArtifact {
-  provider: 'allscale' | 'clustly';
+  provider: 'clustly';
   status: 'draft' | 'ready' | 'released' | 'failed' | 'posted' | 'funded' | 'claimed' | 'submitted' | 'approved' | 'paid' | 'refunded';
   amountCents: number;
   currency: 'USD' | 'USDC';
@@ -690,6 +690,11 @@ function buildEvaluationSummary(sourceState: ArtifactSourceState = 'fixture'): E
 }
 
 function toClustlyTask(artifact: FixturePaymentArtifact, sourceState: ArtifactSourceState): IssueDetailViewModel['paymentArtifact'] {
+  const rawUrl = artifact.artifactUrl;
+  const taskUrl =
+    rawUrl && rawUrl.includes('allscale.example/payments')
+      ? rawUrl.replace('allscale.example/payments', 'clustly.ai/tasks')
+      : rawUrl;
   return {
     provider: 'clustly',
     sourceState,
@@ -697,7 +702,7 @@ function toClustlyTask(artifact: FixturePaymentArtifact, sourceState: ArtifactSo
     amountCents: artifact.amountCents,
     currency: artifact.currency === 'USD' ? 'USDC' : artifact.currency,
     taskId: `fixture-${artifact.amountCents}`,
-    taskUrl: artifact.artifactUrl?.replace('allscale.example/payments', 'clustly.ai/tasks'),
+    taskUrl,
     fundingMode: 'manual-browser',
     claimerKind: 'human',
     releaseReason: 'Released only after funded Clustly task, linked PR, non-stale passed verification, and maintainer acceptance.',

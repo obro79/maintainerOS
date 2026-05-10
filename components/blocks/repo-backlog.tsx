@@ -116,6 +116,7 @@ export function RepoBacklog({ dashboard, initialLane }: { dashboard?: DashboardV
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
+            aria-label="Search issues"
             placeholder="Search issues…"
             className="pl-8 pr-4 py-1.5 text-sm bg-[#F9F7F7]/[0.035] border border-[#F9F7F7]/12 rounded-lg text-white placeholder:text-[#F9F7F7]/28 focus:outline-none focus:border-[#F9F7F7]/24 w-48 transition-colors"
           />

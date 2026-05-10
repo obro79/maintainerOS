@@ -81,19 +81,6 @@ export function RepoSidebar({ org, repo }: RepoSidebarProps) {
         })}
       </nav>
 
-      {/* Live CLOD indicator */}
-      <div className="px-4 pb-4">
-        <div className="rounded-lg border border-[#F9F7F7]/10 bg-[#F9F7F7]/[0.025] px-3 py-2.5">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="relative flex size-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#3F72AF] opacity-60" />
-              <span className="relative inline-flex size-1.5 rounded-full bg-[#3F72AF]" />
-            </span>
-            <span className="text-[10px] font-sans text-[#3F72AF]">CLOD routing</span>
-          </div>
-          <div className="text-[10px] text-[#F9F7F7]/28">Last run 4m ago</div>
-        </div>
-      </div>
     </aside>
   );
 }

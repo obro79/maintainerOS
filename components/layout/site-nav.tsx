@@ -55,7 +55,10 @@ export function SiteNav() {
             </motion.div>
           </div>
 
-          <button onClick={() => setMenuOpen(!menuOpen)} className="rounded-md p-2 text-[#F9F7F7]/80 transition-colors hover:bg-[#F9F7F7]/7 hover:text-white lg:hidden">
+          <button
+            aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="rounded-md p-2 text-[#F9F7F7]/80 transition-colors hover:bg-[#F9F7F7]/7 hover:text-white lg:hidden">
             {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
           </button>
         </div>

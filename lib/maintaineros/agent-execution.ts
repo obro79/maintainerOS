@@ -110,11 +110,19 @@ export async function generateClodPatchPackage(issue: IssueDetailViewModel, repo
     },
     body: JSON.stringify({
       model: process.env.CLOD_BALANCED_MODEL || process.env.CLOD_CHEAP_MODEL || 'DeepSeek V3',
-      max_completion_tokens: 1800,
+      reasoning_effort: process.env.CLOD_AGENT_REASONING_EFFORT || 'low',
+      max_completion_tokens: Number(process.env.CLOD_AGENT_MAX_COMPLETION_TOKENS || 6000),
+      response_format: { type: 'json_object' },
       messages: [
         {
           role: 'system',
-          content: 'Return strict JSON only with summary, branchName, commitMessage, filesIntended, unifiedDiff, and verificationCommands. unifiedDiff must be a git apply compatible patch.',
+          content: [
+            'Return one JSON object only. No markdown.',
+            'Required schema: {summary:string, branchName:string, commitMessage:string, filesIntended:string[], unifiedDiff:string, verificationCommands:string[]}.',
+            'filesIntended must be an array of file paths, not a map.',
+            'unifiedDiff must be one git apply compatible patch string beginning with diff --git.',
+            'Keep changes scoped to the issue and do not include unrelated files.',
+          ].join(' '),
         },
         {
           role: 'user',

@@ -1,4 +1,5 @@
 import { EvidenceBadge } from './evidence-badge';
+import type React from 'react';
 import type { SponsorProofViewModel } from '@/lib/maintaineros/types';
 
 export function SponsorProofPanel({ proof }: { proof: SponsorProofViewModel }) {
@@ -12,7 +13,24 @@ export function SponsorProofPanel({ proof }: { proof: SponsorProofViewModel }) {
         <EvidenceBadge sourceState={proof.sourceState} />
       </div>
       <p className="mt-3 text-sm leading-relaxed text-zinc-500">{proof.summary}</p>
-      <p className="mt-3 text-xs text-zinc-600">Status: {proof.status}{proof.runId ? ` · Run: ${proof.runId}` : ''}</p>
+      <p className="mt-3 text-xs text-zinc-600">
+        Status: {proof.status}{proof.runId ? ` · Run: ${proof.runId}` : ''}{proof.occurredAt ? ` · ${new Date(proof.occurredAt).toISOString()}` : ''}
+      </p>
+      {(proof.artifactUrl || proof.screenshotUrl || proof.logUrl) && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {proof.artifactUrl && <ProofLink href={proof.artifactUrl}>Artifact</ProofLink>}
+          {proof.screenshotUrl && <ProofLink href={proof.screenshotUrl}>Screenshot</ProofLink>}
+          {proof.logUrl && <ProofLink href={proof.logUrl}>Log</ProofLink>}
+        </div>
+      )}
     </section>
+  );
+}
+
+function ProofLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <a className="inline-flex rounded-lg border border-white/10 px-2 py-1 text-xs text-blue-300 hover:text-blue-200" href={href}>
+      {children}
+    </a>
   );
 }

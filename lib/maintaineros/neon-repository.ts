@@ -22,6 +22,8 @@ import { buildSandboxExecutionsForIssue, buildSandboxTraceEvents, toSandboxAttem
 import { toVerificationQueueItem } from './verification';
 import { toClustlyBountyListItem } from './payments';
 import { buildDeterministicWorkOrder } from './work-orders';
+import { listSponsorProofRuns } from './provider-runs';
+import { mergeSponsorProof } from './sponsor-proof';
 import { hidePayoutArtifactsForNonClustlyRoutes } from './payout';
 import { buildRouteHistoryFromTrace } from './route-history';
 import { listTraceEvents, mergeTraceEvents } from './trace-events';
@@ -76,6 +78,7 @@ export class NeonMaintainerOSRepository implements MaintainerOSRepository {
       const details = await Promise.all(issues.rows.map((issue) => toIssueDetailWithPersistedTrace(client, repository.id, issue)));
       const selectedIssue = details[0] ?? emptyIssueDetail(repository.id);
       const latestImportRun = await getLatestImportRun(client, repository.owner, repository.name);
+      const sponsorProof = mergeSponsorProof(await listSponsorProofRuns(client, repository.id));
 
       return {
         repository: {
@@ -114,6 +117,7 @@ export class NeonMaintainerOSRepository implements MaintainerOSRepository {
           { provider: 'greptile', sourceState: 'planned', status: 'planned', label: 'Greptile', detail: 'Verification lands in Phase 5.' },
           { provider: 'clustly', sourceState: 'planned', status: 'planned', label: 'Clustly', detail: 'Bounty rail lands in Phase 6.' },
         ],
+        sponsorProof,
       };
     });
   }

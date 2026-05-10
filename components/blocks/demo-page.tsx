@@ -108,6 +108,7 @@ export function DemoPage({ dashboard }: { dashboard: DashboardViewModel }) {
                 <input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
+                  aria-label="Filter demo issues"
                   placeholder="Filter issues"
                   className="h-10 w-full rounded-md border border-[#F9F7F7]/12 bg-black/24 pl-9 pr-3 text-sm text-white placeholder:text-[#F9F7F7]/35 focus:border-[#3F72AF]/35 focus:outline-none"
                 />

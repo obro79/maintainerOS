@@ -70,7 +70,7 @@ const ENTRIES: ChangelogEntry[] = [
     icon: Shield,
     tone: 'text-[#DBE2EF]',
     items: [
-      { type: 'New', text: 'GitHub OAuth read-only scope enforcement' },
+      { type: 'New', text: 'GitHub public-only connect flow without private-repo scopes or write access' },
       { type: 'Improved', text: 'CSV export includes confidence score and rationale summary' },
       { type: 'Fixed', text: 'Pagination fixed for repos with more than 500 open issues' },
     ],

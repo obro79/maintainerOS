@@ -96,6 +96,7 @@ function ConnectContent() {
 
       <motion.a
         href="/api/auth/github/start"
+        aria-label={isOAuthConnected ? 'Reconnect GitHub OAuth' : 'Continue with GitHub OAuth'}
         whileHover={{ scale: 1.02, y: -1 }}
         whileTap={{ scale: 0.98 }}
         className="mb-3 flex w-full items-center justify-center gap-3 rounded-xl bg-white px-6 py-3.5 text-[15px] font-semibold text-black shadow-2xl shadow-black/50 transition-all duration-200 hover:bg-zinc-100">
@@ -157,6 +158,7 @@ function ConnectContent() {
 
         <motion.button
           type="submit"
+          aria-label={status === 'importing' ? `Importing ${repoPath}` : 'Import public GitHub repository'}
           disabled={status === 'importing'}
           whileHover={{ scale: status === 'importing' ? 1 : 1.02, y: status === 'importing' ? 0 : -1 }}
           whileTap={{ scale: status === 'importing' ? 1 : 0.98 }}
@@ -181,8 +183,8 @@ function ConnectContent() {
       </div>
 
       <div className="text-center">
-        <Link href="/demo" className="inline-flex items-center gap-1 text-sm text-zinc-600 transition-colors hover:text-zinc-400">
-          Want to explore first? <span className="text-emerald-500">View live demo</span>
+        <Link href="/vercel/next.js" className="inline-flex items-center gap-1 text-sm text-zinc-600 transition-colors hover:text-zinc-400">
+          Want to explore first? <span className="text-emerald-500">Open live repo</span>
           <ChevronRight className="size-3.5 text-emerald-500" />
         </Link>
       </div>

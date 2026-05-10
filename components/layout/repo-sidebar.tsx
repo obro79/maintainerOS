@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Activity, Award, Bot, CheckCircle2, FileCheck2, LayoutDashboard, List, RotateCcw, ScrollText, ChevronRight, GitMerge } from 'lucide-react';
+import { Activity, Award, Bot, CheckCircle2, FileCheck2, LayoutDashboard, List, ScrollText, ChevronRight, GitMerge } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const NAV = [
@@ -83,12 +83,6 @@ export function RepoSidebar({ org, repo }: RepoSidebarProps) {
 
       {/* Live CLOD indicator */}
       <div className="px-4 pb-4">
-        <Link
-          href="/demo/reset"
-          className="mb-2 flex items-center gap-2 rounded-lg border border-white/6 bg-white/[0.02] px-3 py-2 text-[11px] text-zinc-500 transition-colors hover:text-zinc-300">
-          <RotateCcw className="size-3.5" />
-          Demo reset
-        </Link>
         <div className="rounded-lg border border-white/6 bg-white/[0.02] px-3 py-2.5">
           <div className="flex items-center gap-2 mb-1">
             <span className="relative flex size-1.5">

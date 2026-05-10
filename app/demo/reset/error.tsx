@@ -21,7 +21,7 @@ export default function DemoResetError({
           <p className="mb-1 font-mono text-[10px] uppercase tracking-[0.25em] text-zinc-600">Presenter tooling</p>
           <h1 className="font-heading text-3xl font-bold tracking-tight text-white">Demo reset unavailable</h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-500">
-            Something failed while loading this panel. You can retry or return to the demo hub.
+            Something failed while loading this panel. You can retry or return to the live repository.
           </p>
         </header>
         <div className="flex flex-wrap gap-3">
@@ -33,10 +33,10 @@ export default function DemoResetError({
             Try again
           </button>
           <Link
-            href="/demo"
+            href="/vercel/next.js"
             className="rounded-lg border border-white/10 px-4 py-2 text-sm text-zinc-400 hover:text-white"
           >
-            Back to demo
+            Open live repo
           </Link>
         </div>
         {process.env.NODE_ENV === 'development' && (

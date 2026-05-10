@@ -19,7 +19,7 @@ const QUICKSTART_STEPS = [
   {
     n: '01',
     label: 'Connect your repo',
-    body: 'Authorize read access via GitHub. MaintainerOS imports issues and stores the routing artifacts separately from your repository.',
+    body: 'Authorize read access via GitHub. This flow does not request private-repo scopes or write access. MaintainerOS imports issues and stores the routing artifacts separately from your repository.',
   },
   {
     n: '02',

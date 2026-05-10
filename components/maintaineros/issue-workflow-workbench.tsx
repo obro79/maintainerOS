@@ -306,7 +306,7 @@ function WorkflowGraph({
             const from = NODE_POSITIONS[edge.from];
             const to = NODE_POSITIONS[edge.to];
             const tone = edgeTone(edge.status);
-            const active = edge.status !== 'skipped';
+            const active = edge.to === currentNodeId;
             return (
               <motion.line
                 key={`${edge.from}-${edge.to}-${edge.status}`}
@@ -380,12 +380,12 @@ function WorkflowNodeCard({
       transition={{ duration: 0.25, delay: index * 0.035, ease: [0.22, 1, 0.36, 1] }}
       aria-pressed={selected}
     >
-      {node.status !== 'skipped' && (
+      {current && (
         <motion.span
           className={cn('absolute inset-x-0 top-0 h-px opacity-70', tone.bar)}
           initial={{ x: '-100%' }}
           animate={{ x: '100%' }}
-          transition={{ duration: current ? 0.9 : 1.8, repeat: Infinity, ease: 'linear', delay: index * 0.08 }}
+          transition={{ duration: 0.9, repeat: Infinity, ease: 'linear', delay: index * 0.08 }}
         />
       )}
       {current && (

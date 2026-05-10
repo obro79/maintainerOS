@@ -21,8 +21,10 @@ import { buildContextPackForIssue, buildNiaTraceEvent } from './nia-context';
 import { buildSandboxExecutionsForIssue, buildSandboxTraceEvents, toSandboxAttemptListItems } from './daytona';
 import { toVerificationQueueItem } from './verification';
 import { toClustlyBountyListItem } from './payments';
-import { listPersistedTraceEvents, mergeTraceEvents } from './trace-events';
 import { buildDeterministicWorkOrder } from './work-orders';
+import { hidePayoutArtifactsForNonClustlyRoutes } from './payout';
+import { buildRouteHistoryFromTrace } from './route-history';
+import { listTraceEvents, mergeTraceEvents } from './trace-events';
 
 interface RepositoryRow {
   id: string;
@@ -71,7 +73,7 @@ export class NeonMaintainerOSRepository implements MaintainerOSRepository {
         [repository.id],
       );
       const cards = issues.rows.map(toIssueCard);
-      const details = await Promise.all(issues.rows.map((issue) => toIssueDetailWithPersistedTrace(repository.id, issue)));
+      const details = await Promise.all(issues.rows.map((issue) => toIssueDetailWithPersistedTrace(client, repository.id, issue)));
       const selectedIssue = details[0] ?? emptyIssueDetail(repository.id);
       const latestImportRun = await getLatestImportRun(client, repository.owner, repository.name);
 
@@ -123,7 +125,8 @@ export class NeonMaintainerOSRepository implements MaintainerOSRepository {
         `select * from maintaineros_issues where repository_id = $1 and number = $2 limit 1`,
         [repository.id, issueNumber],
       );
-      return result.rows[0] ? toIssueDetailWithPersistedTrace(repository.id, result.rows[0]) : null;
+      if (!result.rows[0]) return null;
+      return toIssueDetailWithPersistedTrace(client, repository.id, result.rows[0]);
     });
   }
 
@@ -155,14 +158,9 @@ export class NeonMaintainerOSRepository implements MaintainerOSRepository {
   }
 }
 
-async function toIssueDetailWithPersistedTrace(repositoryId: string, issue: IssueRow) {
-  const detail = applyStoredClodArtifact(repositoryId, toIssueDetail(issue));
-  const persisted = await listPersistedTraceEvents(repositoryId, detail.number);
-  if (persisted.length === 0) return detail;
-  return {
-    ...detail,
-    trace: mergeTraceEvents(detail.trace, persisted),
-  };
+async function toIssueDetailWithPersistedTrace(client: PgClient, repositoryId: string, issue: IssueRow) {
+  const persistedTrace = await listTraceEvents(client, repositoryId, issue.number);
+  return applyStoredClodArtifact(repositoryId, toIssueDetail(issue, persistedTrace));
 }
 
 async function findRepository(client: PgClient, repositoryId: string): Promise<RepositoryRow> {
@@ -213,7 +211,7 @@ function toIssueCard(issue: IssueRow): IssueCardViewModel {
   };
 }
 
-function toIssueDetail(issue: IssueRow): IssueDetailViewModel {
+function toIssueDetail(issue: IssueRow, persistedTrace: IssueTraceEventViewModel[] = []): IssueDetailViewModel {
   const card = toIssueCard(issue);
   const labels = normalizeLabels(issue.labels);
   const decision = scoreIssue({
@@ -287,23 +285,27 @@ function toIssueDetail(issue: IssueRow): IssueDetailViewModel {
         }
       : null,
     paymentArtifact: null,
+    routeHistory: [],
     trace: [],
     payoutGate: {
       canRelease: false,
       reasons: ['Live issue imported, but verification and Clustly release artifacts are not present yet.'],
     },
   };
-  const sandboxExecutions = buildSandboxExecutionsForIssue(baseDetail, issue.repository_id, 'live');
-  const trace = [
+  const payoutVisibleBaseDetail = hidePayoutArtifactsForNonClustlyRoutes(baseDetail);
+  const sandboxExecutions = buildSandboxExecutionsForIssue(payoutVisibleBaseDetail, issue.repository_id, 'live');
+  const derivedTrace = [
     ...buildLiveTrace(issue, decision.route, modelRun.model, contextPack),
-    ...buildSandboxTraceEvents(baseDetail, sandboxExecutions).map((event) => ({ ...event, route: decision.route })),
-  ].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
+    ...buildSandboxTraceEvents(payoutVisibleBaseDetail, sandboxExecutions).map((event) => ({ ...event, route: decision.route })),
+  ];
+  const trace = mergeTraceEvents(derivedTrace, persistedTrace);
 
-  return {
-    ...baseDetail,
+  return hidePayoutArtifactsForNonClustlyRoutes({
+    ...payoutVisibleBaseDetail,
     sandboxExecutions,
+    routeHistory: buildRouteHistoryFromTrace(payoutVisibleBaseDetail, trace),
     trace,
-  };
+  });
 }
 
 function buildLiveTrace(issue: IssueRow, route: ExecutionRoute, model: string, contextPack: IssueDetailViewModel['contextPack']): IssueTraceEventViewModel[] {

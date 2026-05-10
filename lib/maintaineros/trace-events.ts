@@ -1,5 +1,5 @@
+import { hasNeonConnection, withPostgres, type PgClient } from './postgres';
 import type { ArtifactSourceState, ExecutionRoute, IssueTraceEventViewModel, ProviderKey } from './types';
-import { hasNeonConnection, withPostgres } from './postgres';
 
 interface TraceEventInput {
   id?: string;
@@ -95,19 +95,21 @@ export async function recordTraceEvent(input: TraceEventInput) {
   }
 }
 
+export async function listTraceEvents(client: PgClient, repositoryId: string, issueNumber: number) {
+  const result = await client.query<TraceEventRow>(
+    `select id, provider, source_state, status, title, detail, artifact_url, related_id, payload, occurred_at
+     from maintaineros_trace_events
+     where lower(repository_id) = lower($1) and issue_number = $2
+     order by occurred_at asc`,
+    [repositoryId, issueNumber],
+  );
+  return result.rows.map(toTraceEvent);
+}
+
 export async function listPersistedTraceEvents(repositoryId: string, issueNumber: number): Promise<IssueTraceEventViewModel[]> {
   if (!hasNeonConnection()) return [];
   try {
-    return await withPostgres(async (client) => {
-      const result = await client.query<TraceEventRow>(
-        `select id, provider, source_state, status, title, detail, artifact_url, related_id, payload, occurred_at
-         from maintaineros_trace_events
-         where repository_id = $1 and issue_number = $2
-         order by occurred_at asc`,
-        [repositoryId.toLowerCase(), issueNumber],
-      );
-      return result.rows.map(toTraceEvent);
-    });
+    return await withPostgres((client) => listTraceEvents(client, repositoryId, issueNumber));
   } catch {
     return [];
   }

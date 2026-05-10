@@ -195,6 +195,11 @@ export function IssueArtifactStack({ issue }: { issue: IssueDetailViewModel | nu
               </p>
             )}
             <p className="mt-2 text-sm text-zinc-300">{issue.verification.summary}</p>
+            {issue.verification.isStale && (
+              <p className="mt-2 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+                SHA mismatch blocks completion and payout until Greptile reruns on the current PR head.
+              </p>
+            )}
             <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-zinc-500 md:grid-cols-4">
               <span>Status: {issue.verification.status}</span>
               <span>Findings: {issue.verification.blockingFindingsCount}</span>
@@ -252,8 +257,10 @@ export function IssueArtifactStack({ issue }: { issue: IssueDetailViewModel | nu
               </p>
               {!issue.payoutGate.canRelease && (
                 <ul className="mt-2 space-y-1">
-                  {issue.payoutGate.reasons.map((reason) => (
-                    <li key={reason} className="text-xs text-zinc-500">{reason}</li>
+                  {issue.payoutGate.reasonDetails.map((reason) => (
+                    <li key={reason.code} className="text-xs text-zinc-500">
+                      <span className="font-mono text-zinc-600">{reason.code}</span> · {reason.message}
+                    </li>
                   ))}
                 </ul>
               )}

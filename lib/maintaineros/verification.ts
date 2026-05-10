@@ -11,7 +11,6 @@ export class FixtureGreptileObserver implements VerificationObserver {
 }
 
 export function isVerificationStale(verification: VerificationViewModel) {
-  if (verification.status === 'stale' || verification.isStale) return true;
   if (!verification.verifiedSha || !verification.currentSha) return false;
   return verification.verifiedSha !== verification.currentSha;
 }
@@ -33,14 +32,14 @@ export function buildGreptileVerification(issue: IssueDetailViewModel, pullReque
   const base = issue.verification;
   const currentSha = pullRequest.headSha;
   const forcedStatus = forcedVerificationStatus(issue);
-  const status = forcedStatus ?? base?.status ?? 'pending';
+  const status = forcedStatus ?? (base && hasExplicitStaleStatus(base) ? 'stale' : base?.status) ?? 'pending';
   const baseVerifiedSha = base?.verifiedSha ?? null;
   const verifiedSha = status === 'pending'
     ? null
     : status === 'stale'
       ? baseVerifiedSha && baseVerifiedSha !== currentSha ? baseVerifiedSha : `${currentSha}-old`
       : baseVerifiedSha ?? currentSha;
-  const isStale = status === 'stale' || Boolean(verifiedSha && currentSha && verifiedSha !== currentSha);
+  const isStale = Boolean(verifiedSha && verifiedSha !== currentSha);
   const effectiveStatus = isStale ? 'stale' : status;
   const blockingFindings = effectiveStatus === 'failed'
     ? ['Missing regression coverage for the failing path.', 'Acceptance criteria were not demonstrated in the PR.']
@@ -106,6 +105,10 @@ function forcedVerificationStatus(issue: IssueDetailViewModel): VerificationView
   if (issue.number === 1) return 'pending';
   if (issue.number === 17) return 'failed';
   return null;
+}
+
+function hasExplicitStaleStatus(verification: VerificationViewModel) {
+  return verification.status === 'stale';
 }
 
 function summaryFor(issue: IssueDetailViewModel, status: VerificationViewModel['status']) {

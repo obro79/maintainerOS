@@ -230,14 +230,13 @@ export interface ClustlyBountyListItemViewModel {
   traceUrl: string;
   bounty: BountyViewModel;
   task: ClustlyTaskViewModel | null;
-  gate: {
-    canRelease: boolean;
-    reasons: string[];
-  };
+  gate: PayoutGateViewModel;
 }
 
+export type BountyLifecycleStatus = 'proposed' | 'funded' | 'claimed' | 'submitted' | 'approved' | 'paid' | 'canceled';
+
 export interface BountyViewModel {
-  status: 'proposed' | 'funded' | 'claimed' | 'submitted' | 'approved' | 'paid' | 'canceled';
+  status: BountyLifecycleStatus;
   amountCents: number;
   currency: 'USD';
   rationale: string;
@@ -260,6 +259,29 @@ export interface ClustlyTaskViewModel {
 }
 
 export type PaymentArtifactViewModel = ClustlyTaskViewModel;
+
+export type PayoutBlockReasonCode =
+  | 'not_bounty_route'
+  | 'missing_bounty'
+  | 'bounty_canceled'
+  | 'bounty_not_funded'
+  | 'missing_pull_request'
+  | 'missing_verification'
+  | 'verification_not_passed'
+  | 'verification_stale'
+  | 'maintainer_not_accepted';
+
+export interface PayoutGateReasonViewModel {
+  code: PayoutBlockReasonCode;
+  message: string;
+}
+
+export interface PayoutGateViewModel {
+  canRelease: boolean;
+  reasons: string[];
+  reasonCodes: PayoutBlockReasonCode[];
+  reasonDetails: PayoutGateReasonViewModel[];
+}
 
 export interface SponsorProofViewModel {
   provider: ProviderKey;
@@ -342,10 +364,7 @@ export interface IssueDetailViewModel extends IssueCardViewModel {
   paymentArtifact: PaymentArtifactViewModel | null;
   routeHistory: RouteAttemptViewModel[];
   trace: IssueTraceEventViewModel[];
-  payoutGate: {
-    canRelease: boolean;
-    reasons: string[];
-  };
+  payoutGate: PayoutGateViewModel;
 }
 
 export interface RouteBucketViewModel {

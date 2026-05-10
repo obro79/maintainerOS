@@ -36,17 +36,10 @@ for (const table of tables) {
   }
 }
 
-<<<<<<< HEAD
 const fixtureIndex = JSON.parse(readFileSync("data/mock-repos/index.json", "utf8"));
 const expectedCounts = new Map(
   fixtureIndex.repositories.map((repo) => [repo.id, repo.issueCount])
 );
-=======
-const expectedCounts = new Map([
-  ["maintaineros-demo-large", 400],
-  ["maintaineros-demo-medium", 200]
-]);
->>>>>>> 9146087 (Add setup scripts and infra seeds)
 
 for (const [repoId, expectedCount] of expectedCounts) {
   const fixture = JSON.parse(readFileSync(`data/mock-repos/${repoId}.json`, "utf8"));
@@ -61,6 +54,15 @@ for (const [repoId, expectedCount] of expectedCounts) {
       throw new Error(`Issue ${issue.id} is missing route/workOrder/modelRun data`);
     }
   }
+}
+
+const largeFixture = JSON.parse(readFileSync("data/mock-repos/maintaineros-demo-large.json", "utf8"));
+const nonClustlyArtifactIssue = largeFixture.issues.find(
+  (issue) => issue.classification?.route !== "bounty-worthy" && issue.paymentArtifact
+);
+
+if (!nonClustlyArtifactIssue) {
+  throw new Error("Expected a non-bounty fixture issue with a raw payment artifact for payout suppression coverage");
 }
 
 console.log("MaintainerOS prep check passed.");

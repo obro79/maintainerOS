@@ -21,8 +21,10 @@ import { buildContextPackForIssue, buildNiaTraceEvent } from './nia-context';
 import { buildSandboxExecutionsForIssue, buildSandboxTraceEvents, toSandboxAttemptListItems } from './daytona';
 import { toVerificationQueueItem } from './verification';
 import { toClustlyBountyListItem } from './payments';
+import { hidePayoutArtifactsForNonClustlyRoutes } from './payout';
 import { listPersistedTraceEvents, mergeTraceEvents } from './trace-events';
 import { buildDeterministicWorkOrder } from './work-orders';
+import { buildRouteHistoryFromTrace } from './route-history';
 
 interface RepositoryRow {
   id: string;
@@ -213,7 +215,7 @@ function toIssueCard(issue: IssueRow): IssueCardViewModel {
   };
 }
 
-function toIssueDetail(issue: IssueRow): IssueDetailViewModel {
+function toIssueDetail(issue: IssueRow, persistedTrace: IssueTraceEventViewModel[] = []): IssueDetailViewModel {
   const card = toIssueCard(issue);
   const labels = normalizeLabels(issue.labels);
   const decision = scoreIssue({
@@ -287,23 +289,27 @@ function toIssueDetail(issue: IssueRow): IssueDetailViewModel {
         }
       : null,
     paymentArtifact: null,
+    routeHistory: [],
     trace: [],
     payoutGate: {
       canRelease: false,
       reasons: ['Live issue imported, but verification and Clustly release artifacts are not present yet.'],
     },
   };
-  const sandboxExecutions = buildSandboxExecutionsForIssue(baseDetail, issue.repository_id, 'live');
+  const payoutVisibleBaseDetail = hidePayoutArtifactsForNonClustlyRoutes(baseDetail);
+  const sandboxExecutions = buildSandboxExecutionsForIssue(payoutVisibleBaseDetail, issue.repository_id, 'live');
   const trace = [
     ...buildLiveTrace(issue, decision.route, modelRun.model, contextPack),
-    ...buildSandboxTraceEvents(baseDetail, sandboxExecutions).map((event) => ({ ...event, route: decision.route })),
+    ...buildSandboxTraceEvents(payoutVisibleBaseDetail, sandboxExecutions).map((event) => ({ ...event, route: decision.route })),
+    ...persistedTrace,
   ].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
 
-  return {
-    ...baseDetail,
+  return hidePayoutArtifactsForNonClustlyRoutes({
+    ...payoutVisibleBaseDetail,
     sandboxExecutions,
+    routeHistory: buildRouteHistoryFromTrace(payoutVisibleBaseDetail, trace),
     trace,
-  };
+  });
 }
 
 function buildLiveTrace(issue: IssueRow, route: ExecutionRoute, model: string, contextPack: IssueDetailViewModel['contextPack']): IssueTraceEventViewModel[] {

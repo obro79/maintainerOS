@@ -376,11 +376,11 @@
         "summary": "Fixture verification result for demo proof panel."
       },
       "paymentArtifact": {
-        "provider": "allscale",
+        "provider": "clustly",
         "status": "released",
         "amountCents": 45000,
-        "currency": "USD",
-        "artifactUrl": "https://allscale.example/payments/maintaineros-demo-medium-7"
+        "currency": "USDC",
+        "artifactUrl": "https://clustly.ai/tasks/maintaineros-demo-medium-7"
       },
       "modelRun": {
         "provider": "clod",
@@ -795,11 +795,11 @@
         "summary": "Fixture verification result for demo proof panel."
       },
       "paymentArtifact": {
-        "provider": "allscale",
+        "provider": "clustly",
         "status": "ready",
         "amountCents": 45000,
-        "currency": "USD",
-        "artifactUrl": "https://allscale.example/payments/maintaineros-demo-medium-15"
+        "currency": "USDC",
+        "artifactUrl": "https://clustly.ai/tasks/maintaineros-demo-medium-15"
       },
       "modelRun": {
         "provider": "clod",

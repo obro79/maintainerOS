@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { formatInteger } from '@/lib/maintaineros/format';
 import { SiteNav } from '@/components/layout/site-nav';
 import { DataSourceBanner } from '@/components/maintaineros/data-source-banner';
+import { ROUTE_LABEL } from '@/lib/maintaineros/types';
 import type { DashboardViewModel, DemoLane, IssueCardViewModel } from '@/lib/maintaineros/types';
 
 type Lane = DemoLane;
@@ -418,6 +419,24 @@ export function DemoPage({ dashboard }: { dashboard: DashboardViewModel }) {
                             <p className="text-[11px] text-zinc-600 leading-relaxed">{event.detail}</p>
                           </div>
                         ))}
+                      </div>
+                    </div>
+
+                    <div className={cn('rounded-xl border p-3.5 mb-4', cfg.border, 'bg-[#030509]/60')}>
+                      <div className="text-[10px] text-zinc-600 mb-2">Retry / reroute history</div>
+                      <div className="space-y-2">
+                        {selectedDetail.routeHistory.slice(0, 3).map((attempt) => (
+                          <div key={attempt.id} className="border-l border-white/10 pl-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] text-zinc-300">
+                                {attempt.fromRoute ? `${ROUTE_LABEL[attempt.fromRoute]} -> ${ROUTE_LABEL[attempt.toRoute]}` : ROUTE_LABEL[attempt.toRoute]}
+                              </span>
+                              <span className="text-[9px] font-mono text-zinc-600">{attempt.status}</span>
+                            </div>
+                            <p className="text-[11px] text-zinc-600 leading-relaxed">{attempt.reason}</p>
+                          </div>
+                        ))}
+                        {selectedDetail.routeHistory.length === 0 && <p className="text-[11px] text-zinc-600">No retry history recorded.</p>}
                       </div>
                     </div>
 

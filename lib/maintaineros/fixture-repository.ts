@@ -20,7 +20,7 @@ import {
   type VerificationQueueItemViewModel,
   type VerificationViewModel,
 } from './types';
-import { canReleasePayout } from './payout';
+import { NON_CLUSTLY_ROUTE_REASON, canReleasePayout, hidePayoutArtifactsForNonClustlyRoutes } from './payout';
 import { classifyComplexity, classifyRisk, estimatePremiumBaselineCents, evaluateRoutePolicy, scoreIssue, selectClodModel } from './routing';
 import { applyStoredClodArtifact } from './clod-artifacts';
 import { buildContextPackForIssue, buildNiaTraceEvent } from './nia-context';
@@ -28,6 +28,7 @@ import { buildSandboxExecutionsForIssue, buildSandboxTraceEvents, toSandboxAttem
 import { buildGreptileVerification, toVerificationQueueItem } from './verification';
 import { toClustlyBountyListItem } from './payments';
 import { listPersistedTraceEvents, mergeTraceEvents } from './trace-events';
+import { buildRouteHistoryFromTrace } from './route-history';
 import { buildDeterministicWorkOrder } from './work-orders';
 
 interface FixtureRepositoryFile {
@@ -302,7 +303,7 @@ function toIssueDetail(issue: FixtureIssue, sourceState: ArtifactSourceState = '
         isStale: false,
       }
     : null;
-  const verification = pullRequest ? buildGreptileVerification({ ...card, body: issue.body, htmlUrl: issue.htmlUrl, author: issue.author, labels: issue.labels, modelRun, workOrder, routePolicy, contextPack: null, sandboxExecutions: [], pullRequest, verification: baseVerification, bounty: issue.bounty, paymentArtifact: null, trace: [], payoutGate: { canRelease: false, reasons: [] } }, pullRequest, sourceState) : null;
+  const verification = pullRequest ? buildGreptileVerification({ ...card, body: issue.body, htmlUrl: issue.htmlUrl, author: issue.author, labels: issue.labels, modelRun, workOrder, routePolicy, contextPack: null, sandboxExecutions: [], pullRequest, verification: baseVerification, bounty: issue.bounty, paymentArtifact: null, routeHistory: [], trace: [], payoutGate: { canRelease: false, reasons: [] } }, pullRequest, sourceState) : null;
   const contextPack = buildContextPackForIssue(
     {
       id: issue.id,
@@ -335,26 +336,29 @@ function toIssueDetail(issue: FixtureIssue, sourceState: ArtifactSourceState = '
         }
       : null,
     paymentArtifact: issue.paymentArtifact ? toClustlyTask(issue.paymentArtifact, sourceState) : null,
+    routeHistory: [],
     trace: [],
     payoutGate: { canRelease: false, reasons: [] },
   };
-  const sandboxExecutions = buildSandboxExecutionsForIssue(baseDetail, repositoryId, sourceState);
-  const payoutGate = canReleasePayout(baseDetail);
+  const payoutVisibleBaseDetail = hidePayoutArtifactsForNonClustlyRoutes(baseDetail);
+  const sandboxExecutions = buildSandboxExecutionsForIssue(payoutVisibleBaseDetail, repositoryId, sourceState);
+  const payoutGate = canReleasePayout(payoutVisibleBaseDetail);
   const trace = [
     ...buildTrace(issue, modelRun, sourceState, contextPack, verification, card.route, workOrder),
-    ...buildSandboxTraceEvents(baseDetail, sandboxExecutions).map((event) => ({ ...event, route: card.route })),
+    ...buildSandboxTraceEvents(payoutVisibleBaseDetail, sandboxExecutions).map((event) => ({ ...event, route: card.route })),
     ...buildPullRequestTraceEvents(issue, pullRequest, sourceState, card.route, workOrder),
-    ...buildPayoutGateTraceEvents(issue, baseDetail.paymentArtifact, payoutGate, sourceState, card.route),
+    ...buildPayoutGateTraceEvents(issue, payoutVisibleBaseDetail.paymentArtifact, payoutGate, sourceState, card.route),
   ].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
-  const detail = {
-    ...baseDetail,
+  const detail = hidePayoutArtifactsForNonClustlyRoutes({
+    ...payoutVisibleBaseDetail,
     sandboxExecutions,
+    routeHistory: buildRouteHistoryFromTrace(payoutVisibleBaseDetail, trace),
     trace,
-  };
+  });
 
   return {
     ...detail,
-    payoutGate,
+    payoutGate: detail.route === 'bounty-worthy' ? payoutGate : detail.payoutGate,
   };
 }
 
@@ -423,7 +427,7 @@ function buildTrace(issue: FixtureIssue, modelRun: ModelRunViewModel, sourceStat
     },
   ];
 
-  if (issue.number === 41 || route === 'bounty-worthy') {
+  if (issue.number === 41 || issue.number === 5 || route === 'bounty-worthy') {
     trace.push(
       {
         id: `${issue.id}-cheap-attempt`,
@@ -431,6 +435,7 @@ function buildTrace(issue: FixtureIssue, modelRun: ModelRunViewModel, sourceStat
         actor: 'Low-cost agent',
         provider: 'daytona',
         sourceState,
+        route: 'agent-solvable',
         title: 'First attempt failed verification',
         detail: 'Greptile-style check found missing regression coverage and incomplete acceptance criteria.',
         status: 'failed',
@@ -443,6 +448,7 @@ function buildTrace(issue: FixtureIssue, modelRun: ModelRunViewModel, sourceStat
         at: base,
         actor: 'Escalation policy',
         sourceState,
+        route: issue.classification.route,
         title: 'Escalated after failed proof',
         detail: 'MaintainerOS preserved the failed attempt and selected a stronger route based on verification evidence.',
         status: 'escalated',
@@ -484,7 +490,19 @@ function buildTrace(issue: FixtureIssue, modelRun: ModelRunViewModel, sourceStat
     trace.push(buildNiaTraceEvent({ id: issue.id, number: issue.number }, contextPack));
   }
 
-  if (issue.paymentArtifact) {
+  if (issue.classification.route !== 'bounty-worthy' && issue.paymentArtifact) {
+    trace.push({
+      id: `${issue.id}-payout-suppressed`,
+      at: base,
+      actor: 'MaintainerOS payout guard',
+      sourceState,
+      title: 'Payout artifact suppressed',
+      detail: NON_CLUSTLY_ROUTE_REASON,
+      status: 'blocked',
+    });
+  }
+
+  if (issue.classification.route === 'bounty-worthy' && issue.paymentArtifact) {
     trace.push(
       {
         id: `${issue.id}-clustly-posted`,
@@ -551,7 +569,7 @@ function buildPayoutGateTraceEvents(
   sourceState: ArtifactSourceState,
   route: ExecutionRoute,
 ): IssueTraceEventViewModel[] {
-  if (!issue.bounty && !paymentArtifact) return [];
+  if (issue.classification.route !== 'bounty-worthy' || (!issue.bounty && !paymentArtifact)) return [];
   return [
     {
       id: `${issue.id}-payout-gate`,

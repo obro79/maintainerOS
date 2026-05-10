@@ -1,5 +1,6 @@
 import { EvidenceBadge } from './evidence-badge';
 import type React from 'react';
+import { ROUTE_LABEL } from '@/lib/maintaineros/types';
 import type { IssueDetailViewModel } from '@/lib/maintaineros/types';
 
 function ArtifactSection({ title, sourceState, children }: { title: string; sourceState?: IssueDetailViewModel['modelRun']['sourceState']; children: React.ReactNode }) {
@@ -58,6 +59,33 @@ export function IssueArtifactStack({ issue }: { issue: IssueDetailViewModel | nu
             )}
           </div>
         </div>
+      </ArtifactSection>
+
+      <ArtifactSection title="Retry and reroute history" sourceState={issue.routeHistory[0]?.sourceState}>
+        {issue.routeHistory.length > 0 ? (
+          <div className="space-y-2">
+            {issue.routeHistory.map((attempt) => (
+              <div key={attempt.id} className="rounded-lg border border-white/6 p-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-mono text-[10px] text-zinc-600">#{attempt.sequence}</span>
+                  <span className="text-sm font-medium text-zinc-300">
+                    {attempt.fromRoute ? `${ROUTE_LABEL[attempt.fromRoute]} -> ${ROUTE_LABEL[attempt.toRoute]}` : ROUTE_LABEL[attempt.toRoute]}
+                  </span>
+                  <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase text-zinc-500">{attempt.trigger}</span>
+                  <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase text-zinc-500">{attempt.status}</span>
+                </div>
+                <p className="mt-2 text-xs leading-relaxed text-zinc-500">{attempt.reason}</p>
+                <div className="mt-2 flex flex-wrap gap-3 text-xs text-zinc-600">
+                  {attempt.model && <span>Model: {attempt.model}</span>}
+                  {attempt.costCents != null && <span>Cost: {attempt.costCents}c</span>}
+                  <span>{new Date(attempt.occurredAt).toISOString()}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-zinc-300">No retry or reroute history has been recorded yet.</p>
+        )}
       </ArtifactSection>
 
       <ArtifactSection title="CLōD model run" sourceState={issue.modelRun.sourceState}>
@@ -119,15 +147,15 @@ export function IssueArtifactStack({ issue }: { issue: IssueDetailViewModel | nu
       </ArtifactSection>
 
       <ArtifactSection title="Daytona sandbox" sourceState={issue.sandboxExecutions[0]?.sourceState}>
-        {issue.sandboxExecutions[0] ? (
+        {issue.sandboxExecutions.length > 0 ? (
           <div className="space-y-4">
-            {issue.sandboxExecutions.map((attempt) => (
+            <p className="text-xs text-amber-300">Sandbox output is execution evidence only. Greptile verification decides correctness in Phase 5.</p>
+            {issue.sandboxExecutions.map((attempt, index) => (
               <div key={attempt.id} className="rounded-lg border border-white/6 p-3">
                 <p className="text-sm text-zinc-300">{attempt.logSummary}</p>
                 <p className="mt-1 text-xs text-zinc-600">
-                  {attempt.status} · {attempt.sandboxId} · exit {attempt.exitCode ?? 'pending'}
+                  Attempt {index + 1} · {attempt.status} · {attempt.sandboxId} · exit {attempt.exitCode ?? 'pending'}
                 </p>
-                <p className="mt-2 text-xs text-amber-300">Sandbox output is execution evidence only. Greptile verification decides correctness in Phase 5.</p>
                 <div className="mt-3 grid gap-3 md:grid-cols-2">
                   <div>
                     <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-700">Command results</p>

@@ -1,5 +1,5 @@
 import type { ClustlyBountyListItemViewModel, IssueDetailViewModel, PaymentArtifactViewModel } from './types';
-import { canReleasePayout } from './payout';
+import { canReleasePayout, isClustlyEligibleRoute } from './payout';
 
 export interface PaymentProvider {
   createArtifact(issue: IssueDetailViewModel): Promise<PaymentArtifactViewModel | null>;
@@ -18,7 +18,7 @@ export class FixtureClustlyProvider implements PaymentProvider, ClustlyProvider 
 
   async createTask(issue: IssueDetailViewModel): Promise<PaymentArtifactViewModel | null> {
     const gate = canReleasePayout(issue);
-    if (issue.route !== 'bounty-worthy' || !issue.bounty) return null;
+    if (!isClustlyEligibleRoute(issue) || !issue.bounty) return null;
 
     return {
       provider: 'clustly',
@@ -49,7 +49,7 @@ export class FixtureClustlyProvider implements PaymentProvider, ClustlyProvider 
 }
 
 export function toClustlyBountyListItem(repositoryId: string, issue: IssueDetailViewModel): ClustlyBountyListItemViewModel | null {
-  if (issue.route !== 'bounty-worthy' || !issue.bounty) return null;
+  if (!isClustlyEligibleRoute(issue) || !issue.bounty) return null;
   return {
     issueNumber: issue.number,
     issueTitle: issue.title,

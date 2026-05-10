@@ -123,6 +123,7 @@ function makeIssue(repo, index) {
   const risk = Math.min(10, template.risk + (index % 2));
   const confidence = Number((0.72 + ((index % 20) / 100)).toFixed(2));
   const amountCents = amountFor(template, index);
+  const staleNonClustlyPaymentArtifact = repo.id === "maintaineros-demo-large" && number === 5;
 
   return {
     id,
@@ -185,13 +186,16 @@ function makeIssue(repo, index) {
           summary: "Fixture verification result for demo proof panel."
         }
       : null,
-    paymentArtifact: amountCents
+    paymentArtifact: amountCents || staleNonClustlyPaymentArtifact
       ? {
-          provider: "allscale",
-          status: index % 16 === 6 ? "released" : "ready",
-          amountCents,
-          currency: "USD",
-          artifactUrl: `https://allscale.example/payments/${id}`
+          provider: "clustly",
+          status: amountCents && index % 16 === 6 ? "released" : staleNonClustlyPaymentArtifact ? "failed" : "ready",
+          amountCents: amountCents ?? 25000,
+          currency: "USDC",
+          artifactUrl: `https://clustly.ai/tasks/${id}`,
+          releaseReason: staleNonClustlyPaymentArtifact
+            ? "Stale external artifact retained in raw fixture data to verify MaintainerOS hides payouts for non-CLUSTLY routes."
+            : undefined
         }
       : null,
     modelRun: {

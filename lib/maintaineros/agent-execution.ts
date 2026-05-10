@@ -110,7 +110,6 @@ export async function generateClodPatchPackage(issue: IssueDetailViewModel, repo
     },
     body: JSON.stringify({
       model: process.env.CLOD_BALANCED_MODEL || process.env.CLOD_CHEAP_MODEL || 'DeepSeek V3',
-      temperature: 0.1,
       max_completion_tokens: 1800,
       messages: [
         {

@@ -121,11 +121,12 @@ class FallbackMaintainerOSRepository implements MaintainerOSRepository {
 }
 
 function getLiveTimeoutMs() {
+  const minimumLiveTimeoutMs = 8000;
   const parsed = Number(process.env.MAINTAINEROS_LIVE_TIMEOUT_MS);
   if (Number.isFinite(parsed) && parsed > 0) {
-    return parsed;
+    return Math.max(parsed, minimumLiveTimeoutMs);
   }
-  return 1200;
+  return minimumLiveTimeoutMs;
 }
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {

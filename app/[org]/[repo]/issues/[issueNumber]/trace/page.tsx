@@ -23,7 +23,7 @@ export default async function IssueTracePage({ params }: Props) {
       repository={dashboard.repository}
       providerStatuses={dashboard.providerStatuses}
     >
-      <Link className="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-zinc-400" href={`/${org}/${repo}/issues/${issueNumber}`}>
+      <Link className="rounded-lg border border-[#F9F7F7]/12 px-3 py-1.5 text-xs text-[#F9F7F7]/68" href={`/${org}/${repo}/issues/${issueNumber}`}>
         Back to issue
       </Link>
       <TraceLedger events={trace} />

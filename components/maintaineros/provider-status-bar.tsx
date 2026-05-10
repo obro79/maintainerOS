@@ -14,28 +14,28 @@ const DEFAULT_PROVIDERS: ProviderStatusViewModel[] = [
 ];
 
 const STATUS_STYLES: Record<ProviderStatusViewModel['status'], string> = {
-  connected: 'bg-emerald-400 text-emerald-950',
-  degraded: 'bg-amber-400 text-amber-950',
-  disconnected: 'bg-red-400 text-red-950',
-  planned: 'bg-zinc-700 text-zinc-300',
+  connected: 'bg-[#3F72AF] text-[#05070A]',
+  degraded: 'bg-[#DBE2EF] text-[#05070A]',
+  disconnected: 'bg-[#DBE2EF] text-[#05070A]',
+  planned: 'bg-[#112D4E] text-[#F9F7F7]/76',
 };
 
 export function ProviderStatusBar({ providers = DEFAULT_PROVIDERS }: { providers?: ProviderStatusViewModel[] }) {
   return (
-    <div className="grid gap-px overflow-hidden rounded-xl border border-white/8 bg-white/8 sm:grid-cols-2 xl:grid-cols-7">
+    <div className="grid gap-px overflow-hidden rounded-lg border border-[#F9F7F7]/12 bg-[#F9F7F7]/8 sm:grid-cols-2 xl:grid-cols-7">
       {providers.map((provider) => (
-        <div key={provider.provider} className="bg-[#080d14] px-4 py-3">
+        <div key={provider.provider} className="bg-[#0A111A] px-4 py-3">
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs font-semibold text-white">{provider.label}</span>
             <EvidenceBadge sourceState={provider.sourceState} />
           </div>
           <div className="mt-2 flex items-center gap-2">
             <span className={cn('size-1.5 rounded-full', STATUS_STYLES[provider.status])} />
-            <p className="min-w-0 truncate text-[11px] capitalize text-zinc-500">
+            <p className="min-w-0 truncate text-[11px] capitalize text-[#F9F7F7]/56">
               {provider.status}{provider.lastRunAt ? ` · ${formatUtcDateTime(provider.lastRunAt)}` : ''}
             </p>
           </div>
-          <p className="mt-2 text-xs leading-relaxed text-zinc-600">{provider.detail}</p>
+          <p className="mt-2 text-xs leading-relaxed text-[#F9F7F7]/40">{provider.detail}</p>
         </div>
       ))}
     </div>

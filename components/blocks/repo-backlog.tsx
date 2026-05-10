@@ -15,6 +15,12 @@ import type { DashboardViewModel } from '@/lib/maintaineros/types';
 
 type LaneFilter = 'all' | 'agent' | 'review' | 'bounty' | 'clarify';
 
+function normalizeInitialLane(raw?: string | null): LaneFilter {
+  const v = raw?.toLowerCase();
+  if (v === 'agent' || v === 'review' || v === 'bounty' || v === 'clarify') return v;
+  return 'all';
+}
+
 const ISSUES = [
   { id: 112, title: 'Redis queue drains silently on OOM restart',           lane: 'bounty',  conf: 94, risk: 'High', age: '2d',  labels: ['infra','bug']             },
   { id: 111, title: 'Add cursor-based pagination to /issues endpoint',      lane: 'agent',   conf: 89, risk: 'Low',  age: '2d',  labels: ['api','enhancement']       },
@@ -35,8 +41,8 @@ const ISSUES = [
 
 type LaneLimitedKey = Exclude<LaneFilter, 'all'>;
 
-export function RepoBacklog({ dashboard }: { dashboard?: DashboardViewModel }) {
-  const [filter, setFilter] = useState<LaneFilter>('all');
+export function RepoBacklog({ dashboard, initialLane }: { dashboard?: DashboardViewModel; initialLane?: string | null }) {
+  const [filter, setFilter] = useState<LaneFilter>(() => normalizeInitialLane(initialLane));
   const [search, setSearch] = useState('');
   const [overriding, setOverriding] = useState<number | null>(null);
   const { workflowIssueNumber, openWorkflowIssue, closeWorkflowIssue } = useWorkflowIssueUrl();
@@ -72,9 +78,9 @@ export function RepoBacklog({ dashboard }: { dashboard?: DashboardViewModel }) {
     <div className="p-8 max-w-5xl space-y-6">
       {/* Page header */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
-        <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-zinc-600 mb-1">Backlog</p>
-        <h1 className="font-heading text-3xl font-bold text-white tracking-tight">All Issues</h1>
-        <p className="text-sm text-zinc-500 mt-1">{issues.length} open · {issues.filter(i => i.conf >= 85).length} high-confidence routes</p>
+        <p className="font-sans text-[10px] uppercase tracking-[0.25em] text-[#F9F7F7]/40 mb-1">Backlog</p>
+        <h1 className="font-heading text-3xl font-semibold text-white tracking-tight">All Issues</h1>
+        <p className="text-sm text-[#F9F7F7]/56 mt-1">{issues.length} open · {issues.filter(i => i.conf >= 85).length} high-confidence routes</p>
       </motion.div>
 
       {dashboard && <DataSourceBanner repository={dashboard.repository} />}
@@ -95,23 +101,23 @@ export function RepoBacklog({ dashboard }: { dashboard?: DashboardViewModel }) {
                 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all duration-150',
                 filter === key
                   ? [cfg.tw.bgFaint, cfg.tw.text, cfg.tw.border]
-                  : 'border-white/8 text-zinc-500 hover:text-zinc-300 hover:border-white/15 bg-transparent',
+                  : 'border-[#F9F7F7]/12 text-[#F9F7F7]/56 hover:text-[#F9F7F7]/76 hover:border-[#F9F7F7]/20 bg-transparent',
               )}>
               <div className={cn('size-1.5 rounded-full', cfg.tw.bg)} />
               <span>{cfg.label}</span>
-              <span className={cn('font-mono font-bold [font-variant-numeric:tabular-nums]', filter === key ? cfg.tw.text : 'text-zinc-600')}>{count}</span>
+              <span className={cn('font-sans font-bold [font-variant-numeric:tabular-nums]', filter === key ? cfg.tw.text : 'text-[#F9F7F7]/40')}>{count}</span>
             </button>
           );
         })}
 
         {/* Search */}
         <div className="relative ml-auto">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-zinc-600" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-[#F9F7F7]/40" />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search issues…"
-            className="pl-8 pr-4 py-1.5 text-sm bg-white/[0.03] border border-white/8 rounded-lg text-white placeholder:text-zinc-700 focus:outline-none focus:border-white/20 w-48 transition-colors"
+            className="pl-8 pr-4 py-1.5 text-sm bg-[#F9F7F7]/[0.035] border border-[#F9F7F7]/12 rounded-lg text-white placeholder:text-[#F9F7F7]/28 focus:outline-none focus:border-[#F9F7F7]/24 w-48 transition-colors"
           />
         </div>
       </motion.div>
@@ -121,17 +127,17 @@ export function RepoBacklog({ dashboard }: { dashboard?: DashboardViewModel }) {
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
-        className="rounded-xl border border-white/8 overflow-hidden bg-[#080d14]">
+        className="rounded-lg border border-[#F9F7F7]/12 overflow-hidden bg-[#0A111A]">
 
         {/* Header */}
-        <div className="flex items-center px-5 py-2.5 border-b border-white/6 bg-[#080d14]/60">
+        <div className="flex items-center px-5 py-2.5 border-b border-[#F9F7F7]/10 bg-[#0A111A]/60">
           <div className="w-4 shrink-0" />
-          <div className="flex-1 pl-3 text-[10px] font-mono uppercase tracking-wider text-zinc-700">Issue</div>
-          <div className="w-20 text-center text-[10px] font-mono uppercase tracking-wider text-zinc-700">Lane</div>
-          <div className="w-12 text-center text-[10px] font-mono uppercase tracking-wider text-zinc-700">Conf</div>
-          <div className="w-12 text-center text-[10px] font-mono uppercase tracking-wider text-zinc-700">Risk</div>
-          <div className="w-10 text-center text-[10px] font-mono uppercase tracking-wider text-zinc-700">Age</div>
-          <div className="w-24 text-right text-[10px] font-mono uppercase tracking-wider text-zinc-700 pr-1">Action</div>
+          <div className="flex-1 pl-3 text-[10px] font-sans uppercase tracking-wider text-[#F9F7F7]/28">Issue</div>
+          <div className="w-20 text-center text-[10px] font-sans uppercase tracking-wider text-[#F9F7F7]/28">Lane</div>
+          <div className="w-12 text-center text-[10px] font-sans uppercase tracking-wider text-[#F9F7F7]/28">Conf</div>
+          <div className="w-12 text-center text-[10px] font-sans uppercase tracking-wider text-[#F9F7F7]/28">Risk</div>
+          <div className="w-10 text-center text-[10px] font-sans uppercase tracking-wider text-[#F9F7F7]/28">Age</div>
+          <div className="w-24 text-right text-[10px] font-sans uppercase tracking-wider text-[#F9F7F7]/28 pr-1">Action</div>
         </div>
 
         <AnimatePresence mode="popLayout">
@@ -154,19 +160,20 @@ export function RepoBacklog({ dashboard }: { dashboard?: DashboardViewModel }) {
                     openWorkflowIssue(issue.id);
                   }
                 }}
-                className="flex cursor-pointer items-center border-b border-white/5 transition-colors last:border-b-0 hover:bg-white/[0.02] group">
+                className={cn('flex items-center border-b border-[#F9F7F7]/8 last:border-b-0 hover:bg-[#F9F7F7]/[0.025] transition-colors group', dashboard && 'cursor-pointer')}
+              >
                 {/* Lane bar */}
                 <div className={cn('w-1 self-stretch shrink-0', l.tw.bg)} />
 
                 {/* Title */}
                 <div className="flex-1 min-w-0 pl-4 py-3 pr-2">
                   <div className="flex items-center gap-1.5 mb-1">
-                    <span className="font-mono text-[10px] text-zinc-600 [font-variant-numeric:tabular-nums]">#{issue.id}</span>
+                    <span className="font-sans text-[10px] text-[#F9F7F7]/40 [font-variant-numeric:tabular-nums]">#{issue.id}</span>
                     {issue.labels.slice(0, 2).map(lbl => (
-                      <span key={lbl} className="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.05] text-zinc-600 border border-white/6">{lbl}</span>
+                      <span key={lbl} className="text-[9px] px-1.5 py-0.5 rounded bg-[#F9F7F7]/[0.07] text-[#F9F7F7]/40 border border-[#F9F7F7]/10">{lbl}</span>
                     ))}
                   </div>
-                  <p className="text-xs text-zinc-200 truncate">{issue.title}</p>
+                  <p className="text-xs text-[#F9F7F7]/88 truncate">{issue.title}</p>
                 </div>
 
                 {/* Lane badge */}
@@ -181,14 +188,14 @@ export function RepoBacklog({ dashboard }: { dashboard?: DashboardViewModel }) {
 
                 {/* Risk */}
                 <div className="w-12 text-center">
-                  <span className={cn('text-[10px] font-mono',
-                    issue.risk === 'High' ? 'text-red-400' :
-                    issue.risk === 'Med'  ? 'text-amber-400' : 'text-zinc-600'
+                  <span className={cn('text-[10px] font-sans',
+                    issue.risk === 'High' ? 'text-[#F9F7F7]' :
+                    issue.risk === 'Med'  ? 'text-[#DBE2EF]' : 'text-[#F9F7F7]/40'
                   )}>{issue.risk}</span>
                 </div>
 
                 {/* Age */}
-                <div className="w-10 text-center text-[10px] text-zinc-600 font-mono [font-variant-numeric:tabular-nums]">{issue.age}</div>
+                <div className="w-10 text-center text-[10px] text-[#F9F7F7]/40 font-sans [font-variant-numeric:tabular-nums]">{issue.age}</div>
 
                 {/* Actions */}
                 <div className="w-24 flex items-center justify-end gap-1 pr-3">
@@ -200,13 +207,13 @@ export function RepoBacklog({ dashboard }: { dashboard?: DashboardViewModel }) {
                           const c = LANE_CONFIG[k];
                           return (
                             <button key={k} onClick={(event) => { event.stopPropagation(); setOverriding(null); }}
-                              className={cn('text-[8px] font-mono font-bold px-1 py-0.5 rounded border transition-colors',
+                              className={cn('text-[8px] font-sans font-bold px-1 py-0.5 rounded border transition-colors',
                                 c.tw.bgMuted, c.tw.text, c.tw.borderMuted, 'hover:opacity-80')}>
                               {c.label[0]}
                             </button>
                           );
                         })}
-                      <button onClick={(event) => { event.stopPropagation(); setOverriding(null); }} className="text-zinc-700 hover:text-zinc-500 ml-0.5">
+                      <button onClick={(event) => { event.stopPropagation(); setOverriding(null); }} className="text-[#F9F7F7]/28 hover:text-[#F9F7F7]/56 ml-0.5">
                         <RotateCcw className="size-2.5" />
                       </button>
                     </div>
@@ -214,15 +221,15 @@ export function RepoBacklog({ dashboard }: { dashboard?: DashboardViewModel }) {
                     <>
                       <button
                         onClick={(event) => { event.stopPropagation(); setOverriding(issue.id); }}
-                        className="text-[10px] text-zinc-600 hover:text-zinc-300 px-1.5 py-1 rounded hover:bg-white/5 transition-colors">
+                        className="text-[10px] text-[#F9F7F7]/40 hover:text-[#F9F7F7]/76 px-1.5 py-1 rounded hover:bg-[#F9F7F7]/7 transition-colors">
                         Override
                       </button>
                       {traceBase ? (
                         <Link href={`${traceBase}/issues/${issue.id}/trace`} aria-label={`Open trace for issue ${issue.id}`} onClick={(event) => event.stopPropagation()}>
-                          <ExternalLink className="size-3 text-zinc-700 hover:text-zinc-500 cursor-pointer transition-colors" />
+                          <ExternalLink className="size-3 text-[#F9F7F7]/28 hover:text-[#F9F7F7]/56 cursor-pointer transition-colors" />
                         </Link>
                       ) : (
-                        <ExternalLink className="size-3 text-zinc-700 hover:text-zinc-500 cursor-pointer transition-colors" />
+                        <ExternalLink className="size-3 text-[#F9F7F7]/28 hover:text-[#F9F7F7]/56 cursor-pointer transition-colors" />
                       )}
                     </>
                   )}
@@ -234,7 +241,7 @@ export function RepoBacklog({ dashboard }: { dashboard?: DashboardViewModel }) {
 
         {visible.length === 0 && (
           <div className="py-14 text-center">
-            <p className="text-zinc-600 text-sm">No issues match this filter.</p>
+            <p className="text-[#F9F7F7]/40 text-sm">No issues match this filter.</p>
           </div>
         )}
       </motion.div>

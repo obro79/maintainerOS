@@ -26,16 +26,16 @@ export function TraceLedger({ events = [] }: { events?: IssueTraceEventViewModel
 
   if (events.length === 0) {
     return (
-      <div className="rounded-xl border border-white/8 bg-white/[0.02] p-6">
+      <div className="rounded-lg border border-[#F9F7F7]/12 bg-[#F9F7F7]/[0.025] p-6">
         <p className="text-sm font-semibold text-white">No trace events yet</p>
-        <p className="mt-2 text-sm text-zinc-500">Route, context, sandbox, verification, and payout events will appear here as artifacts are created.</p>
+        <p className="mt-2 text-sm text-[#F9F7F7]/56">Route, context, sandbox, verification, and payout events will appear here as artifacts are created.</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/8 bg-[#080d14] p-3">
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-[#F9F7F7]/12 bg-[#0A111A] p-3">
         <Filter label="Provider" value={provider} values={providers} onChange={setProvider} />
         <Filter label="Route" value={route} values={routes} labels={ROUTE_LABEL} onChange={setRoute} />
         <Filter label="Status" value={status} values={statuses} onChange={setStatus} />
@@ -48,38 +48,38 @@ export function TraceLedger({ events = [] }: { events?: IssueTraceEventViewModel
             setStatus('all');
             setSourceState('all');
           }}
-          className="ml-auto rounded-lg border border-white/8 px-2 py-1 text-xs text-zinc-500 hover:text-zinc-300"
+          className="ml-auto rounded-lg border border-[#F9F7F7]/12 px-2 py-1 text-xs text-[#F9F7F7]/56 hover:text-[#F9F7F7]/76"
         >
           All events
         </button>
       </div>
 
       {filtered.length === 0 && (
-        <div className="rounded-xl border border-white/8 bg-white/[0.02] p-6">
+        <div className="rounded-lg border border-[#F9F7F7]/12 bg-[#F9F7F7]/[0.025] p-6">
           <p className="text-sm font-semibold text-white">No matching trace events</p>
-          <p className="mt-2 text-sm text-zinc-500">Clear filters to inspect the full historical ledger.</p>
+          <p className="mt-2 text-sm text-[#F9F7F7]/56">Clear filters to inspect the full historical ledger.</p>
         </div>
       )}
 
       {filtered.map((event) => (
-        <div id={event.id} key={event.id} className="rounded-xl border border-white/8 bg-[#080d14] p-4">
+        <div id={event.id} key={event.id} className="rounded-lg border border-[#F9F7F7]/12 bg-[#0A111A] p-4">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-semibold text-white">{event.title}</span>
-            <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-mono uppercase text-zinc-500">{event.status}</span>
-            {event.route && <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] text-zinc-500">{ROUTE_LABEL[event.route]}</span>}
+            <span className="rounded-full border border-[#F9F7F7]/12 px-2 py-0.5 text-[10px] font-sans uppercase text-[#F9F7F7]/56">{event.status}</span>
+            {event.route && <span className="rounded-full border border-[#F9F7F7]/12 px-2 py-0.5 text-[10px] text-[#F9F7F7]/56">{ROUTE_LABEL[event.route]}</span>}
             {event.sourceState && <EvidenceBadge sourceState={event.sourceState} />}
-            <span className="ml-auto text-[10px] font-mono text-zinc-600">{formatUtcDateTime(event.at)}</span>
+            <span className="ml-auto text-[10px] font-sans text-[#F9F7F7]/40">{formatUtcDateTime(event.at)}</span>
           </div>
-          <p className="mt-1 text-xs text-zinc-500">{event.actor}{event.provider ? ` · ${event.provider}` : ''}</p>
-          <p className="mt-2 text-sm leading-relaxed text-zinc-400">{event.detail}</p>
-          <div className="mt-2 flex flex-wrap gap-3 text-xs text-zinc-600">
+          <p className="mt-1 text-xs text-[#F9F7F7]/56">{event.actor}{event.provider ? ` · ${event.provider}` : ''}</p>
+          <p className="mt-2 text-sm leading-relaxed text-[#F9F7F7]/68">{event.detail}</p>
+          <div className="mt-2 flex flex-wrap gap-3 text-xs text-[#F9F7F7]/40">
             {event.model && <span>Model: {event.model}</span>}
             {event.costCents != null && <span>Cost: {event.costCents}c</span>}
             {event.relatedId && <span>Related: {event.relatedId}</span>}
-            {event.artifactUrl && <a className="text-blue-300" href={event.artifactUrl}>Artifact</a>}
+            {event.artifactUrl && <a className="text-[#DBE2EF]" href={event.artifactUrl}>Artifact</a>}
           </div>
           {event.filesTouched && event.filesTouched.length > 0 && (
-            <p className="mt-2 text-xs text-zinc-600">Files: {event.filesTouched.join(', ')}</p>
+            <p className="mt-2 text-xs text-[#F9F7F7]/40">Files: {event.filesTouched.join(', ')}</p>
           )}
         </div>
       ))}
@@ -89,9 +89,9 @@ export function TraceLedger({ events = [] }: { events?: IssueTraceEventViewModel
 
 function Filter({ label, value, values, labels, onChange }: { label: string; value: string; values: string[]; labels?: Partial<Record<ExecutionRoute, string>>; onChange: (value: string) => void }) {
   return (
-    <label className="flex items-center gap-2 text-xs text-zinc-600">
+    <label className="flex items-center gap-2 text-xs text-[#F9F7F7]/40">
       {label}
-      <select value={value} onChange={(event) => onChange(event.target.value)} className="rounded-lg border border-white/8 bg-[#05080d] px-2 py-1 text-zinc-400">
+      <select value={value} onChange={(event) => onChange(event.target.value)} className="rounded-lg border border-[#F9F7F7]/12 bg-[#05070A] px-2 py-1 text-[#F9F7F7]/68">
         <option value="all">all</option>
         {values.map((option) => <option key={option} value={option}>{labels?.[option as ExecutionRoute] ?? option}</option>)}
       </select>

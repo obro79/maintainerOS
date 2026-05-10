@@ -27,10 +27,10 @@ export default async function ProofPage({ params }: Props) {
     >
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         {dashboard.providerStatuses?.map((provider) => (
-          <div key={provider.provider} className="rounded-xl border border-white/8 bg-[#080d14] p-3">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-700">{provider.label}</p>
+          <div key={provider.provider} className="rounded-lg border border-[#F9F7F7]/12 bg-[#0A111A] p-3">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-[#F9F7F7]/28">{provider.label}</p>
             <p className="mt-1 text-sm font-semibold capitalize text-white">{provider.status}</p>
-            <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-zinc-600">{provider.detail}</p>
+            <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-[#F9F7F7]/40">{provider.detail}</p>
           </div>
         ))}
       </div>
@@ -38,7 +38,7 @@ export default async function ProofPage({ params }: Props) {
         {proofItems.map((proof) => (
           <div key={proof.provider} className="space-y-2">
             <SponsorProofPanel proof={proof} />
-            <Link className="inline-flex rounded-lg border border-white/10 px-3 py-1.5 text-xs text-zinc-400 hover:text-white" href={`/${org}/${repo}/issues/${scenario.targetIssueNumber}/trace#${proofTraceAnchor(proof.provider, scenario.traceAnchors)}`}>
+            <Link className="inline-flex rounded-lg border border-[#F9F7F7]/12 px-3 py-1.5 text-xs text-[#F9F7F7]/68 hover:text-white" href={`/${org}/${repo}/issues/${scenario.targetIssueNumber}/trace#${proofTraceAnchor(proof.provider, scenario.traceAnchors)}`}>
               View trace evidence
             </Link>
           </div>

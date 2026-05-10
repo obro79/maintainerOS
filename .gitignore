@@ -4,6 +4,8 @@
 !.env.example
 node_modules/
 docs/
+!app/docs/
+!app/docs/**
 .next/
 out/
 build/

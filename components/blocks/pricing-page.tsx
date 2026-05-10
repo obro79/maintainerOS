@@ -2,10 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { Check, GitMerge, Zap, ArrowRight, Minus } from 'lucide-react';
+import { Check, GitMerge, Minus, Sparkles } from 'lucide-react';
+import { PageFrame, PageHeader, PageShell, Surface } from '@/components/layout/page-shell';
 import { cn } from '@/lib/utils';
-import { SiteNav } from '@/components/layout/site-nav';
 
 type Billing = 'monthly' | 'annual';
 type PlanKey = 'free' | 'pro' | 'team';
@@ -14,24 +13,14 @@ const PLANS = [
   {
     key: 'free',
     name: 'Free',
-    desc: 'For maintainers exploring the tool.',
+    desc: 'For maintainers exploring the workflow.',
     monthly: 0,
     annual: 0,
-    color: 'text-zinc-300',
-    accent: 'text-zinc-400',
-    border: 'border-white/10',
-    bg: 'bg-white/[0.02]',
-    glow: '',
+    tone: 'text-[#F9F7F7]/78',
+    border: 'border-[#F9F7F7]/12',
     cta: 'Get started free',
-    ctaCls: 'border border-white/15 text-white hover:bg-white/8 hover:border-white/25',
-    features: [
-      '1 connected repository',
-      'Up to 200 issues / month',
-      'CLOD routing + rationale',
-      'Four-lane classification',
-      'Confidence scores',
-      'CSV export',
-    ],
+    ctaClass: 'border border-[#F9F7F7]/14 text-[#F9F7F7] hover:bg-[#F9F7F7]/7',
+    features: ['1 connected repository', 'Up to 200 issues / month', 'CLOD routing rationale', 'Four-lane classification', 'CSV export'],
     limits: ['No Clustly bounty integration', 'No Greptile verification'],
   },
   {
@@ -40,24 +29,12 @@ const PLANS = [
     desc: 'For active maintainers and small teams.',
     monthly: 49,
     annual: 39,
-    color: 'text-emerald-400',
-    accent: 'text-emerald-300',
-    border: 'border-emerald-500/40',
-    bg: 'bg-emerald-500/[0.06]',
-    glow: 'shadow-2xl shadow-emerald-500/20',
+    tone: 'text-[#3F72AF]',
+    border: 'border-[#3F72AF]/36',
     badge: 'Most popular',
     cta: 'Start free trial',
-    ctaCls: 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50',
-    features: [
-      'Up to 5 repositories',
-      'Unlimited issues',
-      'CLOD routing + rationale',
-      'Greptile PR verification',
-      'Clustly bounty integration',
-      'Override & re-route any issue',
-      'Slack notifications',
-      'Email support',
-    ],
+    ctaClass: 'bg-[#3F72AF] text-black hover:bg-[#F9F7F7] shadow-lg shadow-[#3F72AF]/20',
+    features: ['Up to 5 repositories', 'Unlimited issues', 'Greptile PR verification', 'Clustly bounty integration', 'Override and reroute any issue', 'Email support'],
     limits: [],
   },
   {
@@ -66,48 +43,21 @@ const PLANS = [
     desc: 'For orgs managing multiple repos at scale.',
     monthly: 149,
     annual: 119,
-    color: 'text-violet-400',
-    accent: 'text-violet-300',
-    border: 'border-violet-500/30',
-    bg: 'bg-violet-500/[0.04]',
-    glow: 'shadow-xl shadow-violet-500/10',
+    tone: 'text-[#DBE2EF]',
+    border: 'border-[#112D4E]/42',
     cta: 'Talk to us',
-    ctaCls: 'border border-violet-500/40 text-violet-400 hover:bg-violet-500/10 hover:border-violet-500/60',
-    features: [
-      'Unlimited repositories',
-      'Unlimited issues',
-      'Everything in Pro',
-      'Custom routing rules & weights',
-      'Per-repo Clustly budgets',
-      'Audit trail export',
-      'SSO (SAML)',
-      'SLA + priority support',
-      'Dedicated onboarding call',
-    ],
+    ctaClass: 'border border-[#112D4E]/45 text-[#DBE2EF] hover:bg-[#112D4E]/12',
+    features: ['Unlimited repositories', 'Everything in Pro', 'Custom routing rules', 'Per-repo Clustly budgets', 'Audit trail export', 'Priority support'],
     limits: [],
   },
 ] as const;
 
 const FAQ = [
-  { q: 'What counts as an "issue"?', a: 'Any open GitHub issue ingested and classified by CLOD. Closing or routing counts against your monthly limit. Re-routing does not.' },
-  { q: 'How does Clustly bounty integration work?', a: 'When CLOD routes an issue as bounty-worthy, MaintainerOS sends it to Clustly with a suggested reward range. Clustly funds the bounty and releases payment only after a Greptile-verified PR merges.' },
-  { q: 'What is Greptile verification?', a: 'Greptile scans the submitted PR against the original issue spec and routing rationale. It blocks merge if there are unresolved gaps. Included on Pro and Team.' },
-  { q: "Can I override CLOD's routing decisions?", a: 'Yes — always. Every issue has an override button. CLOD surfaces a decision brief; you have final say on every route.' },
-  { q: 'Is there a free trial for Pro?', a: '14 days, no credit card required. Full Pro access including Greptile and Clustly integrations.' },
+  { q: 'What counts as an issue?', a: 'Any open GitHub issue imported and classified by MaintainerOS.' },
+  { q: 'How does Clustly bounty integration work?', a: 'Bounty-worthy issues are packaged for Clustly with a suggested reward and proof gates.' },
+  { q: 'What is Greptile verification?', a: 'Greptile checks a submitted PR against the original issue and routing rationale before merge.' },
+  { q: 'Can I override routing decisions?', a: 'Yes. The maintainer always has final say, and overrides become part of the audit trail.' },
 ];
-
-function FadeUp({ children, delay = 0, className }: { children: React.ReactNode; delay?: number; className?: string }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-40px' }}
-      transition={{ duration: 0.55, delay, ease: [0.22, 1, 0.36, 1] }}
-      className={className}>
-      {children}
-    </motion.div>
-  );
-}
 
 export function PricingPage() {
   const [billing, setBilling] = useState<Billing>('annual');
@@ -142,203 +92,107 @@ export function PricingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#030509] font-sans text-white overflow-x-hidden">
-      <SiteNav />
+    <PageShell>
+      <PageFrame>
+        <PageHeader
+          align="center"
+          eyebrow="Pricing"
+          title="Simple pricing for routed maintenance."
+          description="Start with one repository, then add verification, bounties, and team controls as the workflow becomes real."
+        />
 
-      {/* Ambient background */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-emerald-500/5 blur-[120px] rounded-full" />
-        <div className="absolute top-40 right-0 w-[400px] h-[400px] bg-violet-500/4 blur-[100px] rounded-full" />
-      </div>
-
-      {/* Hero */}
-      <div className="relative pt-28 pb-14 px-6 text-center">
-        <FadeUp>
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/8 mb-6">
-            <span className="relative flex size-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
-            </span>
-            <span className="font-mono text-xs text-emerald-400">340+ maintainers routing today</span>
-          </div>
-          <h1 className="font-heading text-[clamp(2.4rem,5vw,4rem)] font-bold tracking-[-0.02em] text-white mb-4">
-            Simple, transparent pricing
-          </h1>
-          <p className="text-zinc-400 max-w-md mx-auto text-lg leading-relaxed mb-8">
-            Start free. Upgrade when your backlog demands it.
-          </p>
-
-          {/* Billing toggle */}
-          <div className="inline-flex items-center gap-1 p-1 rounded-xl border border-white/10 bg-white/3">
-            {(['monthly', 'annual'] as Billing[]).map((b) => (
-              <button key={b} onClick={() => setBilling(b)}
+        <div className="mt-8 flex justify-center">
+          <div className="inline-flex rounded-lg border border-[#F9F7F7]/12 bg-black/24 p-1">
+            {(['monthly', 'annual'] as Billing[]).map((option) => (
+              <button
+                key={option}
+                onClick={() => setBilling(option)}
                 className={cn(
-                  'relative px-5 py-2 rounded-lg text-sm font-medium transition-all duration-200 capitalize',
-                  billing === b
-                    ? 'bg-white text-black shadow-sm'
-                    : 'text-zinc-500 hover:text-zinc-300',
-                )}>
-                {b}
-                {b === 'annual' && (
-                  <span className={cn(
-                    'ml-1.5 text-[10px] font-bold transition-colors',
-                    billing === 'annual' ? 'text-emerald-600' : 'text-emerald-500',
-                  )}>−20%</span>
+                  'rounded-md px-4 py-2 text-sm capitalize transition-colors',
+                  billing === option ? 'bg-[#F9F7F7] text-black' : 'text-[#F9F7F7]/58 hover:text-white',
                 )}
+              >
+                {option}
+                {option === 'annual' && <span className="ml-1 text-[#112D4E]">-20%</span>}
               </button>
             ))}
           </div>
-        </FadeUp>
-      </div>
+        </div>
 
-      {/* Plans */}
-      <div className="relative mx-auto max-w-5xl px-6 pb-20">
-        <div className="grid md:grid-cols-3 gap-4 items-end">
-          {PLANS.map((plan, i) => {
+        <div className="mt-10 grid gap-4 md:grid-cols-3">
+          {PLANS.map((plan) => {
             const price = billing === 'annual' ? plan.annual : plan.monthly;
-            const isPro = plan.key === 'pro';
             return (
-              <FadeUp key={plan.key} delay={i * 0.07} className={cn('h-full', isPro && 'md:-mt-4')}>
-                <div className={cn(
-                  'relative h-full rounded-2xl border p-6 flex flex-col transition-all duration-300',
-                  plan.border, plan.bg,
-                  isPro && plan.glow,
-                )}>
-                  {/* Pro ambient glow */}
-                  {isPro && (
-                    <div className="absolute -inset-px rounded-2xl bg-gradient-to-b from-emerald-500/20 to-transparent pointer-events-none" />
-                  )}
-
-                  {'badge' in plan && plan.badge && (
-                    <div className="absolute -top-3.5 inset-x-0 flex justify-center">
-                      <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-500 text-black font-mono shadow-lg shadow-emerald-500/30">
-                        {plan.badge}
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="mb-5 pt-2">
-                    <div className={cn('font-heading font-bold text-xl mb-1', plan.color)}>{plan.name}</div>
-                    <p className="text-sm text-zinc-500 leading-snug">{plan.desc}</p>
+              <Surface key={plan.key} className={cn('relative flex min-h-[520px] flex-col p-6', plan.border)}>
+                {'badge' in plan && plan.badge && (
+                  <div className="absolute right-4 top-4 rounded-full border border-[#3F72AF]/30 bg-[#3F72AF]/10 px-2.5 py-1 text-xs text-[#3F72AF]">
+                    {plan.badge}
                   </div>
-
-                  <div className="mb-5 pb-5 border-b border-white/8">
-                    <div className="flex items-baseline gap-1">
-                      <span className="font-heading font-bold text-4xl text-white">
-                        {price === 0 ? 'Free' : `$${price}`}
-                      </span>
-                      {price > 0 && <span className="text-zinc-600 text-sm">/ mo</span>}
-                    </div>
-                    {price > 0 && billing === 'annual' && (
-                      <p className="text-[11px] text-zinc-600 mt-1">
-                        Billed annually · ${plan.monthly}/mo billed monthly
-                      </p>
-                    )}
-                    {price === 0 && <p className="text-[11px] text-zinc-600 mt-1">No credit card required</p>}
-                  </div>
-
-                  <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} className="mb-6">
-                    <button
-                      type="button"
-                      disabled={checkoutState.plan === plan.key}
-                      onClick={() => startCheckout(plan.key)}
-                      className={cn(
-                        'flex items-center justify-center gap-2 w-full py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 cursor-pointer',
-                        plan.ctaCls,
-                        checkoutState.plan === plan.key && 'opacity-70',
-                      )}>
-                      {plan.key === 'free' && <GitMerge className="size-4" />}
-                      {plan.key === 'pro' && <Zap className="size-4" />}
-                      {plan.key === 'team' && <ArrowRight className="size-4" />}
-                      {checkoutState.plan === plan.key ? 'Starting...' : plan.cta}
-                    </button>
-                    {checkoutState.message && plan.key === 'pro' && (
-                      <p className="mt-2 text-center text-[11px] text-amber-300">{checkoutState.message}</p>
-                    )}
-                  </motion.div>
-
-                  <ul className="space-y-2.5 flex-1">
-                    {plan.features.map((f) => (
-                      <li key={f} className="flex items-start gap-2.5 text-sm text-zinc-300">
-                        <Check className={cn('size-4 shrink-0 mt-0.5', plan.color)} />
-                        {f}
-                      </li>
-                    ))}
-                    {'limits' in plan && plan.limits.map((l) => (
-                      <li key={l} className="flex items-start gap-2.5 text-sm text-zinc-600">
-                        <Minus className="size-4 shrink-0 mt-0.5" />
-                        {l}
-                      </li>
-                    ))}
-                  </ul>
+                )}
+                <Sparkles className={cn('size-5', plan.tone)} />
+                <h2 className={cn('mt-6 text-2xl font-semibold tracking-[-0.03em]', plan.tone)}>{plan.name}</h2>
+                <p className="mt-2 min-h-12 text-sm leading-6 text-[#F9F7F7]/55">{plan.desc}</p>
+                <div className="mt-6 border-y border-[#F9F7F7]/10 py-5">
+                  <span className="text-4xl font-semibold tracking-[-0.04em] text-white">{price === 0 ? 'Free' : `$${price}`}</span>
+                  {price > 0 && <span className="ml-1 text-sm text-[#F9F7F7]/42">/ mo</span>}
                 </div>
-              </FadeUp>
+                <button
+                  type="button"
+                  onClick={() => startCheckout(plan.key)}
+                  disabled={checkoutState.plan === plan.key}
+                  className={cn('mt-5 inline-flex h-10 items-center justify-center rounded-md px-4 text-sm font-semibold transition-colors disabled:opacity-60', plan.ctaClass)}
+                >
+                  {checkoutState.plan === plan.key ? 'Starting...' : plan.cta}
+                </button>
+                {checkoutState.message && plan.key === 'pro' && <p className="mt-2 text-xs text-[#3F72AF]">{checkoutState.message}</p>}
+                <ul className="mt-6 flex-1 space-y-2.5">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex gap-2 text-sm leading-6 text-[#F9F7F7]/72">
+                      <Check className={cn('mt-1 size-3.5 shrink-0', plan.tone)} />
+                      {feature}
+                    </li>
+                  ))}
+                  {plan.limits.map((limit) => (
+                    <li key={limit} className="flex gap-2 text-sm leading-6 text-[#F9F7F7]/34">
+                      <Minus className="mt-1 size-3.5 shrink-0" />
+                      {limit}
+                    </li>
+                  ))}
+                </ul>
+              </Surface>
             );
           })}
         </div>
-      </div>
 
-      {/* FAQ */}
-      <div className="border-t border-white/6 py-16 px-6">
-        <div className="mx-auto max-w-2xl">
-          <FadeUp className="text-center mb-10">
-            <p className="font-mono text-xs uppercase tracking-[0.25em] text-zinc-600 mb-3">FAQ</p>
-            <h2 className="font-heading text-2xl font-bold text-white">Common questions</h2>
-          </FadeUp>
+        <section className="mt-16 grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-[0.24em] text-[#112D4E]">FAQ</p>
+            <h2 className="mt-3 text-4xl font-semibold tracking-[-0.05em]">Common questions.</h2>
+          </div>
           <div className="space-y-2">
-            {FAQ.map((item, i) => (
-              <FadeUp key={i} delay={i * 0.04}>
-                <div className={cn(
-                  'rounded-xl border transition-all duration-200',
-                  openFaq === i ? 'border-white/12 bg-white/[0.03]' : 'border-white/8 bg-white/[0.015]',
-                )}>
-                  <button
-                    onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                    className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left cursor-pointer">
-                    <span className="font-medium text-[15px] text-white">{item.q}</span>
-                    <motion.div
-                      animate={{ rotate: openFaq === i ? 45 : 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="shrink-0 size-5 rounded-full border border-white/15 flex items-center justify-center text-zinc-500 text-sm leading-none">
-                      +
-                    </motion.div>
-                  </button>
-                  {openFaq === i && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      className="px-5 pb-4 overflow-hidden">
-                      <p className="text-sm text-zinc-400 leading-relaxed border-t border-white/6 pt-3">{item.a}</p>
-                    </motion.div>
-                  )}
-                </div>
-              </FadeUp>
+            {FAQ.map((item, index) => (
+              <Surface key={item.q}>
+                <button className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left" onClick={() => setOpenFaq(openFaq === index ? null : index)}>
+                  <span className="text-base font-semibold text-white">{item.q}</span>
+                  <span className="text-xl text-[#F9F7F7]/44">{openFaq === index ? '-' : '+'}</span>
+                </button>
+                {openFaq === index && <p className="border-t border-[#F9F7F7]/10 px-5 py-4 text-sm leading-6 text-[#F9F7F7]/58">{item.a}</p>}
+              </Surface>
             ))}
           </div>
-        </div>
-      </div>
+        </section>
 
-      {/* CTA */}
-      <div className="border-t border-white/6 py-24 px-6 text-center">
-        <FadeUp>
-          <div className="mx-auto max-w-xl">
-            <div className="relative mb-6">
-              <div className="absolute inset-0 blur-3xl bg-emerald-500/12 rounded-full scale-150 pointer-events-none" />
-              <h2 className="relative font-heading text-3xl font-bold text-white">Start routing today.</h2>
-            </div>
-            <p className="text-zinc-500 mb-8 max-w-sm mx-auto">
-              Free plan, no credit card. Connect your first repo in under a minute.
-            </p>
-            <motion.div whileHover={{ scale: 1.02, y: -1 }} whileTap={{ scale: 0.98 }} className="inline-block">
-              <Link href="/connect"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all duration-200">
-                <GitMerge className="size-4" />
-                Connect repo — it&apos;s free
-              </Link>
-            </motion.div>
+        <Surface className="mt-16 flex flex-col items-start justify-between gap-5 p-6 sm:flex-row sm:items-center">
+          <div>
+            <h2 className="text-3xl font-semibold tracking-[-0.04em]">Start routing today.</h2>
+            <p className="mt-2 text-[#F9F7F7]/55">Free plan, no credit card. Connect your first repo in under a minute.</p>
           </div>
-        </FadeUp>
-      </div>
-    </div>
+          <Link href="/connect" className="inline-flex h-10 items-center gap-2 rounded-md bg-[#3F72AF] px-4 text-sm font-semibold text-black transition-colors hover:bg-[#F9F7F7]">
+            <GitMerge className="size-4" />
+            Connect repo
+          </Link>
+        </Surface>
+      </PageFrame>
+    </PageShell>
   );
 }

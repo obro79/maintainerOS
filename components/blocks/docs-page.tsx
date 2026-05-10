@@ -2,237 +2,171 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { GitMerge, ChevronRight, Zap, GitBranch, Award, Search, Terminal, BookOpen } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Award, BookOpen, ChevronRight, GitBranch, GitMerge, Search, Terminal, Zap } from 'lucide-react';
+import { PageFrame, PageHeader, PageShell, Surface } from '@/components/layout/page-shell';
 import { LANE_CONFIG } from '@/lib/design-system';
-import { SiteNav } from '@/components/layout/site-nav';
-import { LaneBadge } from '@/components/ui/lane-badge';
+import { cn } from '@/lib/utils';
 
 const NAV_SECTIONS = [
-  { id: 'quickstart', label: 'Quickstart',         icon: Zap      },
-  { id: 'lanes',      label: 'The Four Lanes',     icon: GitBranch },
-  { id: 'greptile',   label: 'Greptile',           icon: Search   },
-  { id: 'clustly',   label: 'Clustly',           icon: Award    },
-  { id: 'api',        label: 'API Reference',      icon: Terminal  },
+  { id: 'quickstart', label: 'Quickstart', icon: Zap },
+  { id: 'lanes', label: 'Lanes', icon: GitBranch },
+  { id: 'greptile', label: 'Greptile', icon: Search },
+  { id: 'clustly', label: 'Clustly', icon: Award },
+  { id: 'api', label: 'API', icon: Terminal },
 ];
 
 const QUICKSTART_STEPS = [
   {
     n: '01',
     label: 'Connect your repo',
-    body: 'Go to /connect, sign in with public GitHub OAuth, and choose a public repository to import. This flow does not request private-repo scopes or write access.',
+    body: 'Authorize public GitHub access. MaintainerOS imports issues and stores the routing artifacts separately from your repository. This flow does not request private-repo scopes or write access.',
   },
   {
     n: '02',
-    label: 'CLOD classifies your backlog',
-    body: 'Within seconds, CLOD processes every open issue and routes it into one of four lanes: Agent, Review, Bounty, or Clarify — each with a confidence score and written rationale.',
+    label: 'Classify the backlog',
+    body: 'CLOD routes issues into AI, DEV, CLUSTLY, or CLARIFY with a confidence score and written rationale.',
   },
   {
     n: '03',
     label: 'Review and override',
-    body: 'Every decision includes a rationale and confidence score. Use the Override button on any issue to reroute it — your decisions are logged in the audit trail and improve future classifications.',
+    body: 'Maintainers can override any route. Every decision is logged so future automation remains inspectable.',
   },
 ];
 
-const LANE_DESCS = [
-  { key: 'agent',   desc: 'Well-scoped, reproducible issues with no API contract impact. Safe for an AI coding agent (Codex, Cursor) to attempt autonomously.' },
-  { key: 'review',  desc: 'Requires maintainer judgment — breaking changes, architectural decisions, or anything needing human sign-off before proceeding.' },
-  { key: 'bounty',  desc: 'Infrastructure-heavy or domain-specific issues best solved by the broader community. CLOD posts these to Clustly automatically.' },
-  { key: 'clarify', desc: 'The issue spec is ambiguous. CLOD posts a targeted clarification comment and re-classifies once the author responds.' },
+const LANES = [
+  { key: 'agent', title: 'AI', desc: 'Well-scoped, reproducible issues safe for an autonomous coding agent.' },
+  { key: 'review', title: 'DEV', desc: 'Architecture, security, or product decisions that need maintainer judgment.' },
+  { key: 'bounty', title: 'CLUSTLY', desc: 'Work that should be packaged for an outside contributor and bounty flow.' },
+  { key: 'clarify', title: 'CLARIFY', desc: 'Reports missing reproduction detail, scope, or acceptance criteria.' },
 ] as const;
 
 export function DocsPage() {
   const [active, setActive] = useState('quickstart');
 
   return (
-    <div className="min-h-screen bg-[#030509] font-sans text-white overflow-x-hidden">
-      <SiteNav />
-
-      <div className="max-w-5xl mx-auto px-6 pt-24 pb-24 flex gap-12">
-
-        {/* Sidebar */}
-        <aside className="hidden lg:flex flex-col w-48 shrink-0 sticky top-24 self-start gap-1">
-          <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-zinc-700 mb-2 px-3">Docs</p>
-          {NAV_SECTIONS.map(({ id, label, icon: Icon }) => (
-            <a
-              key={id}
-              href={`#${id}`}
-              onClick={() => setActive(id)}
-              className={cn(
-                'flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-150',
-                active === id
-                  ? 'text-white bg-white/[0.06] font-medium'
-                  : 'text-zinc-600 hover:text-zinc-300 hover:bg-white/[0.03]',
-              )}>
-              {active === id && <div className="size-1 rounded-full bg-emerald-500 shrink-0" />}
-              <Icon className="size-3.5 shrink-0" />
-              {label}
-            </a>
-          ))}
-
-          <div className="mt-6 pt-5 border-t border-white/6">
-            <Link href="/connect" className="flex items-center gap-1.5 px-3 text-xs text-emerald-500 hover:text-emerald-400 transition-colors">
-              <GitMerge className="size-3.5" />
-              Connect repo
-              <ChevronRight className="size-3 ml-auto" />
-            </Link>
-          </div>
+    <PageShell>
+      <PageFrame className="grid gap-12 lg:grid-cols-[220px_1fr]">
+        <aside className="hidden self-start lg:sticky lg:top-28 lg:block">
+          <Surface className="p-2">
+            <p className="px-3 py-2 text-xs uppercase tracking-[0.22em] text-[#F9F7F7]/38">Docs</p>
+            {NAV_SECTIONS.map(({ id, label, icon: Icon }) => (
+              <a
+                key={id}
+                href={`#${id}`}
+                onClick={() => setActive(id)}
+                className={cn(
+                  'flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors',
+                  active === id ? 'bg-[#F9F7F7]/9 text-white' : 'text-[#F9F7F7]/50 hover:bg-[#F9F7F7]/6 hover:text-white',
+                )}
+              >
+                <Icon className={cn('size-4', active === id ? 'text-[#3F72AF]' : 'text-[#F9F7F7]/35')} />
+                {label}
+              </a>
+            ))}
+            <div className="mt-3 border-t border-[#F9F7F7]/10 pt-3">
+              <Link href="/connect" className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-[#3F72AF] hover:bg-[#3F72AF]/10">
+                <GitMerge className="size-4" />
+                Connect repo
+                <ChevronRight className="ml-auto size-4" />
+              </Link>
+            </div>
+          </Surface>
         </aside>
 
-        {/* Content */}
-        <div className="flex-1 min-w-0 space-y-16">
+        <div className="min-w-0 space-y-14">
+          <PageHeader
+            eyebrow="Documentation"
+            title="MaintainerOS Docs"
+            description="Connect a repo, understand route decisions, and wire Greptile verification plus Clustly bounties into your maintainer workflow."
+          />
 
-          {/* Hero */}
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
-            <div className="flex items-center gap-2 mb-3">
-              <BookOpen className="size-4 text-emerald-400" />
-              <p className="font-mono text-xs uppercase tracking-[0.2em] text-emerald-500/80">Documentation</p>
+          <section id="quickstart" className="scroll-mt-28" onMouseEnter={() => setActive('quickstart')}>
+            <div className="mb-5 flex items-center gap-3">
+              <BookOpen className="size-5 text-[#3F72AF]" />
+              <h2 className="text-2xl font-semibold tracking-[-0.03em]">Quickstart</h2>
             </div>
-            <h1 className="font-heading text-4xl font-bold tracking-tight text-white mb-4">MaintainerOS Docs</h1>
-            <p className="text-zinc-400 text-lg leading-relaxed max-w-xl">
-              Connect your repo, understand routing decisions, and integrate Greptile verification and Clustly bounties.
+            <div className="space-y-4">
+              {QUICKSTART_STEPS.map((step) => (
+                <Surface key={step.n} className="grid gap-4 p-5 sm:grid-cols-[72px_1fr]">
+                  <span className="text-3xl font-semibold tracking-[-0.05em] text-[#F9F7F7]/24">{step.n}</span>
+                  <div>
+                    <h3 className="font-semibold text-white">{step.label}</h3>
+                    <p className="mt-2 text-sm leading-6 text-[#F9F7F7]/58">{step.body}</p>
+                  </div>
+                </Surface>
+              ))}
+            </div>
+          </section>
+
+          <section id="lanes" className="scroll-mt-28" onMouseEnter={() => setActive('lanes')}>
+            <h2 className="mb-5 text-2xl font-semibold tracking-[-0.03em]">The Four Lanes</h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {LANES.map((lane) => {
+                const cfg = LANE_CONFIG[lane.key];
+                return (
+                  <Surface key={lane.key} className={cn('p-5', cfg.tw.border)}>
+                    <div className="flex items-center justify-between">
+                      <h3 className={cn('font-semibold', cfg.tw.text)}>{lane.title}</h3>
+                      <span className={cn('size-2 rounded-full', cfg.tw.bg)} />
+                    </div>
+                    <p className="mt-3 text-sm leading-6 text-[#F9F7F7]/58">{lane.desc}</p>
+                  </Surface>
+                );
+              })}
+            </div>
+          </section>
+
+          <section id="greptile" className="scroll-mt-28" onMouseEnter={() => setActive('greptile')}>
+            <h2 className="mb-4 text-2xl font-semibold tracking-[-0.03em]">Greptile Verification</h2>
+            <p className="max-w-2xl text-[#F9F7F7]/60">
+              When a PR is submitted for a routed issue, Greptile checks the diff against the original issue and CLOD rationale before merge.
             </p>
-          </motion.div>
-
-          {/* Quickstart */}
-          <section id="quickstart" className="scroll-mt-24" onMouseEnter={() => setActive('quickstart')}>
-            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
-              <div className="flex items-center gap-2.5 mb-6">
-                <div className="size-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                  <Zap className="size-4 text-emerald-400" />
-                </div>
-                <h2 className="font-heading text-xl font-bold text-white">Quickstart</h2>
+            <Surface className="mt-5 p-5">
+              <div className="mb-3 flex items-center gap-2">
+                <span className="size-2 rounded-full bg-[#3F72AF]" />
+                <span className="text-sm font-semibold text-[#3F72AF]">Verification passed</span>
+                <span className="ml-auto text-sm text-[#F9F7F7]/38">PR #204</span>
               </div>
-              <div className="space-y-5">
-                {QUICKSTART_STEPS.map((step) => (
-                  <div key={step.n} className="flex gap-5">
-                    <div className="font-heading font-bold text-3xl text-zinc-800 [font-variant-numeric:tabular-nums] leading-none pt-1 w-8 shrink-0">
-                      {step.n}
-                    </div>
-                    <div className="flex-1 pt-1">
-                      <div className="font-semibold text-white mb-1.5">{step.label}</div>
-                      <p className="text-sm text-zinc-400 leading-relaxed">{step.body}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          </section>
-
-          {/* Four Lanes */}
-          <section id="lanes" className="scroll-mt-24" onMouseEnter={() => setActive('lanes')}>
-            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }}>
-              <div className="flex items-center gap-2.5 mb-6">
-                <div className="size-7 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
-                  <GitBranch className="size-4 text-violet-400" />
-                </div>
-                <h2 className="font-heading text-xl font-bold text-white">The Four Lanes</h2>
-              </div>
-              <div className="space-y-3">
-                {LANE_DESCS.map(({ key, desc }) => {
-                  const cfg = LANE_CONFIG[key];
-                  return (
-                    <div key={key} className={cn('flex gap-4 p-4 rounded-xl border', cfg.tw.bgFaint, cfg.tw.border)}>
-                      <div className="pt-0.5">
-                        <LaneBadge value={key} size="md" />
-                      </div>
-                      <p className="text-sm text-zinc-400 leading-relaxed">{desc}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            </motion.div>
-          </section>
-
-          {/* Greptile */}
-          <section id="greptile" className="scroll-mt-24" onMouseEnter={() => setActive('greptile')}>
-            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}>
-              <div className="flex items-center gap-2.5 mb-4">
-                <div className="size-7 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-                  <Search className="size-4 text-blue-400" />
-                </div>
-                <h2 className="font-heading text-xl font-bold text-white">Greptile Verification</h2>
-              </div>
-              <p className="text-zinc-400 leading-relaxed mb-4">
-                When a PR is submitted for a routed issue, Greptile scans the diff against the original issue description and CLOD rationale. If there are unresolved spec gaps, merge is blocked until they&apos;re addressed.
+              <p className="text-sm leading-6 text-[#F9F7F7]/58">
+                PR covers the issue spec and route rationale. No blocking gaps detected. Merge approved.
               </p>
-              <div className="rounded-xl border border-white/8 bg-[#080d14] p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="size-1.5 rounded-full bg-emerald-500" />
-                  <span className="text-xs font-mono text-emerald-400">Verification passed</span>
-                  <span className="ml-auto text-xs text-zinc-600">PR #204</span>
-                </div>
-                <p className="text-xs font-mono text-zinc-400 leading-relaxed">
-                  &quot;PR covers all paths described in issue #108. Token refresh mutex correctly handles concurrent SSO flows. No spec gaps detected. Merge approved.&quot;
-                </p>
-              </div>
-              <p className="text-xs text-zinc-600 mt-3">Available on Pro and Team plans.</p>
-            </motion.div>
+            </Surface>
           </section>
 
-          {/* Clustly */}
-          <section id="clustly" className="scroll-mt-24" onMouseEnter={() => setActive('clustly')}>
-            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.25 }}>
-              <div className="flex items-center gap-2.5 mb-4">
-                <div className="size-7 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
-                  <Award className="size-4 text-violet-400" />
-                </div>
-                <h2 className="font-heading text-xl font-bold text-white">Clustly Bounty Integration</h2>
-              </div>
-              <p className="text-zinc-400 leading-relaxed mb-4">
-                CLOD routes Bounty-lane issues to Clustly with a suggested reward range based on complexity and risk scores. Clustly funds and manages the bounty. Payment releases only after Greptile confirms the submitted PR fully resolves the issue.
-              </p>
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { step: '01', label: 'CLOD routes issue as Bounty', color: 'text-violet-400' },
-                  { step: '02', label: 'Clustly posts with suggested reward', color: 'text-violet-400' },
-                  { step: '03', label: 'Greptile verifies PR · funds released', color: 'text-emerald-400' },
-                ].map(({ step, label, color }) => (
-                  <div key={step} className="rounded-xl border border-white/8 bg-[#080d14] p-3">
-                    <div className={cn('font-heading font-bold text-2xl mb-1 [font-variant-numeric:tabular-nums]', color)}>{step}</div>
-                    <p className="text-xs text-zinc-500 leading-snug">{label}</p>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
+          <section id="clustly" className="scroll-mt-28" onMouseEnter={() => setActive('clustly')}>
+            <h2 className="mb-4 text-2xl font-semibold tracking-[-0.03em]">Clustly Bounty Integration</h2>
+            <p className="max-w-2xl text-[#F9F7F7]/60">
+              CLUSTLY-lane issues are packaged with a suggested reward, proof requirements, and a payout gate.
+            </p>
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              {['Route as CLUSTLY', 'Post bounty package', 'Release after proof'].map((label, index) => (
+                <Surface key={label} className="p-4">
+                  <div className="text-2xl font-semibold text-[#DBE2EF]">0{index + 1}</div>
+                  <p className="mt-2 text-sm text-[#F9F7F7]/58">{label}</p>
+                </Surface>
+              ))}
+            </div>
           </section>
 
-          {/* API */}
-          <section id="api" className="scroll-mt-24" onMouseEnter={() => setActive('api')}>
-            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.3 }}>
-              <div className="flex items-center gap-2.5 mb-4">
-                <div className="size-7 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center">
-                  <Terminal className="size-4 text-zinc-400" />
-                </div>
-                <h2 className="font-heading text-xl font-bold text-white">API Reference</h2>
-              </div>
-              <p className="text-zinc-400 leading-relaxed mb-4">
-                MaintainerOS exposes a REST API for advanced integrations. Authenticate with a Bearer token from your settings page.
-              </p>
-              <div className="space-y-3">
-                {[
-                  { method: 'GET',  path: '/v1/issues?repo=org/repo',    desc: 'List all routed issues with lane + confidence' },
-                  { method: 'POST', path: '/v1/issues/:id/override',     desc: 'Override a lane decision for a specific issue'  },
-                  { method: 'GET',  path: '/v1/bounties?repo=org/repo',  desc: 'List active and paid bounties'                  },
-                  { method: 'GET',  path: '/v1/audit/:id',               desc: 'Fetch the full proof chain for an issue'        },
-                ].map(({ method, path, desc }) => (
-                  <div key={path} className="flex items-center gap-3 rounded-lg border border-white/6 bg-[#080d14] px-4 py-3 font-mono text-xs">
-                    <span className={cn('font-bold w-10 shrink-0', method === 'GET' ? 'text-emerald-400' : 'text-amber-400')}>{method}</span>
-                    <span className="text-zinc-300 flex-1">{path}</span>
-                    <span className="text-zinc-600 hidden md:block">{desc}</span>
-                  </div>
-                ))}
-              </div>
-              <pre className="mt-4 rounded-xl border border-white/8 bg-[#080d14] p-4 font-mono text-sm text-emerald-300 overflow-x-auto leading-relaxed">
-{`curl -H "Authorization: Bearer <token>" \\
-  https://api.maintaineros.dev/v1/issues?repo=acme/my-repo`}
-              </pre>
-            </motion.div>
+          <section id="api" className="scroll-mt-28" onMouseEnter={() => setActive('api')}>
+            <h2 className="mb-4 text-2xl font-semibold tracking-[-0.03em]">API Reference</h2>
+            <div className="space-y-2">
+              {[
+                ['GET', '/v1/issues?repo=org/repo', 'List routed issues'],
+                ['POST', '/v1/issues/:id/override', 'Override a route'],
+                ['GET', '/v1/bounties?repo=org/repo', 'List bounties'],
+                ['GET', '/v1/audit/:id', 'Fetch proof chain'],
+              ].map(([method, path, desc]) => (
+                <Surface key={path} className="grid gap-2 px-4 py-3 text-sm sm:grid-cols-[70px_1fr_160px]">
+                  <span className={method === 'GET' ? 'text-[#3F72AF]' : 'text-[#DBE2EF]'}>{method}</span>
+                  <span className="text-[#F9F7F7]/74">{path}</span>
+                  <span className="text-[#F9F7F7]/38">{desc}</span>
+                </Surface>
+              ))}
+            </div>
           </section>
-
         </div>
-      </div>
-    </div>
+      </PageFrame>
+    </PageShell>
   );
 }

@@ -30,7 +30,7 @@ if (process.env.GITHUB_TOKEN) {
 }
 
 const repository = await githubFetch(`https://api.github.com/repos/${owner}/${repo}`);
-const issues = await fetchIssues(owner, repo, limit);
+const { issues, skippedPullRequestCount } = await fetchIssues(owner, repo, limit);
 const repositoryId = `${owner}/${repo}`.toLowerCase();
 const startedAt = new Date();
 const runId = `github-${owner}-${repo}-${startedAt.getTime()}`.toLowerCase();
@@ -69,10 +69,15 @@ try {
   );
 
   for (const issue of issues) {
+    const metadata = issueMetadata(issue);
     await client.query(
       `insert into maintaineros_issues
-        (id, repository_id, number, title, body, author, labels, comments_count, html_url, state, created_at, updated_at, closed_at)
-       values ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10, $11, $12, $13)
+        (id, repository_id, number, title, body, author, labels, comments_count, html_url, state, created_at, updated_at, closed_at,
+         provider_issue_id, node_id, author_metadata, author_association, assignees, milestone, labels_full, reactions,
+         comments_url, events_url, timeline_url, repository_url, api_url, state_reason, locked, active_lock_reason, raw_payload)
+       values ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10, $11, $12, $13,
+         $14, $15, $16::jsonb, $17, $18::jsonb, $19::jsonb, $20::jsonb, $21::jsonb,
+         $22, $23, $24, $25, $26, $27, $28, $29, $30::jsonb)
        on conflict (repository_id, number) do update set
         title = excluded.title,
         body = excluded.body,
@@ -83,7 +88,24 @@ try {
         state = excluded.state,
         created_at = excluded.created_at,
         updated_at = excluded.updated_at,
-        closed_at = excluded.closed_at`,
+        closed_at = excluded.closed_at,
+        provider_issue_id = excluded.provider_issue_id,
+        node_id = excluded.node_id,
+        author_metadata = excluded.author_metadata,
+        author_association = excluded.author_association,
+        assignees = excluded.assignees,
+        milestone = excluded.milestone,
+        labels_full = excluded.labels_full,
+        reactions = excluded.reactions,
+        comments_url = excluded.comments_url,
+        events_url = excluded.events_url,
+        timeline_url = excluded.timeline_url,
+        repository_url = excluded.repository_url,
+        api_url = excluded.api_url,
+        state_reason = excluded.state_reason,
+        locked = excluded.locked,
+        active_lock_reason = excluded.active_lock_reason,
+        raw_payload = excluded.raw_payload`,
       [
         String(issue.id),
         repositoryId,
@@ -97,7 +119,24 @@ try {
         issue.state,
         issue.created_at,
         issue.updated_at,
-        issue.closed_at
+        issue.closed_at,
+        String(issue.id),
+        issue.node_id ?? null,
+        JSON.stringify(metadata.author),
+        issue.author_association ?? null,
+        JSON.stringify(metadata.assignees),
+        JSON.stringify(issue.milestone ?? null),
+        JSON.stringify(metadata.labelsFull),
+        JSON.stringify(issue.reactions ?? null),
+        issue.comments_url ?? null,
+        issue.events_url ?? null,
+        issue.timeline_url ?? null,
+        issue.repository_url ?? null,
+        issue.url ?? null,
+        issue.state_reason ?? null,
+        issue.locked ?? false,
+        issue.active_lock_reason ?? null,
+        JSON.stringify(issue)
       ]
     );
   }
@@ -110,7 +149,7 @@ try {
          status = $4,
          finished_at = $5
      where id = $1`,
-    [runId, issues.length, 0, issues.length > 0 ? "succeeded" : "partial", finishedAt.toISOString()]
+    [runId, issues.length, skippedPullRequestCount, issues.length > 0 ? "succeeded" : "partial", finishedAt.toISOString()]
   );
   await client.query("COMMIT");
 } catch (error) {
@@ -136,6 +175,7 @@ console.log(
         fullName: `${owner}/${repo}`,
         requestedLimit: limit,
         importedIssues: issues.length,
+        skippedPullRequests: skippedPullRequestCount,
         repositoryId
       },
       counts: counts.rows[0]
@@ -149,23 +189,28 @@ await pool.end();
 
 async function fetchIssues(ownerName, repoName, requestedLimit) {
   const output = [];
+  let skippedPullRequestCount = 0;
   let page = 1;
 
   while (output.length < requestedLimit) {
     const perPage = 100;
     const pageIssues = await githubFetch(
-      `https://api.github.com/repos/${ownerName}/${repoName}/issues?state=open&per_page=${perPage}&page=${page}`
+      `https://api.github.com/repos/${ownerName}/${repoName}/issues?state=open&sort=created&direction=desc&per_page=${perPage}&page=${page}`
     );
 
     for (const issue of pageIssues) {
-      if (!issue.pull_request) output.push(issue);
+      if (issue.pull_request) {
+        skippedPullRequestCount += 1;
+      } else {
+        output.push(issue);
+      }
     }
 
     if (pageIssues.length < perPage) break;
     page += 1;
   }
 
-  return output.slice(0, requestedLimit);
+  return { issues: output.slice(0, requestedLimit), skippedPullRequestCount };
 }
 
 async function githubFetch(url) {
@@ -178,6 +223,26 @@ async function githubFetch(url) {
 
 function normalizeLabels(labels) {
   return labels.flatMap((label) => (typeof label === "string" ? [label] : label.name ? [label.name] : []));
+}
+
+function issueMetadata(issue) {
+  return {
+    author: issue.user
+      ? {
+          login: issue.user.login,
+          id: issue.user.id ?? null,
+          htmlUrl: issue.user.html_url ?? null,
+          type: issue.user.type ?? null
+        }
+      : null,
+    assignees: (issue.assignees ?? []).map((assignee) => ({
+      login: assignee.login,
+      id: assignee.id ?? null,
+      htmlUrl: assignee.html_url ?? null,
+      type: assignee.type ?? null
+    })),
+    labelsFull: issue.labels.map((label) => (typeof label === "string" ? { name: label } : label))
+  };
 }
 
 async function ensureMaintainerSchema(client) {
@@ -213,6 +278,27 @@ async function ensureMaintainerSchema(client) {
       closed_at timestamptz,
       unique(repository_id, number)
     )
+  `);
+
+  await client.query(`
+    alter table maintaineros_issues
+      add column if not exists provider_issue_id text,
+      add column if not exists node_id text,
+      add column if not exists author_metadata jsonb not null default '{}'::jsonb,
+      add column if not exists author_association text,
+      add column if not exists assignees jsonb not null default '[]'::jsonb,
+      add column if not exists milestone jsonb,
+      add column if not exists labels_full jsonb not null default '[]'::jsonb,
+      add column if not exists reactions jsonb,
+      add column if not exists comments_url text,
+      add column if not exists events_url text,
+      add column if not exists timeline_url text,
+      add column if not exists repository_url text,
+      add column if not exists api_url text,
+      add column if not exists state_reason text,
+      add column if not exists locked boolean not null default false,
+      add column if not exists active_lock_reason text,
+      add column if not exists raw_payload jsonb not null default '{}'::jsonb
   `);
 
   await client.query(`

@@ -14,7 +14,7 @@ import {
   type SandboxAttemptListItemViewModel,
   type VerificationQueueItemViewModel,
 } from './types';
-import { classifyComplexity, classifyRisk, estimatePremiumBaselineCents, scoreIssue, selectClodModel } from './routing';
+import { classifyComplexity, classifyRisk, estimatePremiumBaselineCents, evaluateRoutePolicy, scoreIssue, selectClodModel } from './routing';
 import { withPostgres, type PgClient } from './postgres';
 import { applyStoredClodArtifact } from './clod-artifacts';
 import { buildContextPackForIssue, buildNiaTraceEvent } from './nia-context';
@@ -22,6 +22,7 @@ import { buildSandboxExecutionsForIssue, buildSandboxTraceEvents, toSandboxAttem
 import { toVerificationQueueItem } from './verification';
 import { toClustlyBountyListItem } from './payments';
 import { listPersistedTraceEvents, mergeTraceEvents } from './trace-events';
+import { buildDeterministicWorkOrder } from './work-orders';
 
 interface RepositoryRow {
   id: string;
@@ -223,6 +224,13 @@ function toIssueDetail(issue: IssueRow): IssueDetailViewModel {
   });
   const modelSelection = selectClodModel(decision);
   const suggestedFiles = suggestedFilesFor(issue);
+  const routePolicy = evaluateRoutePolicy({
+    route: decision.route,
+    complexityScore: decision.complexityScore,
+    riskScore: decision.riskScore,
+    confidence: decision.confidence,
+    labels,
+  });
   const modelRun = {
     provider: 'clod' as const,
     sourceState: 'planned' as const,
@@ -237,17 +245,13 @@ function toIssueDetail(issue: IssueRow): IssueDetailViewModel {
     estimatedCostCents: null,
     premiumBaselineCents: estimatePremiumBaselineCents(null, modelSelection.tier),
   };
-  const workOrder: IssueDetailViewModel['workOrder'] = {
-    title: `Draft work order for #${issue.number}`,
-    status: 'draft',
-    assigneeKind: decision.route === 'maintainer-review' ? 'maintainer' : decision.route === 'bounty-worthy' ? 'contributor' : decision.route === 'close-or-clarify' ? 'unassigned' : 'agent',
-    acceptanceChecks: [
-      'Reproduce or explain the issue before implementation.',
-      'Keep the fix scoped to the imported GitHub issue.',
-      'Attach verification evidence before payout or close.',
-    ],
+  const workOrder = buildDeterministicWorkOrder({
+    issueNumber: issue.number,
+    title: issue.title,
+    route: decision.route,
+    routePolicy,
     suggestedFiles,
-  };
+  });
   const contextPack = buildContextPackForIssue(
     {
       id: issue.id,
@@ -268,6 +272,7 @@ function toIssueDetail(issue: IssueRow): IssueDetailViewModel {
     labels,
     modelRun,
     workOrder,
+    routePolicy,
     contextPack,
     sandboxExecutions: [],
     pullRequest: null,

@@ -4,9 +4,20 @@ import type React from 'react';
 import { ROUTE_LABEL } from '@/lib/maintaineros/types';
 import type { IssueDetailViewModel } from '@/lib/maintaineros/types';
 
-function ArtifactSection({ title, sourceState, children }: { title: string; sourceState?: IssueDetailViewModel['modelRun']['sourceState']; children: React.ReactNode }) {
+function ArtifactSection({
+  title,
+  sourceState,
+  id,
+  children,
+}: {
+  title: string;
+  sourceState?: IssueDetailViewModel['modelRun']['sourceState'];
+  /** Stable anchor for deep links from eval rows and dashboards */
+  id?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <section className="rounded-xl border border-white/8 bg-[#080d14] p-4">
+    <section id={id} className="rounded-xl border border-white/8 bg-[#080d14] p-4 scroll-mt-24">
       <div className="mb-2 flex items-center justify-between gap-3">
         <h3 className="text-sm font-semibold text-white">{title}</h3>
         {sourceState && <EvidenceBadge sourceState={sourceState} />}
@@ -102,7 +113,7 @@ export function IssueArtifactStack({ issue }: { issue: IssueDetailViewModel | nu
         {issue.modelRun.fallbackReason && <p className="mt-2 text-xs leading-relaxed text-amber-300">{issue.modelRun.fallbackReason}</p>}
       </ArtifactSection>
 
-      <ArtifactSection title="Nia context pack" sourceState={issue.contextPack?.sourceState}>
+      <ArtifactSection id="nia-context-pack" title="Nia context pack" sourceState={issue.contextPack?.sourceState}>
         <ContextPackPanel contextPack={issue.contextPack} />
       </ArtifactSection>
 
@@ -146,7 +157,7 @@ export function IssueArtifactStack({ issue }: { issue: IssueDetailViewModel | nu
         )}
       </ArtifactSection>
 
-      <ArtifactSection title="Greptile verification" sourceState={issue.verification?.sourceState}>
+      <ArtifactSection id="greptile-verification" title="Greptile verification" sourceState={issue.verification?.sourceState}>
         {issue.verification ? (
           <div>
             {issue.pullRequest && (

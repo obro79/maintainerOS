@@ -1,6 +1,12 @@
 import Link from 'next/link';
 import { EvidenceBadge } from '@/components/maintaineros/evidence-badge';
 import { PhaseShell } from '@/components/maintaineros/phase-shell';
+import {
+  evalContextPackHref,
+  evalIssueDetailHref,
+  evalTraceHref,
+  evalVerificationHref,
+} from '@/lib/maintaineros/eval-row-links';
 import { getMaintainerOSRepository } from '@/lib/maintaineros/repository';
 import type { EvaluationSummaryViewModel } from '@/lib/maintaineros/types';
 
@@ -60,23 +66,28 @@ export default async function EvalsPage({ params }: Props) {
       </div>
 
       <div className="rounded-xl border border-white/8 bg-[#080d14] p-4">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-white">Evidence Rows</h2>
+        <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold text-white">Evidence Rows</h2>
+            <p className="mt-1 max-w-2xl text-xs text-zinc-600">
+              Trace opens the ledger (with fragment anchors when recorded). Verification jumps to Greptile proof or the verification queue. Issue opens the artifact stack; Context appears when a Nia pack id is present.
+            </p>
+          </div>
           <EvidenceBadge sourceState={evaluation.sourceState ?? 'planned'} />
         </div>
         <div className="overflow-x-auto">
           <div className="min-w-[900px] divide-y divide-white/6">
-            <div className="grid grid-cols-[1.3fr_0.9fr_0.8fr_0.8fr_0.8fr_1fr_0.8fr] gap-3 px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-zinc-700">
+            <div className="grid grid-cols-[1.3fr_0.9fr_0.8fr_0.8fr_0.8fr_1fr_minmax(12rem,1fr)] gap-3 px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-zinc-700">
               <span>Attempt</span>
               <span>Mode</span>
               <span>Verification</span>
               <span>Retry</span>
               <span>Cost</span>
               <span>Failure</span>
-              <span className="text-right">Proof</span>
+              <span className="text-right">Evidence</span>
             </div>
             {rows.map((row) => (
-              <div key={row.id} className="grid grid-cols-[1.3fr_0.9fr_0.8fr_0.8fr_0.8fr_1fr_0.8fr] items-center gap-3 px-3 py-3 text-sm">
+              <div key={row.id} className="grid grid-cols-[1.3fr_0.9fr_0.8fr_0.8fr_0.8fr_1fr_minmax(12rem,1fr)] items-start gap-3 px-3 py-3 text-sm">
                 <div className="min-w-0">
                   <p className="truncate text-zinc-200">{row.label}</p>
                   <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -98,19 +109,7 @@ export default async function EvalsPage({ params }: Props) {
                   <p>{row.modelTierPath ?? 'unknown'}</p>
                 </div>
                 <p className="text-xs text-zinc-500">{row.failureCategory ?? 'none'}</p>
-                <div className="flex justify-end gap-3 text-xs">
-                  <Link className="text-zinc-400 hover:text-white" href={resolveEvidenceHref(row.traceUrl, org, repo, row)}>
-                    Trace
-                  </Link>
-                  {row.contextPackId && (
-                    <Link className="text-zinc-400 hover:text-white" href={resolveEvidenceHref(row.traceUrl, org, repo, row)}>
-                      Context
-                    </Link>
-                  )}
-                  <Link className="text-zinc-400 hover:text-white" href={resolveVerificationHref(row.verificationUrl, org, repo, row)}>
-                    Verify
-                  </Link>
-                </div>
+                <EvidenceLinks org={org} repo={repo} row={row} />
               </div>
             ))}
           </div>
@@ -154,30 +153,31 @@ function formatCost(value?: number | null) {
 
 type EvaluationRow = NonNullable<EvaluationSummaryViewModel['rows']>[number];
 
+function EvidenceLinks({ org, repo, row }: { org: string; repo: string; row: EvaluationRow }) {
+  const contextHref = evalContextPackHref(org, repo, row);
+  return (
+    <div className="flex flex-col items-end gap-1 text-xs sm:flex-row sm:flex-wrap sm:justify-end sm:gap-x-3 sm:gap-y-1">
+      <Link className="text-zinc-400 hover:text-white" href={evalTraceHref(org, repo, row)}>
+        Trace
+      </Link>
+      <Link className="text-zinc-400 hover:text-white" href={evalVerificationHref(org, repo, row)}>
+        Verification
+      </Link>
+      <Link className="text-zinc-400 hover:text-white" href={evalIssueDetailHref(org, repo, row)}>
+        Issue
+      </Link>
+      {contextHref && (
+        <Link className="text-zinc-400 hover:text-white" href={contextHref}>
+          Context
+        </Link>
+      )}
+    </div>
+  );
+}
+
 function costSummary(evaluation: EvaluationSummaryViewModel) {
   if (evaluation.costEvidence === 'unknown') return 'cost evidence unknown';
   const premium = evaluation.premiumOnlyCostPerVerifiedFixCents == null ? 'premium unknown' : `${evaluation.premiumOnlyCostPerVerifiedFixCents}c premium-only`;
   return `${evaluation.costEvidence ?? 'planned'} · ${premium}`;
 }
 
-function resolveEvidenceHref(
-  href: string | undefined,
-  org: string,
-  repo: string,
-  row: EvaluationRow,
-) {
-  if (!href && row.issueNumber) return `/${org}/${repo}/issues/${row.issueNumber}/trace`;
-  if (!href) return `/${org}/${repo}/evals`;
-  return href.replace('/maintaineros-demo-large/', `/${org}/${repo}/`);
-}
-
-function resolveVerificationHref(
-  href: string | undefined,
-  org: string,
-  repo: string,
-  row: EvaluationRow,
-) {
-  if (!href && row.issueNumber) return `/${org}/${repo}/issues/${row.issueNumber}/trace`;
-  if (!href) return `/${org}/${repo}/verification`;
-  return href.replace('/maintaineros-demo-large/', `/${org}/${repo}/`);
-}

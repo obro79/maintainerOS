@@ -152,7 +152,7 @@ export class NeonMaintainerOSRepository implements MaintainerOSRepository {
         issues: cards,
         issueDetails: details,
         selectedIssue,
-        evaluation: liveEvaluation(cards.length),
+        evaluation: liveEvaluation(cards),
         providerStatuses: [
           { provider: 'github', sourceState: 'live', status: 'connected', label: 'GitHub', lastRunAt: latestImportRun?.finishedAt ?? undefined, detail: latestImportRun ? `${latestImportRun.importedIssueCount} imported, ${latestImportRun.skippedPullRequestCount} PRs skipped.` : 'Ready for GitHub import.' },
           { provider: 'neon', sourceState: 'live', status: 'connected', label: 'Neon', lastRunAt: latestImportRun?.finishedAt ?? undefined, detail: 'Reading imported issues from Neon.' },
@@ -625,7 +625,9 @@ function buildBuckets(issues: IssueCardViewModel[]): RouteBucketViewModel[] {
   });
 }
 
-function liveEvaluation(sampleSize: number): EvaluationSummaryViewModel {
+function liveEvaluation(cards: IssueCardViewModel[]): EvaluationSummaryViewModel {
+  const sampleSize = cards.length;
+  const anchorIssueNumber = cards[0]?.number;
   const rows: EvaluationSummaryViewModel['rows'] = sampleSize > 0
     ? [
         {
@@ -635,6 +637,7 @@ function liveEvaluation(sampleSize: number): EvaluationSummaryViewModel {
           pairState: 'unpaired',
           contextMode: 'baseline',
           sourceState: 'live',
+          issueNumber: anchorIssueNumber,
           verificationStatus: 'pending',
           failureCategory: null,
           retryCount: 0,
@@ -650,6 +653,7 @@ function liveEvaluation(sampleSize: number): EvaluationSummaryViewModel {
           pairState: 'unpaired',
           contextMode: 'nia-enriched',
           sourceState: 'live',
+          issueNumber: anchorIssueNumber,
           verificationStatus: 'pending',
           failureCategory: null,
           retryCount: 0,

@@ -1,6 +1,7 @@
 import type { ImportRunViewModel } from './types';
 import { withPostgres } from './postgres';
 import { recordTraceEvent } from './trace-events';
+import { GITHUB_IMPORT_DEFAULT_LIMIT, GITHUB_IMPORT_MAX_LIMIT } from './limits';
 
 interface GitHubIssueResponse {
   id: number;
@@ -27,7 +28,7 @@ export interface ImportGitHubInput {
 export function validateImportInput(input: Partial<ImportGitHubInput>): ImportGitHubInput {
   const owner = input.owner?.trim();
   const repo = input.repo?.trim();
-  const limit = Number(input.limit ?? 40);
+  const limit = Number(input.limit ?? GITHUB_IMPORT_DEFAULT_LIMIT);
 
   if (!owner || !/^[a-zA-Z0-9_.-]+$/.test(owner)) {
     throw new Error('owner must be a GitHub owner name.');
@@ -35,8 +36,8 @@ export function validateImportInput(input: Partial<ImportGitHubInput>): ImportGi
   if (!repo || !/^[a-zA-Z0-9_.-]+$/.test(repo)) {
     throw new Error('repo must be a GitHub repository name.');
   }
-  if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
-    throw new Error('limit must be an integer from 1 to 100.');
+  if (!Number.isInteger(limit) || limit < 1 || limit > GITHUB_IMPORT_MAX_LIMIT) {
+    throw new Error(`limit must be an integer from 1 to ${GITHUB_IMPORT_MAX_LIMIT}.`);
   }
 
   return { owner, repo, limit };
@@ -56,22 +57,7 @@ export async function importGitHubIssues(input: ImportGitHubInput): Promise<Impo
     );
 
     try {
-      const response = await fetch(`https://api.github.com/repos/${input.owner}/${input.repo}/issues?state=open&per_page=${input.limit}`, {
-        headers: {
-          Accept: 'application/vnd.github+json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          'X-GitHub-Api-Version': '2022-11-28',
-          'User-Agent': 'MaintainerOS-Hackathon',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`GitHub import failed: ${response.status} ${response.statusText}`);
-      }
-
-      const payload = (await response.json()) as GitHubIssueResponse[];
-      const issues = payload.filter((issue) => !issue.pull_request);
-      const skippedPullRequestCount = payload.length - issues.length;
+      const { issues, skippedPullRequestCount } = await fetchIssues(input.owner, input.repo, input.limit, token);
       const repositoryId = `${input.owner}/${input.repo}`.toLowerCase();
       const finishedAt = new Date();
 
@@ -132,26 +118,28 @@ export async function importGitHubIssues(input: ImportGitHubInput): Promise<Impo
         );
       }
 
-      await Promise.all(issues.map((issue) => recordTraceEvent({
-        id: `${repositoryId}-${issue.number}-github-import-${runId}`,
-        repositoryId,
-        issueNumber: issue.number,
-        actor: 'GitHub import',
-        provider: 'github',
-        sourceState: 'live',
-        title: `Imported issue #${issue.number}`,
-        detail: 'Live GitHub issue metadata, labels, author, timestamps, URL, and body were persisted.',
-        status: 'succeeded',
-        artifactUrl: issue.html_url,
-        relatedId: runId,
-        at: finishedAt.toISOString(),
-        payload: {
-          runId,
-          owner: input.owner,
-          repo: input.repo,
-          skippedPullRequestCount,
-        },
-      })));
+      for (const issue of issues) {
+        await recordTraceEvent({
+          id: `${repositoryId}-${issue.number}-github-import-${runId}`,
+          repositoryId,
+          issueNumber: issue.number,
+          actor: 'GitHub import',
+          provider: 'github',
+          sourceState: 'live',
+          title: `Imported issue #${issue.number}`,
+          detail: 'Live GitHub issue metadata, labels, author, timestamps, URL, and body were persisted.',
+          status: 'succeeded',
+          artifactUrl: issue.html_url,
+          relatedId: runId,
+          at: finishedAt.toISOString(),
+          payload: {
+            runId,
+            owner: input.owner,
+            repo: input.repo,
+            skippedPullRequestCount,
+          },
+        });
+      }
 
       const status: ImportRunViewModel['status'] = issues.length > 0 ? 'succeeded' : 'partial';
       await client.query(
@@ -199,4 +187,40 @@ function normalizeLabels(labels: GitHubIssueResponse['labels']) {
   return labels
     .map((label) => (typeof label === 'string' ? label : label.name))
     .filter((label): label is string => Boolean(label));
+}
+
+async function fetchIssues(owner: string, repo: string, requestedLimit: number, token?: string) {
+  const issues: GitHubIssueResponse[] = [];
+  let skippedPullRequestCount = 0;
+  let page = 1;
+
+  while (issues.length < requestedLimit) {
+    const perPage = 100;
+    const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/issues?state=open&per_page=${perPage}&page=${page}`, {
+      headers: {
+        Accept: 'application/vnd.github+json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        'X-GitHub-Api-Version': '2022-11-28',
+        'User-Agent': 'MaintainerOS-Hackathon',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`GitHub import failed: ${response.status} ${response.statusText}`);
+    }
+
+    const payload = (await response.json()) as GitHubIssueResponse[];
+    skippedPullRequestCount += payload.filter((issue) => issue.pull_request).length;
+
+    for (const issue of payload) {
+      if (issue.pull_request) continue;
+      issues.push(issue);
+      if (issues.length >= requestedLimit) break;
+    }
+
+    if (payload.length < perPage) break;
+    page += 1;
+  }
+
+  return { issues, skippedPullRequestCount };
 }

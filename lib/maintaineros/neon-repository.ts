@@ -28,6 +28,7 @@ import { listPersistedTraceEvents, mergeTraceEvents } from './trace-events';
 import { buildDeterministicWorkOrder } from './work-orders';
 import { buildRouteHistoryFromTrace } from './route-history';
 import { getProviderHealth } from './provider-runtime';
+import { ROUTED_ISSUE_DISPLAY_LIMIT } from './limits';
 
 interface RepositoryRow {
   id: string;
@@ -72,8 +73,8 @@ export class NeonMaintainerOSRepository implements MaintainerOSRepository {
     return withPostgres(async (client) => {
       const repository = await findRepository(client, repositoryId);
       const issues = await client.query<IssueRow>(
-        `select * from maintaineros_issues where repository_id = $1 order by updated_at desc nulls last, number desc limit 40`,
-        [repository.id],
+        `select * from maintaineros_issues where repository_id = $1 order by updated_at desc nulls last, number desc limit $2`,
+        [repository.id, ROUTED_ISSUE_DISPLAY_LIMIT],
       );
       const cards = issues.rows.map(toIssueCard);
       const details = await Promise.all(issues.rows.map((issue) => toIssueDetailWithPersistedTrace(repository.id, issue)));

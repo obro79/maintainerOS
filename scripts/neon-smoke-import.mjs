@@ -7,7 +7,7 @@ loadEnvLocal();
 
 const owner = process.env.GITHUB_IMPORT_OWNER || "vercel";
 const repo = process.env.GITHUB_IMPORT_REPO || "next.js";
-const limit = Number(process.env.NEON_SMOKE_IMPORT_LIMIT || process.env.GITHUB_IMPORT_LIMIT || "40");
+const limit = Number(process.env.NEON_SMOKE_IMPORT_LIMIT || process.env.GITHUB_IMPORT_LIMIT || "5000");
 
 if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL is required.");

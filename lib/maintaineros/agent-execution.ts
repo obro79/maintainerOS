@@ -102,6 +102,24 @@ export async function runAgentExecution(issue: IssueDetailViewModel, repositoryI
 export async function generateClodPatchPackage(issue: IssueDetailViewModel, repositoryId: string): Promise<AgentPatchPackage> {
   if (!process.env.CLOD_API_KEY) throw new Error('CLOD_API_KEY is required to generate an agent patch.');
   const baseUrl = (process.env.CLOD_BASE_URL || 'https://api.clod.io/v1').replace(/\/$/, '');
+  const firstPayload = await requestClodPatchPayload(baseUrl, issue, repositoryId, true);
+  try {
+    return parseAgentPatchPackage(firstPayload?.choices?.[0]?.message?.content);
+  } catch (error) {
+    const retryPayload = await requestClodPatchPayload(baseUrl, issue, repositoryId, false);
+    try {
+      return parseAgentPatchPackage(retryPayload?.choices?.[0]?.message?.content);
+    } catch {
+      const message = error instanceof Error ? error.message : 'CLŌD patch response was not valid JSON.';
+      const finishReason = stringValue(firstPayload?.choices?.[0]?.finish_reason);
+      const content = firstPayload?.choices?.[0]?.message?.content;
+      const contentLength = typeof content === 'string' ? content.length : 0;
+      throw new Error(`${message} finish_reason=${finishReason || 'unknown'} content_length=${contentLength}`);
+    }
+  }
+}
+
+async function requestClodPatchPayload(baseUrl: string, issue: IssueDetailViewModel, repositoryId: string, includeContextPack: boolean) {
   const response = await fetch(`${baseUrl}/chat/completions`, {
     method: 'POST',
     headers: {
@@ -130,7 +148,7 @@ export async function generateClodPatchPackage(issue: IssueDetailViewModel, repo
             repositoryId,
             issue: { number: issue.number, title: issue.title, body: issue.body, labels: issue.labels },
             workOrder: issue.workOrder,
-            contextPack: issue.contextPack,
+            contextPack: includeContextPack ? issue.contextPack : null,
           }),
         },
       ],
@@ -138,7 +156,7 @@ export async function generateClodPatchPackage(issue: IssueDetailViewModel, repo
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(payload?.error?.message || `CLŌD patch request failed with ${response.status}.`);
-  return parseAgentPatchPackage(payload?.choices?.[0]?.message?.content);
+  return payload;
 }
 
 function executionCommands(repositoryId: string, issue: IssueDetailViewModel, patchPackage: AgentPatchPackage) {
@@ -273,6 +291,10 @@ function daytonaHeaders(): HeadersInit {
 
 function totalDuration(commandResults: SandboxCommandResultViewModel[]) {
   return commandResults.reduce((total, command) => total + (command.durationMs ?? 0), 0);
+}
+
+function stringValue(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value.trim() : '';
 }
 
 function assertRepositoryId(repositoryId: string) {

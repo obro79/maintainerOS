@@ -1,0 +1,2120 @@
+{
+  "repository": {
+    "id": "maintaineros-demo-large",
+    "provider": "github",
+    "owner": "maintaineros",
+    "name": "ledgerkit",
+    "fullName": "maintaineros/ledgerkit",
+    "defaultBranch": "main",
+    "visibility": "public",
+    "htmlUrl": "https://github.com/maintaineros/ledgerkit",
+    "description": "Payment ledger library with a long-lived maintainer backlog.",
+    "generatedAt": "2026-05-07T00:00:00.000Z"
+  },
+  "summary": {
+    "issueCount": 40,
+    "routes": {
+      "agent-solvable": 15,
+      "maintainer-review": 15,
+      "bounty-worthy": 5,
+      "close-or-clarify": 5
+    }
+  },
+  "issues": [
+    {
+      "id": "maintaineros-demo-large-1",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 1,
+      "title": "Incorrect cache invalidation when webhook replay changes",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: webhook replay.\nMaintainerOS route target: agent-solvable.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-1",
+      "labels": [
+        "bug",
+        "cache"
+      ],
+      "commentsCount": 0,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/1",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-04-01T00:00:00.000Z",
+      "classification": {
+        "route": "agent-solvable",
+        "complexityScore": 3,
+        "riskScore": 3,
+        "confidence": 0.72,
+        "rationale": "agent-solvable because complexity=3, risk=3, labels=bug, cache."
+      },
+      "workOrder": {
+        "title": "Work order for #1",
+        "status": "ready",
+        "assigneeKind": "agent",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/webhook-replay.ts",
+          "tests/webhook-replay.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": {
+        "provider": "greptile",
+        "status": "pending",
+        "summary": "Fixture verification result for demo proof panel."
+      },
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "fast-small",
+        "purpose": "routing",
+        "estimatedCostCents": 1,
+        "latencyMs": 790,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-2",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 2,
+      "title": "Document invoice sync setup for new contributors",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: invoice sync.\nMaintainerOS route target: agent-solvable.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-2",
+      "labels": [
+        "documentation",
+        "good first issue"
+      ],
+      "commentsCount": 7,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/2",
+      "createdAt": "2026-01-02T00:00:00.000Z",
+      "updatedAt": "2026-04-02T00:00:00.000Z",
+      "classification": {
+        "route": "agent-solvable",
+        "complexityScore": 2,
+        "riskScore": 2,
+        "confidence": 0.73,
+        "rationale": "agent-solvable because complexity=2, risk=2, labels=documentation, good first issue."
+      },
+      "workOrder": {
+        "title": "Work order for #2",
+        "status": "ready",
+        "assigneeKind": "agent",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/invoice-sync.ts",
+          "tests/invoice-sync.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": {
+        "provider": "greptile",
+        "status": "passed",
+        "summary": "Fixture verification result for demo proof panel."
+      },
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "fast-small",
+        "purpose": "routing",
+        "estimatedCostCents": 1,
+        "latencyMs": 660,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-3",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 3,
+      "title": "Add regression coverage for pagination edge cases",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: pagination.\nMaintainerOS route target: agent-solvable.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-3",
+      "labels": [
+        "tests",
+        "help wanted"
+      ],
+      "commentsCount": 14,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/3",
+      "createdAt": "2026-01-03T00:00:00.000Z",
+      "updatedAt": "2026-04-03T00:00:00.000Z",
+      "classification": {
+        "route": "agent-solvable",
+        "complexityScore": 4,
+        "riskScore": 2,
+        "confidence": 0.74,
+        "rationale": "agent-solvable because complexity=4, risk=2, labels=tests, help wanted."
+      },
+      "workOrder": {
+        "title": "Work order for #3",
+        "status": "ready",
+        "assigneeKind": "agent",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/pagination.ts",
+          "tests/pagination.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": {
+        "provider": "greptile",
+        "status": "passed",
+        "summary": "Fixture verification result for demo proof panel."
+      },
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "balanced",
+        "purpose": "routing",
+        "estimatedCostCents": 4,
+        "latencyMs": 920,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-4",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 4,
+      "title": "Untangle rate limits dependency boundary",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: rate limits.\nMaintainerOS route target: maintainer-review.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-4",
+      "labels": [
+        "refactor",
+        "maintainer-review"
+      ],
+      "commentsCount": 21,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/4",
+      "createdAt": "2026-01-04T00:00:00.000Z",
+      "updatedAt": "2026-04-04T00:00:00.000Z",
+      "classification": {
+        "route": "maintainer-review",
+        "complexityScore": 7,
+        "riskScore": 8,
+        "confidence": 0.75,
+        "rationale": "maintainer-review because complexity=7, risk=8, labels=refactor, maintainer-review."
+      },
+      "workOrder": {
+        "title": "Work order for #4",
+        "status": "ready",
+        "assigneeKind": "maintainer",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/rate-limits.ts",
+          "tests/rate-limits.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": null,
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "deep-reasoner",
+        "purpose": "routing",
+        "estimatedCostCents": 12,
+        "latencyMs": 1310,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-5",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 5,
+      "title": "Support configurable token refresh policies",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: token refresh.\nMaintainerOS route target: maintainer-review.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-5",
+      "labels": [
+        "enhancement",
+        "needs design"
+      ],
+      "commentsCount": 5,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/5",
+      "createdAt": "2026-01-05T00:00:00.000Z",
+      "updatedAt": "2026-04-05T00:00:00.000Z",
+      "classification": {
+        "route": "maintainer-review",
+        "complexityScore": 9,
+        "riskScore": 6,
+        "confidence": 0.76,
+        "rationale": "maintainer-review because complexity=9, risk=6, labels=enhancement, needs design."
+      },
+      "workOrder": {
+        "title": "Work order for #5",
+        "status": "ready",
+        "assigneeKind": "maintainer",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/token-refresh.ts",
+          "tests/token-refresh.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": null,
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "deep-reasoner",
+        "purpose": "routing",
+        "estimatedCostCents": 12,
+        "latencyMs": 1570,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-6",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 6,
+      "title": "Review branch previews permissions after dependency upgrade",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: branch previews.\nMaintainerOS route target: maintainer-review.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-6",
+      "labels": [
+        "security",
+        "priority"
+      ],
+      "commentsCount": 12,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/6",
+      "createdAt": "2026-01-06T00:00:00.000Z",
+      "updatedAt": "2026-04-06T00:00:00.000Z",
+      "classification": {
+        "route": "maintainer-review",
+        "complexityScore": 8,
+        "riskScore": 10,
+        "confidence": 0.77,
+        "rationale": "maintainer-review because complexity=8, risk=10, labels=security, priority."
+      },
+      "workOrder": {
+        "title": "Work order for #6",
+        "status": "ready",
+        "assigneeKind": "maintainer",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/branch-previews.ts",
+          "tests/branch-previews.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": null,
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "deep-reasoner",
+        "purpose": "routing",
+        "estimatedCostCents": 12,
+        "latencyMs": 1440,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-7",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 7,
+      "title": "Implement schema migrations adapter with acceptance test suite",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: schema migrations.\nMaintainerOS route target: bounty-worthy.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-7",
+      "labels": [
+        "bounty",
+        "integration"
+      ],
+      "commentsCount": 19,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/7",
+      "createdAt": "2026-01-07T00:00:00.000Z",
+      "updatedAt": "2026-04-07T00:00:00.000Z",
+      "classification": {
+        "route": "bounty-worthy",
+        "complexityScore": 6,
+        "riskScore": 5,
+        "confidence": 0.78,
+        "rationale": "bounty-worthy because complexity=6, risk=5, labels=bounty, integration."
+      },
+      "workOrder": {
+        "title": "Work order for #7",
+        "status": "ready",
+        "assigneeKind": "contributor",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/schema-migrations.ts",
+          "tests/schema-migrations.test.ts"
+        ]
+      },
+      "bounty": {
+        "status": "paid",
+        "amountCents": 45000,
+        "currency": "USD",
+        "rationale": "Integration-shaped work with bounded acceptance checks."
+      },
+      "verification": {
+        "provider": "greptile",
+        "status": "passed",
+        "summary": "Fixture verification result for demo proof panel."
+      },
+      "paymentArtifact": {
+        "provider": "allscale",
+        "status": "released",
+        "amountCents": 45000,
+        "currency": "USD",
+        "artifactUrl": "https://allscale.example/payments/maintaineros-demo-large-7"
+      },
+      "modelRun": {
+        "provider": "clod",
+        "model": "balanced",
+        "purpose": "routing",
+        "estimatedCostCents": 4,
+        "latencyMs": 1180,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-8",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 8,
+      "title": "Clarify vague report about worker retries failures",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: worker retries.\nMaintainerOS route target: close-or-clarify.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-8",
+      "labels": [
+        "needs reproduction",
+        "triage"
+      ],
+      "commentsCount": 3,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/8",
+      "createdAt": "2026-01-08T00:00:00.000Z",
+      "updatedAt": "2026-04-08T00:00:00.000Z",
+      "classification": {
+        "route": "close-or-clarify",
+        "complexityScore": 5,
+        "riskScore": 5,
+        "confidence": 0.79,
+        "rationale": "close-or-clarify because complexity=5, risk=5, labels=needs reproduction, triage."
+      },
+      "workOrder": {
+        "title": "Work order for #8",
+        "status": "blocked",
+        "assigneeKind": "unassigned",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/worker-retries.ts",
+          "tests/worker-retries.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": null,
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "balanced",
+        "purpose": "routing",
+        "estimatedCostCents": 4,
+        "latencyMs": 1050,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-9",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 9,
+      "title": "Incorrect cache invalidation when error reporting changes",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: error reporting.\nMaintainerOS route target: agent-solvable.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-9",
+      "labels": [
+        "bug",
+        "cache"
+      ],
+      "commentsCount": 10,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/9",
+      "createdAt": "2026-01-09T00:00:00.000Z",
+      "updatedAt": "2026-04-09T00:00:00.000Z",
+      "classification": {
+        "route": "agent-solvable",
+        "complexityScore": 5,
+        "riskScore": 3,
+        "confidence": 0.8,
+        "rationale": "agent-solvable because complexity=5, risk=3, labels=bug, cache."
+      },
+      "workOrder": {
+        "title": "Work order for #9",
+        "status": "ready",
+        "assigneeKind": "agent",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/error-reporting.ts",
+          "tests/error-reporting.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": {
+        "provider": "greptile",
+        "status": "passed",
+        "summary": "Fixture verification result for demo proof panel."
+      },
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "balanced",
+        "purpose": "routing",
+        "estimatedCostCents": 4,
+        "latencyMs": 1050,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-10",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 10,
+      "title": "Document typed exports setup for new contributors",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: typed exports.\nMaintainerOS route target: agent-solvable.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-10",
+      "labels": [
+        "documentation",
+        "good first issue"
+      ],
+      "commentsCount": 17,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/10",
+      "createdAt": "2026-01-10T00:00:00.000Z",
+      "updatedAt": "2026-04-10T00:00:00.000Z",
+      "classification": {
+        "route": "agent-solvable",
+        "complexityScore": 1,
+        "riskScore": 2,
+        "confidence": 0.81,
+        "rationale": "agent-solvable because complexity=1, risk=2, labels=documentation, good first issue."
+      },
+      "workOrder": {
+        "title": "Work order for #10",
+        "status": "ready",
+        "assigneeKind": "agent",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/typed-exports.ts",
+          "tests/typed-exports.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": {
+        "provider": "greptile",
+        "status": "passed",
+        "summary": "Fixture verification result for demo proof panel."
+      },
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "fast-small",
+        "purpose": "routing",
+        "estimatedCostCents": 1,
+        "latencyMs": 530,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-11",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 11,
+      "title": "Add regression coverage for CLI bootstrap edge cases",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: CLI bootstrap.\nMaintainerOS route target: agent-solvable.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-11",
+      "labels": [
+        "tests",
+        "help wanted"
+      ],
+      "commentsCount": 1,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/11",
+      "createdAt": "2026-01-11T00:00:00.000Z",
+      "updatedAt": "2026-04-11T00:00:00.000Z",
+      "classification": {
+        "route": "agent-solvable",
+        "complexityScore": 3,
+        "riskScore": 2,
+        "confidence": 0.82,
+        "rationale": "agent-solvable because complexity=3, risk=2, labels=tests, help wanted."
+      },
+      "workOrder": {
+        "title": "Work order for #11",
+        "status": "ready",
+        "assigneeKind": "agent",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/CLI-bootstrap.ts",
+          "tests/CLI-bootstrap.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": {
+        "provider": "greptile",
+        "status": "passed",
+        "summary": "Fixture verification result for demo proof panel."
+      },
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "fast-small",
+        "purpose": "routing",
+        "estimatedCostCents": 1,
+        "latencyMs": 790,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-12",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 12,
+      "title": "Untangle fixture loading dependency boundary",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: fixture loading.\nMaintainerOS route target: maintainer-review.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-12",
+      "labels": [
+        "refactor",
+        "maintainer-review"
+      ],
+      "commentsCount": 8,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/12",
+      "createdAt": "2026-01-12T00:00:00.000Z",
+      "updatedAt": "2026-04-12T00:00:00.000Z",
+      "classification": {
+        "route": "maintainer-review",
+        "complexityScore": 9,
+        "riskScore": 8,
+        "confidence": 0.83,
+        "rationale": "maintainer-review because complexity=9, risk=8, labels=refactor, maintainer-review."
+      },
+      "workOrder": {
+        "title": "Work order for #12",
+        "status": "ready",
+        "assigneeKind": "maintainer",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/fixture-loading.ts",
+          "tests/fixture-loading.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": null,
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "deep-reasoner",
+        "purpose": "routing",
+        "estimatedCostCents": 12,
+        "latencyMs": 1570,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-13",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 13,
+      "title": "Support configurable authorization policies",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: authorization.\nMaintainerOS route target: maintainer-review.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-13",
+      "labels": [
+        "enhancement",
+        "needs design"
+      ],
+      "commentsCount": 15,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/13",
+      "createdAt": "2026-01-13T00:00:00.000Z",
+      "updatedAt": "2026-04-13T00:00:00.000Z",
+      "classification": {
+        "route": "maintainer-review",
+        "complexityScore": 8,
+        "riskScore": 6,
+        "confidence": 0.84,
+        "rationale": "maintainer-review because complexity=8, risk=6, labels=enhancement, needs design."
+      },
+      "workOrder": {
+        "title": "Work order for #13",
+        "status": "ready",
+        "assigneeKind": "maintainer",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/authorization.ts",
+          "tests/authorization.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": null,
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "deep-reasoner",
+        "purpose": "routing",
+        "estimatedCostCents": 12,
+        "latencyMs": 1440,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-14",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 14,
+      "title": "Review search indexing permissions after dependency upgrade",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: search indexing.\nMaintainerOS route target: maintainer-review.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-14",
+      "labels": [
+        "security",
+        "priority"
+      ],
+      "commentsCount": 22,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/14",
+      "createdAt": "2026-01-14T00:00:00.000Z",
+      "updatedAt": "2026-04-14T00:00:00.000Z",
+      "classification": {
+        "route": "maintainer-review",
+        "complexityScore": 7,
+        "riskScore": 10,
+        "confidence": 0.85,
+        "rationale": "maintainer-review because complexity=7, risk=10, labels=security, priority."
+      },
+      "workOrder": {
+        "title": "Work order for #14",
+        "status": "ready",
+        "assigneeKind": "maintainer",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/search-indexing.ts",
+          "tests/search-indexing.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": null,
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "deep-reasoner",
+        "purpose": "routing",
+        "estimatedCostCents": 12,
+        "latencyMs": 1310,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-15",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 15,
+      "title": "Implement queue draining adapter with acceptance test suite",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: queue draining.\nMaintainerOS route target: bounty-worthy.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-15",
+      "labels": [
+        "bounty",
+        "integration"
+      ],
+      "commentsCount": 6,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/15",
+      "createdAt": "2026-01-15T00:00:00.000Z",
+      "updatedAt": "2026-04-15T00:00:00.000Z",
+      "classification": {
+        "route": "bounty-worthy",
+        "complexityScore": 8,
+        "riskScore": 5,
+        "confidence": 0.86,
+        "rationale": "bounty-worthy because complexity=8, risk=5, labels=bounty, integration."
+      },
+      "workOrder": {
+        "title": "Work order for #15",
+        "status": "ready",
+        "assigneeKind": "contributor",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/queue-draining.ts",
+          "tests/queue-draining.test.ts"
+        ]
+      },
+      "bounty": {
+        "status": "funded",
+        "amountCents": 45000,
+        "currency": "USD",
+        "rationale": "Integration-shaped work with bounded acceptance checks."
+      },
+      "verification": {
+        "provider": "greptile",
+        "status": "passed",
+        "summary": "Fixture verification result for demo proof panel."
+      },
+      "paymentArtifact": {
+        "provider": "allscale",
+        "status": "ready",
+        "amountCents": 45000,
+        "currency": "USD",
+        "artifactUrl": "https://allscale.example/payments/maintaineros-demo-large-15"
+      },
+      "modelRun": {
+        "provider": "clod",
+        "model": "deep-reasoner",
+        "purpose": "routing",
+        "estimatedCostCents": 12,
+        "latencyMs": 1440,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-16",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 16,
+      "title": "Clarify vague report about dependency scanning failures",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: dependency scanning.\nMaintainerOS route target: close-or-clarify.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-16",
+      "labels": [
+        "needs reproduction",
+        "triage"
+      ],
+      "commentsCount": 13,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/16",
+      "createdAt": "2026-01-16T00:00:00.000Z",
+      "updatedAt": "2026-04-16T00:00:00.000Z",
+      "classification": {
+        "route": "close-or-clarify",
+        "complexityScore": 4,
+        "riskScore": 5,
+        "confidence": 0.87,
+        "rationale": "close-or-clarify because complexity=4, risk=5, labels=needs reproduction, triage."
+      },
+      "workOrder": {
+        "title": "Work order for #16",
+        "status": "blocked",
+        "assigneeKind": "unassigned",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/dependency-scanning.ts",
+          "tests/dependency-scanning.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": null,
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "balanced",
+        "purpose": "routing",
+        "estimatedCostCents": 4,
+        "latencyMs": 920,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-17",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 17,
+      "title": "Incorrect cache invalidation when webhook replay changes",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: webhook replay.\nMaintainerOS route target: agent-solvable.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-17",
+      "labels": [
+        "bug",
+        "cache"
+      ],
+      "commentsCount": 20,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/17",
+      "createdAt": "2026-01-17T00:00:00.000Z",
+      "updatedAt": "2026-04-17T00:00:00.000Z",
+      "classification": {
+        "route": "agent-solvable",
+        "complexityScore": 4,
+        "riskScore": 3,
+        "confidence": 0.88,
+        "rationale": "agent-solvable because complexity=4, risk=3, labels=bug, cache."
+      },
+      "workOrder": {
+        "title": "Work order for #17",
+        "status": "ready",
+        "assigneeKind": "agent",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/webhook-replay.ts",
+          "tests/webhook-replay.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": {
+        "provider": "greptile",
+        "status": "passed",
+        "summary": "Fixture verification result for demo proof panel."
+      },
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "balanced",
+        "purpose": "routing",
+        "estimatedCostCents": 4,
+        "latencyMs": 920,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-18",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 18,
+      "title": "Document invoice sync setup for new contributors",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: invoice sync.\nMaintainerOS route target: agent-solvable.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-18",
+      "labels": [
+        "documentation",
+        "good first issue"
+      ],
+      "commentsCount": 4,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/18",
+      "createdAt": "2026-01-18T00:00:00.000Z",
+      "updatedAt": "2026-04-18T00:00:00.000Z",
+      "classification": {
+        "route": "agent-solvable",
+        "complexityScore": 3,
+        "riskScore": 2,
+        "confidence": 0.89,
+        "rationale": "agent-solvable because complexity=3, risk=2, labels=documentation, good first issue."
+      },
+      "workOrder": {
+        "title": "Work order for #18",
+        "status": "ready",
+        "assigneeKind": "agent",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/invoice-sync.ts",
+          "tests/invoice-sync.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": {
+        "provider": "greptile",
+        "status": "passed",
+        "summary": "Fixture verification result for demo proof panel."
+      },
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "fast-small",
+        "purpose": "routing",
+        "estimatedCostCents": 1,
+        "latencyMs": 790,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-19",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 19,
+      "title": "Add regression coverage for pagination edge cases",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: pagination.\nMaintainerOS route target: agent-solvable.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-19",
+      "labels": [
+        "tests",
+        "help wanted"
+      ],
+      "commentsCount": 11,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/19",
+      "createdAt": "2026-01-19T00:00:00.000Z",
+      "updatedAt": "2026-04-19T00:00:00.000Z",
+      "classification": {
+        "route": "agent-solvable",
+        "complexityScore": 2,
+        "riskScore": 2,
+        "confidence": 0.9,
+        "rationale": "agent-solvable because complexity=2, risk=2, labels=tests, help wanted."
+      },
+      "workOrder": {
+        "title": "Work order for #19",
+        "status": "ready",
+        "assigneeKind": "agent",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/pagination.ts",
+          "tests/pagination.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": {
+        "provider": "greptile",
+        "status": "passed",
+        "summary": "Fixture verification result for demo proof panel."
+      },
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "fast-small",
+        "purpose": "routing",
+        "estimatedCostCents": 1,
+        "latencyMs": 660,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-20",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 20,
+      "title": "Untangle rate limits dependency boundary",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: rate limits.\nMaintainerOS route target: maintainer-review.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-20",
+      "labels": [
+        "refactor",
+        "maintainer-review"
+      ],
+      "commentsCount": 18,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/20",
+      "createdAt": "2026-01-20T00:00:00.000Z",
+      "updatedAt": "2026-04-20T00:00:00.000Z",
+      "classification": {
+        "route": "maintainer-review",
+        "complexityScore": 8,
+        "riskScore": 8,
+        "confidence": 0.91,
+        "rationale": "maintainer-review because complexity=8, risk=8, labels=refactor, maintainer-review."
+      },
+      "workOrder": {
+        "title": "Work order for #20",
+        "status": "ready",
+        "assigneeKind": "maintainer",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/rate-limits.ts",
+          "tests/rate-limits.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": null,
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "deep-reasoner",
+        "purpose": "routing",
+        "estimatedCostCents": 12,
+        "latencyMs": 1440,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-21",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 21,
+      "title": "Support configurable token refresh policies",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: token refresh.\nMaintainerOS route target: maintainer-review.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-21",
+      "labels": [
+        "enhancement",
+        "needs design"
+      ],
+      "commentsCount": 2,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/21",
+      "createdAt": "2026-01-21T00:00:00.000Z",
+      "updatedAt": "2026-04-21T00:00:00.000Z",
+      "classification": {
+        "route": "maintainer-review",
+        "complexityScore": 10,
+        "riskScore": 6,
+        "confidence": 0.72,
+        "rationale": "maintainer-review because complexity=10, risk=6, labels=enhancement, needs design."
+      },
+      "workOrder": {
+        "title": "Work order for #21",
+        "status": "ready",
+        "assigneeKind": "maintainer",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/token-refresh.ts",
+          "tests/token-refresh.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": null,
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "deep-reasoner",
+        "purpose": "routing",
+        "estimatedCostCents": 12,
+        "latencyMs": 1700,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-22",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 22,
+      "title": "Review branch previews permissions after dependency upgrade",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: branch previews.\nMaintainerOS route target: maintainer-review.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-22",
+      "labels": [
+        "security",
+        "priority"
+      ],
+      "commentsCount": 9,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/22",
+      "createdAt": "2026-01-22T00:00:00.000Z",
+      "updatedAt": "2026-04-22T00:00:00.000Z",
+      "classification": {
+        "route": "maintainer-review",
+        "complexityScore": 6,
+        "riskScore": 10,
+        "confidence": 0.73,
+        "rationale": "maintainer-review because complexity=6, risk=10, labels=security, priority."
+      },
+      "workOrder": {
+        "title": "Work order for #22",
+        "status": "ready",
+        "assigneeKind": "maintainer",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/branch-previews.ts",
+          "tests/branch-previews.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": null,
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "balanced",
+        "purpose": "routing",
+        "estimatedCostCents": 4,
+        "latencyMs": 1180,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-23",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 23,
+      "title": "Implement schema migrations adapter with acceptance test suite",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: schema migrations.\nMaintainerOS route target: bounty-worthy.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-23",
+      "labels": [
+        "bounty",
+        "integration"
+      ],
+      "commentsCount": 16,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/23",
+      "createdAt": "2026-01-23T00:00:00.000Z",
+      "updatedAt": "2026-04-23T00:00:00.000Z",
+      "classification": {
+        "route": "bounty-worthy",
+        "complexityScore": 7,
+        "riskScore": 5,
+        "confidence": 0.74,
+        "rationale": "bounty-worthy because complexity=7, risk=5, labels=bounty, integration."
+      },
+      "workOrder": {
+        "title": "Work order for #23",
+        "status": "ready",
+        "assigneeKind": "contributor",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/schema-migrations.ts",
+          "tests/schema-migrations.test.ts"
+        ]
+      },
+      "bounty": {
+        "status": "paid",
+        "amountCents": 45000,
+        "currency": "USD",
+        "rationale": "Integration-shaped work with bounded acceptance checks."
+      },
+      "verification": {
+        "provider": "greptile",
+        "status": "pending",
+        "summary": "Fixture verification result for demo proof panel."
+      },
+      "paymentArtifact": {
+        "provider": "allscale",
+        "status": "released",
+        "amountCents": 45000,
+        "currency": "USD",
+        "artifactUrl": "https://allscale.example/payments/maintaineros-demo-large-23"
+      },
+      "modelRun": {
+        "provider": "clod",
+        "model": "deep-reasoner",
+        "purpose": "routing",
+        "estimatedCostCents": 12,
+        "latencyMs": 1310,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-24",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 24,
+      "title": "Clarify vague report about worker retries failures",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: worker retries.\nMaintainerOS route target: close-or-clarify.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-24",
+      "labels": [
+        "needs reproduction",
+        "triage"
+      ],
+      "commentsCount": 0,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/24",
+      "createdAt": "2026-01-24T00:00:00.000Z",
+      "updatedAt": "2026-04-24T00:00:00.000Z",
+      "classification": {
+        "route": "close-or-clarify",
+        "complexityScore": 6,
+        "riskScore": 5,
+        "confidence": 0.75,
+        "rationale": "close-or-clarify because complexity=6, risk=5, labels=needs reproduction, triage."
+      },
+      "workOrder": {
+        "title": "Work order for #24",
+        "status": "blocked",
+        "assigneeKind": "unassigned",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/worker-retries.ts",
+          "tests/worker-retries.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": null,
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "balanced",
+        "purpose": "routing",
+        "estimatedCostCents": 4,
+        "latencyMs": 1180,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-25",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 25,
+      "title": "Incorrect cache invalidation when error reporting changes",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: error reporting.\nMaintainerOS route target: agent-solvable.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-25",
+      "labels": [
+        "bug",
+        "cache"
+      ],
+      "commentsCount": 7,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/25",
+      "createdAt": "2026-01-25T00:00:00.000Z",
+      "updatedAt": "2026-04-25T00:00:00.000Z",
+      "classification": {
+        "route": "agent-solvable",
+        "complexityScore": 3,
+        "riskScore": 3,
+        "confidence": 0.76,
+        "rationale": "agent-solvable because complexity=3, risk=3, labels=bug, cache."
+      },
+      "workOrder": {
+        "title": "Work order for #25",
+        "status": "ready",
+        "assigneeKind": "agent",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/error-reporting.ts",
+          "tests/error-reporting.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": {
+        "provider": "greptile",
+        "status": "passed",
+        "summary": "Fixture verification result for demo proof panel."
+      },
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "fast-small",
+        "purpose": "routing",
+        "estimatedCostCents": 1,
+        "latencyMs": 790,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-26",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 26,
+      "title": "Document typed exports setup for new contributors",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: typed exports.\nMaintainerOS route target: agent-solvable.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-26",
+      "labels": [
+        "documentation",
+        "good first issue"
+      ],
+      "commentsCount": 14,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/26",
+      "createdAt": "2026-01-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z",
+      "classification": {
+        "route": "agent-solvable",
+        "complexityScore": 2,
+        "riskScore": 2,
+        "confidence": 0.77,
+        "rationale": "agent-solvable because complexity=2, risk=2, labels=documentation, good first issue."
+      },
+      "workOrder": {
+        "title": "Work order for #26",
+        "status": "ready",
+        "assigneeKind": "agent",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/typed-exports.ts",
+          "tests/typed-exports.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": {
+        "provider": "greptile",
+        "status": "passed",
+        "summary": "Fixture verification result for demo proof panel."
+      },
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "fast-small",
+        "purpose": "routing",
+        "estimatedCostCents": 1,
+        "latencyMs": 660,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-27",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 27,
+      "title": "Add regression coverage for CLI bootstrap edge cases",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: CLI bootstrap.\nMaintainerOS route target: agent-solvable.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-27",
+      "labels": [
+        "tests",
+        "help wanted"
+      ],
+      "commentsCount": 21,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/27",
+      "createdAt": "2026-01-27T00:00:00.000Z",
+      "updatedAt": "2026-04-27T00:00:00.000Z",
+      "classification": {
+        "route": "agent-solvable",
+        "complexityScore": 4,
+        "riskScore": 2,
+        "confidence": 0.78,
+        "rationale": "agent-solvable because complexity=4, risk=2, labels=tests, help wanted."
+      },
+      "workOrder": {
+        "title": "Work order for #27",
+        "status": "ready",
+        "assigneeKind": "agent",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/CLI-bootstrap.ts",
+          "tests/CLI-bootstrap.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": {
+        "provider": "greptile",
+        "status": "passed",
+        "summary": "Fixture verification result for demo proof panel."
+      },
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "balanced",
+        "purpose": "routing",
+        "estimatedCostCents": 4,
+        "latencyMs": 920,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-28",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 28,
+      "title": "Untangle fixture loading dependency boundary",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: fixture loading.\nMaintainerOS route target: maintainer-review.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-28",
+      "labels": [
+        "refactor",
+        "maintainer-review"
+      ],
+      "commentsCount": 5,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/28",
+      "createdAt": "2026-01-28T00:00:00.000Z",
+      "updatedAt": "2026-04-28T00:00:00.000Z",
+      "classification": {
+        "route": "maintainer-review",
+        "complexityScore": 7,
+        "riskScore": 8,
+        "confidence": 0.79,
+        "rationale": "maintainer-review because complexity=7, risk=8, labels=refactor, maintainer-review."
+      },
+      "workOrder": {
+        "title": "Work order for #28",
+        "status": "ready",
+        "assigneeKind": "maintainer",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/fixture-loading.ts",
+          "tests/fixture-loading.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": null,
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "deep-reasoner",
+        "purpose": "routing",
+        "estimatedCostCents": 12,
+        "latencyMs": 1310,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-29",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 29,
+      "title": "Support configurable authorization policies",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: authorization.\nMaintainerOS route target: maintainer-review.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-29",
+      "labels": [
+        "enhancement",
+        "needs design"
+      ],
+      "commentsCount": 12,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/29",
+      "createdAt": "2026-01-29T00:00:00.000Z",
+      "updatedAt": "2026-04-29T00:00:00.000Z",
+      "classification": {
+        "route": "maintainer-review",
+        "complexityScore": 9,
+        "riskScore": 6,
+        "confidence": 0.8,
+        "rationale": "maintainer-review because complexity=9, risk=6, labels=enhancement, needs design."
+      },
+      "workOrder": {
+        "title": "Work order for #29",
+        "status": "ready",
+        "assigneeKind": "maintainer",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/authorization.ts",
+          "tests/authorization.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": null,
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "deep-reasoner",
+        "purpose": "routing",
+        "estimatedCostCents": 12,
+        "latencyMs": 1570,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-30",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 30,
+      "title": "Review search indexing permissions after dependency upgrade",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: search indexing.\nMaintainerOS route target: maintainer-review.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-30",
+      "labels": [
+        "security",
+        "priority"
+      ],
+      "commentsCount": 19,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/30",
+      "createdAt": "2026-01-30T00:00:00.000Z",
+      "updatedAt": "2026-04-30T00:00:00.000Z",
+      "classification": {
+        "route": "maintainer-review",
+        "complexityScore": 8,
+        "riskScore": 10,
+        "confidence": 0.81,
+        "rationale": "maintainer-review because complexity=8, risk=10, labels=security, priority."
+      },
+      "workOrder": {
+        "title": "Work order for #30",
+        "status": "ready",
+        "assigneeKind": "maintainer",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/search-indexing.ts",
+          "tests/search-indexing.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": null,
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "deep-reasoner",
+        "purpose": "routing",
+        "estimatedCostCents": 12,
+        "latencyMs": 1440,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-31",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 31,
+      "title": "Implement queue draining adapter with acceptance test suite",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: queue draining.\nMaintainerOS route target: bounty-worthy.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-31",
+      "labels": [
+        "bounty",
+        "integration"
+      ],
+      "commentsCount": 3,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/31",
+      "createdAt": "2026-01-31T00:00:00.000Z",
+      "updatedAt": "2026-04-01T00:00:00.000Z",
+      "classification": {
+        "route": "bounty-worthy",
+        "complexityScore": 6,
+        "riskScore": 5,
+        "confidence": 0.82,
+        "rationale": "bounty-worthy because complexity=6, risk=5, labels=bounty, integration."
+      },
+      "workOrder": {
+        "title": "Work order for #31",
+        "status": "ready",
+        "assigneeKind": "contributor",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/queue-draining.ts",
+          "tests/queue-draining.test.ts"
+        ]
+      },
+      "bounty": {
+        "status": "funded",
+        "amountCents": 45000,
+        "currency": "USD",
+        "rationale": "Integration-shaped work with bounded acceptance checks."
+      },
+      "verification": {
+        "provider": "greptile",
+        "status": "passed",
+        "summary": "Fixture verification result for demo proof panel."
+      },
+      "paymentArtifact": {
+        "provider": "allscale",
+        "status": "ready",
+        "amountCents": 45000,
+        "currency": "USD",
+        "artifactUrl": "https://allscale.example/payments/maintaineros-demo-large-31"
+      },
+      "modelRun": {
+        "provider": "clod",
+        "model": "balanced",
+        "purpose": "routing",
+        "estimatedCostCents": 4,
+        "latencyMs": 1180,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-32",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 32,
+      "title": "Clarify vague report about dependency scanning failures",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: dependency scanning.\nMaintainerOS route target: close-or-clarify.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-32",
+      "labels": [
+        "needs reproduction",
+        "triage"
+      ],
+      "commentsCount": 10,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/32",
+      "createdAt": "2026-02-01T00:00:00.000Z",
+      "updatedAt": "2026-04-02T00:00:00.000Z",
+      "classification": {
+        "route": "close-or-clarify",
+        "complexityScore": 5,
+        "riskScore": 5,
+        "confidence": 0.83,
+        "rationale": "close-or-clarify because complexity=5, risk=5, labels=needs reproduction, triage."
+      },
+      "workOrder": {
+        "title": "Work order for #32",
+        "status": "blocked",
+        "assigneeKind": "unassigned",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/dependency-scanning.ts",
+          "tests/dependency-scanning.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": null,
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "balanced",
+        "purpose": "routing",
+        "estimatedCostCents": 4,
+        "latencyMs": 1050,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-33",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 33,
+      "title": "Incorrect cache invalidation when webhook replay changes",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: webhook replay.\nMaintainerOS route target: agent-solvable.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-33",
+      "labels": [
+        "bug",
+        "cache"
+      ],
+      "commentsCount": 17,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/33",
+      "createdAt": "2026-02-02T00:00:00.000Z",
+      "updatedAt": "2026-04-03T00:00:00.000Z",
+      "classification": {
+        "route": "agent-solvable",
+        "complexityScore": 5,
+        "riskScore": 3,
+        "confidence": 0.84,
+        "rationale": "agent-solvable because complexity=5, risk=3, labels=bug, cache."
+      },
+      "workOrder": {
+        "title": "Work order for #33",
+        "status": "ready",
+        "assigneeKind": "agent",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/webhook-replay.ts",
+          "tests/webhook-replay.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": {
+        "provider": "greptile",
+        "status": "passed",
+        "summary": "Fixture verification result for demo proof panel."
+      },
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "balanced",
+        "purpose": "routing",
+        "estimatedCostCents": 4,
+        "latencyMs": 1050,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-34",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 34,
+      "title": "Document invoice sync setup for new contributors",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: invoice sync.\nMaintainerOS route target: agent-solvable.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-34",
+      "labels": [
+        "documentation",
+        "good first issue"
+      ],
+      "commentsCount": 1,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/34",
+      "createdAt": "2026-02-03T00:00:00.000Z",
+      "updatedAt": "2026-04-04T00:00:00.000Z",
+      "classification": {
+        "route": "agent-solvable",
+        "complexityScore": 1,
+        "riskScore": 2,
+        "confidence": 0.85,
+        "rationale": "agent-solvable because complexity=1, risk=2, labels=documentation, good first issue."
+      },
+      "workOrder": {
+        "title": "Work order for #34",
+        "status": "ready",
+        "assigneeKind": "agent",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/invoice-sync.ts",
+          "tests/invoice-sync.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": {
+        "provider": "greptile",
+        "status": "pending",
+        "summary": "Fixture verification result for demo proof panel."
+      },
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "fast-small",
+        "purpose": "routing",
+        "estimatedCostCents": 1,
+        "latencyMs": 530,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-35",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 35,
+      "title": "Add regression coverage for pagination edge cases",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: pagination.\nMaintainerOS route target: agent-solvable.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-35",
+      "labels": [
+        "tests",
+        "help wanted"
+      ],
+      "commentsCount": 8,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/35",
+      "createdAt": "2026-02-04T00:00:00.000Z",
+      "updatedAt": "2026-04-05T00:00:00.000Z",
+      "classification": {
+        "route": "agent-solvable",
+        "complexityScore": 3,
+        "riskScore": 2,
+        "confidence": 0.86,
+        "rationale": "agent-solvable because complexity=3, risk=2, labels=tests, help wanted."
+      },
+      "workOrder": {
+        "title": "Work order for #35",
+        "status": "ready",
+        "assigneeKind": "agent",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/pagination.ts",
+          "tests/pagination.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": {
+        "provider": "greptile",
+        "status": "passed",
+        "summary": "Fixture verification result for demo proof panel."
+      },
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "fast-small",
+        "purpose": "routing",
+        "estimatedCostCents": 1,
+        "latencyMs": 790,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-36",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 36,
+      "title": "Untangle rate limits dependency boundary",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: rate limits.\nMaintainerOS route target: maintainer-review.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-36",
+      "labels": [
+        "refactor",
+        "maintainer-review"
+      ],
+      "commentsCount": 15,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/36",
+      "createdAt": "2026-02-05T00:00:00.000Z",
+      "updatedAt": "2026-04-06T00:00:00.000Z",
+      "classification": {
+        "route": "maintainer-review",
+        "complexityScore": 9,
+        "riskScore": 8,
+        "confidence": 0.87,
+        "rationale": "maintainer-review because complexity=9, risk=8, labels=refactor, maintainer-review."
+      },
+      "workOrder": {
+        "title": "Work order for #36",
+        "status": "ready",
+        "assigneeKind": "maintainer",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/rate-limits.ts",
+          "tests/rate-limits.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": null,
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "deep-reasoner",
+        "purpose": "routing",
+        "estimatedCostCents": 12,
+        "latencyMs": 1570,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-37",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 37,
+      "title": "Support configurable token refresh policies",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: token refresh.\nMaintainerOS route target: maintainer-review.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-37",
+      "labels": [
+        "enhancement",
+        "needs design"
+      ],
+      "commentsCount": 22,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/37",
+      "createdAt": "2026-02-06T00:00:00.000Z",
+      "updatedAt": "2026-04-07T00:00:00.000Z",
+      "classification": {
+        "route": "maintainer-review",
+        "complexityScore": 8,
+        "riskScore": 6,
+        "confidence": 0.88,
+        "rationale": "maintainer-review because complexity=8, risk=6, labels=enhancement, needs design."
+      },
+      "workOrder": {
+        "title": "Work order for #37",
+        "status": "ready",
+        "assigneeKind": "maintainer",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/token-refresh.ts",
+          "tests/token-refresh.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": null,
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "deep-reasoner",
+        "purpose": "routing",
+        "estimatedCostCents": 12,
+        "latencyMs": 1440,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-38",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 38,
+      "title": "Review branch previews permissions after dependency upgrade",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: branch previews.\nMaintainerOS route target: maintainer-review.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-1",
+      "labels": [
+        "security",
+        "priority"
+      ],
+      "commentsCount": 6,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/38",
+      "createdAt": "2026-02-07T00:00:00.000Z",
+      "updatedAt": "2026-04-08T00:00:00.000Z",
+      "classification": {
+        "route": "maintainer-review",
+        "complexityScore": 7,
+        "riskScore": 10,
+        "confidence": 0.89,
+        "rationale": "maintainer-review because complexity=7, risk=10, labels=security, priority."
+      },
+      "workOrder": {
+        "title": "Work order for #38",
+        "status": "ready",
+        "assigneeKind": "maintainer",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/branch-previews.ts",
+          "tests/branch-previews.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": null,
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "deep-reasoner",
+        "purpose": "routing",
+        "estimatedCostCents": 12,
+        "latencyMs": 1310,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-39",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 39,
+      "title": "Implement schema migrations adapter with acceptance test suite",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: schema migrations.\nMaintainerOS route target: bounty-worthy.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-2",
+      "labels": [
+        "bounty",
+        "integration"
+      ],
+      "commentsCount": 13,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/39",
+      "createdAt": "2026-02-08T00:00:00.000Z",
+      "updatedAt": "2026-04-09T00:00:00.000Z",
+      "classification": {
+        "route": "bounty-worthy",
+        "complexityScore": 8,
+        "riskScore": 5,
+        "confidence": 0.9,
+        "rationale": "bounty-worthy because complexity=8, risk=5, labels=bounty, integration."
+      },
+      "workOrder": {
+        "title": "Work order for #39",
+        "status": "ready",
+        "assigneeKind": "contributor",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/schema-migrations.ts",
+          "tests/schema-migrations.test.ts"
+        ]
+      },
+      "bounty": {
+        "status": "paid",
+        "amountCents": 45000,
+        "currency": "USD",
+        "rationale": "Integration-shaped work with bounded acceptance checks."
+      },
+      "verification": {
+        "provider": "greptile",
+        "status": "passed",
+        "summary": "Fixture verification result for demo proof panel."
+      },
+      "paymentArtifact": {
+        "provider": "allscale",
+        "status": "released",
+        "amountCents": 45000,
+        "currency": "USD",
+        "artifactUrl": "https://allscale.example/payments/maintaineros-demo-large-39"
+      },
+      "modelRun": {
+        "provider": "clod",
+        "model": "deep-reasoner",
+        "purpose": "routing",
+        "estimatedCostCents": 12,
+        "latencyMs": 1440,
+        "status": "succeeded"
+      }
+    },
+    {
+      "id": "maintaineros-demo-large-40",
+      "repositoryId": "maintaineros-demo-large",
+      "number": 40,
+      "title": "Clarify vague report about worker retries failures",
+      "body": "Seeded issue for maintaineros/ledgerkit.\nArea: worker retries.\nMaintainerOS route target: close-or-clarify.\nThis record is deterministic fixture data for backlog-scale demos.",
+      "state": "open",
+      "author": "contributor-3",
+      "labels": [
+        "needs reproduction",
+        "triage"
+      ],
+      "commentsCount": 20,
+      "htmlUrl": "https://github.com/maintaineros/ledgerkit/issues/40",
+      "createdAt": "2026-02-09T00:00:00.000Z",
+      "updatedAt": "2026-04-10T00:00:00.000Z",
+      "classification": {
+        "route": "close-or-clarify",
+        "complexityScore": 4,
+        "riskScore": 5,
+        "confidence": 0.91,
+        "rationale": "close-or-clarify because complexity=4, risk=5, labels=needs reproduction, triage."
+      },
+      "workOrder": {
+        "title": "Work order for #40",
+        "status": "blocked",
+        "assigneeKind": "unassigned",
+        "acceptanceChecks": [
+          "Reproduce or explain the issue from the fixture description.",
+          "Make the smallest scoped change that satisfies the route rationale.",
+          "Add or update at least one acceptance check artifact."
+        ],
+        "suggestedFiles": [
+          "src/worker-retries.ts",
+          "tests/worker-retries.test.ts"
+        ]
+      },
+      "bounty": null,
+      "verification": null,
+      "paymentArtifact": null,
+      "modelRun": {
+        "provider": "clod",
+        "model": "balanced",
+        "purpose": "routing",
+        "estimatedCostCents": 4,
+        "latencyMs": 920,
+        "status": "succeeded"
+      }
+    }
+  ]
+}

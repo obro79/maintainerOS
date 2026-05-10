@@ -40,7 +40,27 @@ export async function POST(request: Request) {
   }
 
   const stored = persistClodArtifact(repositoryId, issue, result);
-  await recordTraceEvent(repositoryId, issue.number, stored.traceEvent);
+  await recordTraceEvent({
+    id: stored.traceEvent.id,
+    repositoryId,
+    issueNumber: issue.number,
+    actor: stored.traceEvent.actor,
+    provider: 'clod',
+    sourceState: stored.traceEvent.sourceState ?? 'rehearsal',
+    route: issue.route,
+    title: stored.traceEvent.title,
+    detail: stored.traceEvent.detail,
+    status: stored.traceEvent.status,
+    relatedId: stored.traceEvent.relatedId,
+    model: stored.traceEvent.model,
+    costCents: stored.traceEvent.costCents,
+    filesTouched: stored.traceEvent.filesTouched,
+    at: stored.traceEvent.at,
+    payload: {
+      workOrderTitle: stored.workOrder.title,
+      generatedBy: stored.workOrder.generatedBy,
+    },
+  });
   const { ok: providerOk, ...artifactResult } = result;
   return NextResponse.json({
     ok: true,

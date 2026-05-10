@@ -21,12 +21,14 @@ import {
   type VerificationViewModel,
 } from './types';
 import { NON_CLUSTLY_ROUTE_REASON, canReleasePayout, hidePayoutArtifactsForNonClustlyRoutes } from './payout';
-import { classifyComplexity, classifyRisk, estimatePremiumBaselineCents, scoreIssue, selectClodModel } from './routing';
+import { classifyComplexity, classifyRisk, estimatePremiumBaselineCents, evaluateRoutePolicy, scoreIssue, selectClodModel } from './routing';
 import { applyStoredClodArtifact } from './clod-artifacts';
 import { buildContextPackForIssue, buildNiaTraceEvent } from './nia-context';
 import { buildSandboxExecutionsForIssue, buildSandboxTraceEvents, toSandboxAttemptListItems } from './daytona';
 import { buildGreptileVerification, toVerificationQueueItem } from './verification';
 import { toClustlyBountyListItem } from './payments';
+import { listPersistedTraceEvents, mergeTraceEvents } from './trace-events';
+import { buildDeterministicWorkOrder } from './work-orders';
 import { buildSponsorProofFromIssue } from './sponsor-proof';
 import { buildRouteHistoryFromTrace } from './route-history';
 
@@ -106,8 +108,8 @@ export class FixtureMaintainerOSRepository implements MaintainerOSRepository {
     const fixture = loadFixture(repositoryId);
     const sourceState = this.sourceState;
     const issues = fixture.issues.slice(0, 40).map(toIssueCard);
-    const issueDetails = fixture.issues.slice(0, 40).map((issue) => applyStoredClodArtifact(repositoryId, applyStoredClodArtifact(fixture.repository.id, toIssueDetail(issue, sourceState, repositoryId))));
-    const selectedIssue = applyStoredClodArtifact(repositoryId, applyStoredClodArtifact(fixture.repository.id, toIssueDetail(fixture.issues.find((issue) => issue.number === 41) ?? fixture.issues[0], sourceState, repositoryId)));
+    const issueDetails = await Promise.all(fixture.issues.slice(0, 40).map((issue) => toIssueDetailWithPersistedTrace(repositoryId, fixture.repository.id, issue, sourceState)));
+    const selectedIssue = await toIssueDetailWithPersistedTrace(repositoryId, fixture.repository.id, fixture.issues.find((issue) => issue.number === 41) ?? fixture.issues[0], sourceState);
 
     return {
       repository: {
@@ -154,7 +156,7 @@ export class FixtureMaintainerOSRepository implements MaintainerOSRepository {
   async getIssueDetail(repositoryId: string, issueNumber: number): Promise<IssueDetailViewModel | null> {
     const fixture = loadFixture(repositoryId);
     const issue = fixture.issues.find((candidate) => candidate.number === issueNumber);
-    return issue ? applyStoredClodArtifact(repositoryId, applyStoredClodArtifact(fixture.repository.id, toIssueDetail(issue, this.sourceState, repositoryId))) : null;
+    return issue ? toIssueDetailWithPersistedTrace(repositoryId, fixture.repository.id, issue, this.sourceState) : null;
   }
 
   async getIssueTrace(repositoryId: string, issueNumber: number): Promise<IssueTraceEventViewModel[]> {
@@ -210,6 +212,19 @@ export class FixtureMaintainerOSRepository implements MaintainerOSRepository {
   }
 }
 
+async function toIssueDetailWithPersistedTrace(repositoryId: string, fixtureRepositoryId: string, issue: FixtureIssue, sourceState: ArtifactSourceState) {
+  const detail = applyStoredClodArtifact(repositoryId, applyStoredClodArtifact(fixtureRepositoryId, toIssueDetail(issue, sourceState, repositoryId)));
+  const persisted = await listPersistedTraceEvents(repositoryId, detail.number);
+  if (persisted.length === 0 && repositoryId === fixtureRepositoryId) return detail;
+  const fixturePersisted = repositoryId === fixtureRepositoryId ? [] : await listPersistedTraceEvents(fixtureRepositoryId, detail.number);
+  const trace = mergeTraceEvents(detail.trace, [...persisted, ...fixturePersisted]);
+  return {
+    ...detail,
+    routeHistory: buildRouteHistoryFromTrace(detail, trace),
+    trace,
+  };
+}
+
 export function getMaintainerOSRepository(): MaintainerOSRepository {
   return new FixtureMaintainerOSRepository();
 }
@@ -241,7 +256,23 @@ function toIssueCard(issue: FixtureIssue): IssueCardViewModel {
 
 function toIssueDetail(issue: FixtureIssue, sourceState: ArtifactSourceState = 'fixture', repositoryId = 'maintaineros-demo-large'): IssueDetailViewModel {
   const card = toIssueCard(issue);
-  const selection = selectClodModel(scoreIssue(issue));
+  const decision = scoreIssue(issue);
+  const routePolicy = evaluateRoutePolicy({
+    route: decision.route,
+    complexityScore: decision.complexityScore,
+    riskScore: decision.riskScore,
+    confidence: decision.confidence,
+    labels: issue.labels,
+  });
+  const selection = selectClodModel(decision);
+  const workOrder = buildDeterministicWorkOrder({
+    issueNumber: issue.number,
+    title: issue.title,
+    route: decision.route,
+    routePolicy,
+    suggestedFiles: issue.workOrder.suggestedFiles,
+    base: issue.workOrder,
+  });
   const estimatedCostCents = issue.modelRun.estimatedCostCents ?? null;
   const modelRun: ModelRunViewModel = {
     provider: 'clod',
@@ -265,9 +296,9 @@ function toIssueDetail(issue: FixtureIssue, sourceState: ArtifactSourceState = '
         sourceState,
         status: issue.verification.status,
         summary: issue.verification.summary,
-        criteria: issue.workOrder.acceptanceChecks,
-        filesTouched: issue.workOrder.suggestedFiles,
-        filesInspected: issue.workOrder.suggestedFiles,
+        criteria: workOrder.acceptanceChecks,
+        filesTouched: workOrder.suggestedFiles,
+        filesInspected: workOrder.suggestedFiles,
         verifiedSha: issue.verification.status === 'pending' ? null : pullRequest.headSha,
         currentSha: pullRequest.headSha,
         blockingFindingsCount: 0,
@@ -278,7 +309,7 @@ function toIssueDetail(issue: FixtureIssue, sourceState: ArtifactSourceState = '
         isStale: false,
       }
     : null;
-  const verification = pullRequest ? buildGreptileVerification({ ...card, body: issue.body, htmlUrl: issue.htmlUrl, author: issue.author, labels: issue.labels, modelRun, workOrder: issue.workOrder, contextPack: null, sandboxExecutions: [], pullRequest, verification: baseVerification, bounty: issue.bounty, paymentArtifact: null, routeHistory: [], trace: [], payoutGate: { canRelease: false, reasons: [] } }, pullRequest, sourceState) : null;
+  const verification = pullRequest ? buildGreptileVerification({ ...card, body: issue.body, htmlUrl: issue.htmlUrl, author: issue.author, labels: issue.labels, modelRun, workOrder, routePolicy, contextPack: null, sandboxExecutions: [], pullRequest, verification: baseVerification, bounty: issue.bounty, paymentArtifact: null, routeHistory: [], trace: [], payoutGate: { canRelease: false, reasons: [] } }, pullRequest, sourceState) : null;
   const contextPack = buildContextPackForIssue(
     {
       id: issue.id,
@@ -287,7 +318,7 @@ function toIssueDetail(issue: FixtureIssue, sourceState: ArtifactSourceState = '
       body: issue.body,
       labels: issue.labels,
       route: card.route,
-      workOrder: issue.workOrder,
+      workOrder,
     },
     sourceState,
   );
@@ -298,7 +329,8 @@ function toIssueDetail(issue: FixtureIssue, sourceState: ArtifactSourceState = '
     author: issue.author,
     labels: issue.labels,
     modelRun,
-    workOrder: issue.workOrder,
+    workOrder,
+    routePolicy,
     contextPack,
     sandboxExecutions: [],
     pullRequest,
@@ -318,10 +350,10 @@ function toIssueDetail(issue: FixtureIssue, sourceState: ArtifactSourceState = '
   const sandboxExecutions = buildSandboxExecutionsForIssue(payoutVisibleBaseDetail, repositoryId, sourceState);
   const payoutGate = canReleasePayout(payoutVisibleBaseDetail);
   const trace = [
-    ...buildTrace(issue, modelRun, sourceState, contextPack, verification),
+    ...buildTrace(issue, modelRun, sourceState, contextPack, verification, card.route, workOrder),
     ...buildSandboxTraceEvents(payoutVisibleBaseDetail, sandboxExecutions).map((event) => ({ ...event, route: card.route })),
-    ...buildPullRequestTraceEvents(issue, pullRequest, sourceState),
-    ...buildPayoutGateTraceEvents(issue, payoutVisibleBaseDetail.paymentArtifact, payoutGate, sourceState),
+    ...buildPullRequestTraceEvents(issue, pullRequest, sourceState, card.route, workOrder),
+    ...buildPayoutGateTraceEvents(issue, payoutVisibleBaseDetail.paymentArtifact, payoutGate, sourceState, card.route),
   ].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
   const detail = hidePayoutArtifactsForNonClustlyRoutes({
     ...payoutVisibleBaseDetail,
@@ -365,7 +397,7 @@ function buildBuckets(issues: IssueCardViewModel[]): RouteBucketViewModel[] {
   });
 }
 
-function buildTrace(issue: FixtureIssue, modelRun: ModelRunViewModel, sourceState: ArtifactSourceState, contextPack: IssueDetailViewModel['contextPack'], verification: VerificationViewModel | null): IssueTraceEventViewModel[] {
+function buildTrace(issue: FixtureIssue, modelRun: ModelRunViewModel, sourceState: ArtifactSourceState, contextPack: IssueDetailViewModel['contextPack'], verification: VerificationViewModel | null, route: ExecutionRoute, workOrder: IssueDetailViewModel['workOrder']): IssueTraceEventViewModel[] {
   const base = `2026-05-08T18:${String(issue.number % 50).padStart(2, '0')}:00.000Z`;
   const trace: IssueTraceEventViewModel[] = [
     {
@@ -395,13 +427,13 @@ function buildTrace(issue: FixtureIssue, modelRun: ModelRunViewModel, sourceStat
       at: base,
       actor: 'MaintainerOS router',
       sourceState,
-      title: `Routed to ${ROUTE_LABEL[issue.classification.route]}`,
-      detail: issue.classification.rationale,
+      title: `Routed to ${ROUTE_LABEL[route]}`,
+      detail: workOrder.rationale ?? issue.classification.rationale,
       status: 'routed',
     },
   ];
 
-  if (issue.number === 5 || issue.classification.route === 'bounty-worthy') {
+  if (issue.number === 5 || issue.number === 41 || route === 'bounty-worthy') {
     trace.push(
       {
         id: `${issue.id}-cheap-attempt`,
@@ -415,7 +447,7 @@ function buildTrace(issue: FixtureIssue, modelRun: ModelRunViewModel, sourceStat
         status: 'failed',
         model: 'cheap-open',
         costCents: 2,
-        filesTouched: issue.workOrder.suggestedFiles.slice(0, 1),
+        filesTouched: workOrder.suggestedFiles.slice(0, 1),
       },
       {
         id: `${issue.id}-escalated`,
@@ -426,8 +458,8 @@ function buildTrace(issue: FixtureIssue, modelRun: ModelRunViewModel, sourceStat
         title: 'Escalated after failed proof',
         detail: 'MaintainerOS preserved the failed attempt and selected a stronger route based on verification evidence.',
         status: 'escalated',
-        model: issue.classification.route === 'bounty-worthy' ? 'clustly' : 'dev',
-        costCents: issue.classification.route === 'bounty-worthy' ? issue.bounty?.amountCents ? Math.round(issue.bounty.amountCents / 100) : 150 : 7,
+        model: route === 'bounty-worthy' ? 'clustly' : route === 'agent-solvable' ? 'balanced' : 'dev',
+        costCents: route === 'bounty-worthy' ? issue.bounty?.amountCents ? Math.round(issue.bounty.amountCents / 100) : 150 : 7,
       },
     );
   }
@@ -443,7 +475,7 @@ function buildTrace(issue: FixtureIssue, modelRun: ModelRunViewModel, sourceStat
       detail: verification.summary,
       status: verification.status === 'passed' ? 'passed' : verification.status === 'failed' ? 'failed' : verification.status === 'stale' ? 'stale' : 'pending',
       relatedId: verification.verifiedSha ?? verification.currentSha ?? undefined,
-      filesTouched: issue.workOrder.suggestedFiles,
+      filesTouched: workOrder.suggestedFiles,
     });
     if (verification.status === 'failed' || verification.status === 'stale') {
       trace.push({
@@ -464,7 +496,7 @@ function buildTrace(issue: FixtureIssue, modelRun: ModelRunViewModel, sourceStat
     trace.push(buildNiaTraceEvent({ id: issue.id, number: issue.number }, contextPack));
   }
 
-  if (issue.classification.route !== 'bounty-worthy' && issue.paymentArtifact) {
+  if (route !== 'bounty-worthy' && issue.paymentArtifact) {
     trace.push({
       id: `${issue.id}-payout-suppressed`,
       at: base,
@@ -476,7 +508,7 @@ function buildTrace(issue: FixtureIssue, modelRun: ModelRunViewModel, sourceStat
     });
   }
 
-  if (issue.classification.route === 'bounty-worthy' && issue.paymentArtifact) {
+  if (route === 'bounty-worthy' && issue.paymentArtifact) {
     trace.push(
       {
         id: `${issue.id}-clustly-posted`,
@@ -513,10 +545,10 @@ function buildTrace(issue: FixtureIssue, modelRun: ModelRunViewModel, sourceStat
     );
   }
 
-  return trace.map((event) => ({ route: issue.classification.route, ...event }));
+  return trace.map((event) => ({ route, ...event }));
 }
 
-function buildPullRequestTraceEvents(issue: FixtureIssue, pullRequest: IssueDetailViewModel['pullRequest'], sourceState: ArtifactSourceState): IssueTraceEventViewModel[] {
+function buildPullRequestTraceEvents(issue: FixtureIssue, pullRequest: IssueDetailViewModel['pullRequest'], sourceState: ArtifactSourceState, route: ExecutionRoute, workOrder: IssueDetailViewModel['workOrder']): IssueTraceEventViewModel[] {
   if (!pullRequest) return [];
   return [
     {
@@ -525,13 +557,13 @@ function buildPullRequestTraceEvents(issue: FixtureIssue, pullRequest: IssueDeta
       actor: 'GitHub pull request',
       provider: 'github',
       sourceState,
-      route: issue.classification.route,
+      route,
       title: `PR #${pullRequest.number} linked`,
       detail: `${pullRequest.authorLogin} opened ${pullRequest.branchName}; MaintainerOS tied the PR back to issue #${issue.number}.`,
       status: pullRequest.status === 'closed' ? 'blocked' : 'succeeded',
       artifactUrl: pullRequest.htmlUrl,
       relatedId: pullRequest.headSha,
-      filesTouched: issue.workOrder.suggestedFiles,
+      filesTouched: workOrder.suggestedFiles,
     },
   ];
 }
@@ -541,8 +573,9 @@ function buildPayoutGateTraceEvents(
   paymentArtifact: IssueDetailViewModel['paymentArtifact'],
   payoutGate: IssueDetailViewModel['payoutGate'],
   sourceState: ArtifactSourceState,
+  route: ExecutionRoute,
 ): IssueTraceEventViewModel[] {
-  if (issue.classification.route !== 'bounty-worthy' || (!issue.bounty && !paymentArtifact)) return [];
+  if (route !== 'bounty-worthy' || (!issue.bounty && !paymentArtifact)) return [];
   return [
     {
       id: `${issue.id}-payout-gate`,
@@ -550,7 +583,7 @@ function buildPayoutGateTraceEvents(
       actor: 'MaintainerOS payout gate',
       provider: 'clustly',
       sourceState,
-      route: issue.classification.route,
+      route,
       title: payoutGate.canRelease ? 'Payout gate release allowed' : 'Payout gate blocked',
       detail: payoutGate.canRelease
         ? 'Funded task, linked PR, passed non-stale verification, and maintainer acceptance are all present.'

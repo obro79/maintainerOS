@@ -121,10 +121,19 @@ export interface SandboxExecutionViewModel {
   completedCommands: string[];
   durationMs: number | null;
   exitCode: number | null;
+  commandResults: SandboxCommandResultViewModel[];
   logSummary: string;
   filesTouched: string[];
   pullRequestUrl: string | null;
   failureReason: string | null;
+}
+
+export interface SandboxCommandResultViewModel {
+  command: string;
+  status: 'pending' | 'running' | 'passed' | 'failed' | 'skipped';
+  exitCode: number | null;
+  durationMs: number | null;
+  summary: string;
 }
 
 export interface SandboxAttemptListItemViewModel {
@@ -146,6 +155,18 @@ export interface WorkOrderViewModel {
   assigneeKind: 'agent' | 'maintainer' | 'contributor' | 'unassigned';
   acceptanceChecks: string[];
   suggestedFiles: string[];
+  suggestedCommands?: string[];
+  automationSummary?: string;
+}
+
+export interface RoutePolicyViewModel {
+  executionMode: 'ai' | 'dev' | 'clustly' | 'clarify';
+  automationAllowed: boolean;
+  sandboxAllowed: boolean;
+  requiresHumanReview: boolean;
+  requiresPaidWork: boolean;
+  reasons: string[];
+  safetyChecks: string[];
 }
 
 export interface VerificationViewModel {
@@ -255,6 +276,10 @@ export interface DemoResetScenarioViewModel {
   label: string;
   sourceState: ArtifactSourceState;
   description: string;
+  repositoryId: string;
+  targetIssueNumber: number;
+  expectedRoute: ExecutionRoute;
+  traceAnchors: string[];
 }
 
 export interface IssueTraceEventViewModel {
@@ -296,6 +321,7 @@ export interface IssueDetailViewModel extends IssueCardViewModel {
   labels: string[];
   modelRun: ModelRunViewModel;
   workOrder: WorkOrderViewModel;
+  routePolicy: RoutePolicyViewModel;
   contextPack: ContextPackViewModel | null;
   sandboxExecutions: SandboxExecutionViewModel[];
   pullRequest: PullRequestViewModel | null;

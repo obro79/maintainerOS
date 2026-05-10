@@ -3,7 +3,6 @@
 .env.*
 !.env.example
 node_modules/
-package-lock.json
 docs/
 .next/
 out/
@@ -19,3 +18,4 @@ coverage/
 *.log
 *.tsbuildinfo
 next-env.d.ts
+.vercel

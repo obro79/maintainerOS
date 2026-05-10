@@ -12,7 +12,7 @@ export function buildSandboxExecutionsForIssue(issue: IssueDetailViewModel, repo
   const baseAttempt = buildAttempt(issue, repositoryId, sourceState, {
     suffix: 'attempt-1',
     status: issue.verification?.status === 'passed' ? 'passed' : 'failed',
-    completedCommands: issue.verification?.status === 'passed' ? issue.contextPack?.suggestedCommands ?? ['npm test', 'npm run lint'] : ['npm test'],
+    completedCommands: issue.verification?.status === 'passed' ? suggestedCommandsFor(issue) : [suggestedCommandsFor(issue)[0]],
     exitCode: issue.verification?.status === 'passed' ? 0 : 1,
     failureReason: issue.verification?.status === 'passed' ? null : 'Regression evidence did not satisfy the work-order acceptance checks.',
     logSummary: issue.verification?.status === 'passed'
@@ -26,7 +26,7 @@ export function buildSandboxExecutionsForIssue(issue: IssueDetailViewModel, repo
       buildAttempt(issue, repositoryId, sourceState, {
         suffix: 'attempt-2',
         status: 'passed',
-        completedCommands: issue.contextPack?.suggestedCommands ?? ['npm test', 'npm run lint'],
+        completedCommands: suggestedCommandsFor(issue),
         exitCode: 0,
         failureReason: null,
         logSummary: 'Escalated retry completed in sandbox and opened a PR artifact. This is execution evidence, not correctness.',
@@ -80,6 +80,20 @@ export function buildSandboxTraceEvents(issue: IssueDetailViewModel, attempts: S
       });
     }
 
+    attempt.commandResults.forEach((command, commandIndex) => {
+      events.push({
+        id: `${attempt.id}-command-${commandIndex + 1}`,
+        at,
+        actor: 'Sandbox command runner',
+        provider: 'daytona',
+        sourceState: attempt.sourceState,
+        title: `Command ${command.status}: ${command.command}`,
+        detail: command.summary,
+        status: command.status === 'passed' ? 'passed' : command.status === 'failed' ? 'failed' : command.status === 'running' ? 'running' : 'pending',
+        relatedId: attempt.id,
+      });
+    });
+
     return events;
   });
 }
@@ -108,7 +122,7 @@ function buildAttempt(
     failureReason: string | null;
   },
 ): SandboxExecutionViewModel {
-  const commands = issue.contextPack?.suggestedCommands.length ? issue.contextPack.suggestedCommands : ['npm test', 'npm run lint'];
+  const commands = suggestedCommandsFor(issue);
   const filesTouched = issue.workOrder.suggestedFiles.length ? issue.workOrder.suggestedFiles : issue.contextPack?.citations.map((citation) => citation.pathOrUrl ?? citation.title) ?? [];
   return {
     provider: 'daytona',
@@ -124,6 +138,7 @@ function buildAttempt(
     completedCommands: options.completedCommands,
     durationMs: options.status === 'passed' ? 11 * 60 * 1000 : 4 * 60 * 1000,
     exitCode: options.exitCode,
+    commandResults: commands.map((command, index) => commandResult(command, index, options)),
     logSummary: options.logSummary,
     filesTouched,
     pullRequestUrl: options.status === 'passed' ? issue.pullRequest?.htmlUrl ?? `https://github.com/${repositoryId}/pull/${900 + issue.number}` : null,
@@ -132,9 +147,41 @@ function buildAttempt(
 }
 
 function shouldAttemptSandbox(issue: IssueDetailViewModel) {
-  return issue.route === 'agent-solvable' || issue.route === 'bounty-worthy';
+  return issue.routePolicy?.sandboxAllowed ?? issue.route === 'agent-solvable';
 }
 
 function shouldShowEscalatedRetry(issue: IssueDetailViewModel) {
-  return issue.number === 41 || issue.route === 'bounty-worthy';
+  return issue.routePolicy?.automationAllowed === true && issue.number === 41;
+}
+
+function suggestedCommandsFor(issue: IssueDetailViewModel) {
+  if (issue.workOrder.suggestedCommands?.length) return issue.workOrder.suggestedCommands;
+  if (issue.contextPack?.suggestedCommands.length) return issue.contextPack.suggestedCommands;
+  return ['npm test', 'npm run lint'];
+}
+
+function commandResult(
+  command: string,
+  index: number,
+  options: {
+    status: SandboxExecutionViewModel['status'];
+    completedCommands: string[];
+    exitCode: number;
+    logSummary: string;
+    failureReason: string | null;
+  },
+) {
+  const completed = options.completedCommands.includes(command);
+  const failedCommand = options.status === 'failed' && completed && index === options.completedCommands.length - 1;
+  return {
+    command,
+    status: failedCommand ? 'failed' as const : completed ? 'passed' as const : 'skipped' as const,
+    exitCode: failedCommand ? options.exitCode : completed ? 0 : null,
+    durationMs: completed ? (failedCommand ? 75_000 : 95_000) : null,
+    summary: failedCommand
+      ? options.failureReason ?? options.logSummary
+      : completed
+        ? `Command completed during sandbox attempt: ${command}.`
+        : `Command was not reached after an earlier sandbox result: ${command}.`,
+  };
 }

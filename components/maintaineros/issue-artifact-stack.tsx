@@ -31,6 +31,13 @@ export function IssueArtifactStack({ issue }: { issue: IssueDetailViewModel | nu
         <p className="text-sm text-zinc-300">{issue.workOrder.title}</p>
         <p className="mt-1 text-xs text-zinc-600">{issue.workOrder.status} · {issue.workOrder.assigneeKind}{issue.workOrder.generatedBy ? ` · ${issue.workOrder.generatedBy}` : ''}</p>
         {issue.workOrder.rationale && <p className="mt-2 text-xs leading-relaxed text-zinc-500">{issue.workOrder.rationale}</p>}
+        <div className="mt-3 rounded-lg border border-white/6 p-3">
+          <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-700">Route policy</p>
+          <p className={issue.routePolicy.automationAllowed ? 'mt-1 text-xs text-emerald-300' : 'mt-1 text-xs text-amber-300'}>
+            {issue.routePolicy.executionMode.toUpperCase()} · {issue.routePolicy.automationAllowed ? 'automation allowed' : 'automation blocked'}
+          </p>
+          <p className="mt-2 text-xs text-zinc-500">{issue.routePolicy.reasons.join(' ')}</p>
+        </div>
         <div className="mt-3 grid gap-2 md:grid-cols-2">
           <div>
             <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-700">Acceptance</p>
@@ -43,6 +50,13 @@ export function IssueArtifactStack({ issue }: { issue: IssueDetailViewModel | nu
           <div>
             <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-700">Files</p>
             <p className="mt-1 text-xs text-zinc-500">{issue.workOrder.suggestedFiles.join(', ') || 'unknown'}</p>
+            {issue.workOrder.suggestedCommands && issue.workOrder.suggestedCommands.length > 0 && (
+              <div className="mt-2 space-y-1">
+                {issue.workOrder.suggestedCommands.map((command) => (
+                  <code key={command} className="block rounded-lg border border-white/6 px-2 py-1 text-xs text-zinc-500">{command}</code>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </ArtifactSection>
@@ -144,11 +158,11 @@ export function IssueArtifactStack({ issue }: { issue: IssueDetailViewModel | nu
                 </p>
                 <div className="mt-3 grid gap-3 md:grid-cols-2">
                   <div>
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-700">Commands</p>
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-700">Command results</p>
                     <div className="mt-2 space-y-1">
-                      {attempt.requestedCommands.map((command) => (
-                        <code key={command} className="block rounded-lg border border-white/6 px-2 py-1 text-xs text-zinc-500">
-                          {attempt.completedCommands.includes(command) ? '✓' : '·'} {command}
+                      {attempt.commandResults.map((command) => (
+                        <code key={`${attempt.id}-${command.command}`} className="block rounded-lg border border-white/6 px-2 py-1 text-xs text-zinc-500">
+                          {command.status} · {command.command} · exit {command.exitCode ?? 'n/a'}
                         </code>
                       ))}
                     </div>

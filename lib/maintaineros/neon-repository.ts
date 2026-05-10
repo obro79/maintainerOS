@@ -14,18 +14,19 @@ import {
   type SandboxAttemptListItemViewModel,
   type VerificationQueueItemViewModel,
 } from './types';
-import { classifyComplexity, classifyRisk, estimatePremiumBaselineCents, scoreIssue, selectClodModel } from './routing';
+import { classifyComplexity, classifyRisk, estimatePremiumBaselineCents, evaluateRoutePolicy, scoreIssue, selectClodModel } from './routing';
 import { withPostgres, type PgClient } from './postgres';
 import { applyStoredClodArtifact } from './clod-artifacts';
 import { buildContextPackForIssue, buildNiaTraceEvent } from './nia-context';
 import { buildSandboxExecutionsForIssue, buildSandboxTraceEvents, toSandboxAttemptListItems } from './daytona';
 import { toVerificationQueueItem } from './verification';
 import { toClustlyBountyListItem } from './payments';
+import { buildDeterministicWorkOrder } from './work-orders';
 import { listSponsorProofRuns } from './provider-runs';
 import { mergeSponsorProof } from './sponsor-proof';
 import { hidePayoutArtifactsForNonClustlyRoutes } from './payout';
 import { buildRouteHistoryFromTrace } from './route-history';
-import { listTraceEvents } from './trace-events';
+import { listTraceEvents, mergeTraceEvents } from './trace-events';
 
 interface RepositoryRow {
   id: string;
@@ -74,7 +75,7 @@ export class NeonMaintainerOSRepository implements MaintainerOSRepository {
         [repository.id],
       );
       const cards = issues.rows.map(toIssueCard);
-      const details = issues.rows.map((issue) => applyStoredClodArtifact(repository.id, toIssueDetail(issue)));
+      const details = await Promise.all(issues.rows.map((issue) => toIssueDetailWithPersistedTrace(client, repository.id, issue)));
       const selectedIssue = details[0] ?? emptyIssueDetail(repository.id);
       const latestImportRun = await getLatestImportRun(client, repository.owner, repository.name);
       const sponsorProof = mergeSponsorProof(await listSponsorProofRuns(client, repository.id));
@@ -129,9 +130,7 @@ export class NeonMaintainerOSRepository implements MaintainerOSRepository {
         [repository.id, issueNumber],
       );
       if (!result.rows[0]) return null;
-
-      const persistedTrace = await listTraceEvents(client, repository.id, issueNumber);
-      return applyStoredClodArtifact(repository.id, toIssueDetail(result.rows[0], persistedTrace));
+      return toIssueDetailWithPersistedTrace(client, repository.id, result.rows[0]);
     });
   }
 
@@ -161,6 +160,11 @@ export class NeonMaintainerOSRepository implements MaintainerOSRepository {
       .map((issue) => toClustlyBountyListItem(dashboard.repository.id, issue))
       .filter((item): item is ClustlyBountyListItemViewModel => Boolean(item));
   }
+}
+
+async function toIssueDetailWithPersistedTrace(client: PgClient, repositoryId: string, issue: IssueRow) {
+  const persistedTrace = await listTraceEvents(client, repositoryId, issue.number);
+  return applyStoredClodArtifact(repositoryId, toIssueDetail(issue, persistedTrace));
 }
 
 async function findRepository(client: PgClient, repositoryId: string): Promise<RepositoryRow> {
@@ -222,6 +226,13 @@ function toIssueDetail(issue: IssueRow, persistedTrace: IssueTraceEventViewModel
   });
   const modelSelection = selectClodModel(decision);
   const suggestedFiles = suggestedFilesFor(issue);
+  const routePolicy = evaluateRoutePolicy({
+    route: decision.route,
+    complexityScore: decision.complexityScore,
+    riskScore: decision.riskScore,
+    confidence: decision.confidence,
+    labels,
+  });
   const modelRun = {
     provider: 'clod' as const,
     sourceState: 'planned' as const,
@@ -236,17 +247,13 @@ function toIssueDetail(issue: IssueRow, persistedTrace: IssueTraceEventViewModel
     estimatedCostCents: null,
     premiumBaselineCents: estimatePremiumBaselineCents(null, modelSelection.tier),
   };
-  const workOrder: IssueDetailViewModel['workOrder'] = {
-    title: `Draft work order for #${issue.number}`,
-    status: 'draft',
-    assigneeKind: decision.route === 'maintainer-review' ? 'maintainer' : decision.route === 'bounty-worthy' ? 'contributor' : decision.route === 'close-or-clarify' ? 'unassigned' : 'agent',
-    acceptanceChecks: [
-      'Reproduce or explain the issue before implementation.',
-      'Keep the fix scoped to the imported GitHub issue.',
-      'Attach verification evidence before payout or close.',
-    ],
+  const workOrder = buildDeterministicWorkOrder({
+    issueNumber: issue.number,
+    title: issue.title,
+    route: decision.route,
+    routePolicy,
     suggestedFiles,
-  };
+  });
   const contextPack = buildContextPackForIssue(
     {
       id: issue.id,
@@ -267,6 +274,7 @@ function toIssueDetail(issue: IssueRow, persistedTrace: IssueTraceEventViewModel
     labels,
     modelRun,
     workOrder,
+    routePolicy,
     contextPack,
     sandboxExecutions: [],
     pullRequest: null,
@@ -290,11 +298,11 @@ function toIssueDetail(issue: IssueRow, persistedTrace: IssueTraceEventViewModel
   };
   const payoutVisibleBaseDetail = hidePayoutArtifactsForNonClustlyRoutes(baseDetail);
   const sandboxExecutions = buildSandboxExecutionsForIssue(payoutVisibleBaseDetail, issue.repository_id, 'live');
-  const trace = [
+  const derivedTrace = [
     ...buildLiveTrace(issue, decision.route, modelRun.model, contextPack),
     ...buildSandboxTraceEvents(payoutVisibleBaseDetail, sandboxExecutions).map((event) => ({ ...event, route: decision.route })),
-    ...persistedTrace,
-  ].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
+  ];
+  const trace = mergeTraceEvents(derivedTrace, persistedTrace);
 
   return hidePayoutArtifactsForNonClustlyRoutes({
     ...payoutVisibleBaseDetail,

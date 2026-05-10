@@ -1,3 +1,4 @@
+import { redactAgentCommandForEvidence } from './agent-command-evidence';
 import { parseAgentPatchPackage, type AgentPatchPackage } from './agent-patch-package';
 import { recordProviderRun } from './provider-runs';
 import type { IssueDetailViewModel, PullRequestViewModel, SandboxCommandResultViewModel, SandboxExecutionViewModel } from './types';
@@ -160,7 +161,7 @@ async function requestClodPatchPayload(baseUrl: string, issue: IssueDetailViewMo
 }
 
 function executionCommands(repositoryId: string, issue: IssueDetailViewModel, patchPackage: AgentPatchPackage) {
-  const token = process.env.GITHUB_TOKEN;
+  const token = githubWorkflowToken();
   if (!token) throw new Error('GITHUB_TOKEN is required for agent branch push and PR creation.');
   const [owner, repo] = repositoryId.split('/');
   const cloneUrl = `https://x-access-token:${token}@github.com/${owner}/${repo}.git`;
@@ -204,11 +205,11 @@ async function runDaytonaCommand(sandboxId: string, command: string): Promise<Sa
   const exitCode = payload.exitCode ?? payload.code ?? (response.ok ? 0 : 1);
   const output = payload.stdout ?? payload.output ?? payload.stderr ?? response.statusText;
   return {
-    command,
+    command: redactAgentCommandForEvidence(command),
     status: response.ok && exitCode === 0 ? 'passed' : 'failed',
     exitCode,
     durationMs: Date.now() - startedAt,
-    summary: String(output).slice(0, 500),
+    summary: redactAgentCommandForEvidence(String(output)).slice(0, 500),
   };
 }
 
@@ -218,7 +219,7 @@ async function createGitHubPullRequest(repositoryId: string, patchPackage: Agent
     method: 'POST',
     headers: {
       Accept: 'application/vnd.github+json',
-      Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+      Authorization: `Bearer ${githubWorkflowToken()}`,
       'X-GitHub-Api-Version': '2022-11-28',
       'Content-Type': 'application/json',
       'User-Agent': 'MaintainerOS-agent',
@@ -295,6 +296,10 @@ function totalDuration(commandResults: SandboxCommandResultViewModel[]) {
 
 function stringValue(value: unknown) {
   return typeof value === 'string' && value.trim() ? value.trim() : '';
+}
+
+function githubWorkflowToken() {
+  return process.env.GITHUB_TOKEN?.trim();
 }
 
 function assertRepositoryId(repositoryId: string) {

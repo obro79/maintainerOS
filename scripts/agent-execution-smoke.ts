@@ -1,4 +1,5 @@
 import { equal, ok, throws } from 'node:assert/strict';
+import { redactAgentCommandForEvidence } from '../lib/maintaineros/agent-command-evidence';
 import { parseAgentPatchPackage } from '../lib/maintaineros/agent-patch-package';
 
 const patch = parseAgentPatchPackage(JSON.stringify({
@@ -53,5 +54,13 @@ throws(
   })),
   /missing git unified diff/,
 );
+
+const redactedClone = redactAgentCommandForEvidence("git clone 'https://x-access-token:gho_secret123@github.com/owner/repo.git' /tmp/repo");
+ok(!redactedClone.includes('gho_secret123'));
+ok(redactedClone.includes('x-access-token:[redacted]@github.com'));
+
+const redactedBearer = redactAgentCommandForEvidence('Authorization: Bearer ghp_secret456');
+ok(!redactedBearer.includes('ghp_secret456'));
+ok(redactedBearer.includes('Bearer [redacted]'));
 
 console.log('MaintainerOS agent execution smoke passed.');

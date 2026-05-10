@@ -10,6 +10,8 @@ export type ExecutionRoute = 'agent-solvable' | 'maintainer-review' | 'bounty-wo
 
 export type ExecutionRouteOwner = 'ai' | 'dev' | 'clustly' | 'clarify';
 
+export type ContextMode = 'baseline' | 'nia-enriched';
+
 export type DemoLane = 'agent' | 'maintainer' | 'bounty' | 'clarify';
 
 export type IssueRisk = 'low' | 'medium' | 'high';
@@ -93,6 +95,10 @@ export interface ContextPackViewModel {
   issueId?: string;
   issueNumber?: number;
   workOrderId?: string;
+  providerRunId?: string;
+  query?: string;
+  sourceIds?: string[];
+  artifactUrl?: string;
   createdAt?: string;
   errorMessage?: string | null;
   status: ArtifactStatus;
@@ -103,6 +109,9 @@ export interface ContextPackViewModel {
     id: string;
     title: string;
     kind: 'file' | 'doc' | 'issue' | 'pull-request' | 'command';
+    sourceId?: string;
+    sourceUrl?: string;
+    score?: number;
     pathOrUrl?: string;
     snippet: string;
   }>;
@@ -118,6 +127,7 @@ export interface SandboxExecutionViewModel {
   imageOrTemplate: string;
   repoRef: string;
   branchName: string;
+  contextMode: ContextMode;
   contextPackId: string | null;
   requestedCommands: string[];
   completedCommands: string[];
@@ -392,7 +402,7 @@ export interface EvaluationSummaryViewModel {
     sampleId?: string;
     pairId?: string;
     pairState?: 'paired' | 'comparable' | 'unpaired';
-    contextMode: 'baseline' | 'nia-enriched';
+    contextMode: ContextMode;
     verificationStatus: ArtifactStatus;
     sourceState?: ArtifactSourceState;
     contextPackId?: string;

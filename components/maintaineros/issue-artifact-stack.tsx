@@ -154,7 +154,7 @@ export function IssueArtifactStack({ issue }: { issue: IssueDetailViewModel | nu
               <div key={attempt.id} className="rounded-lg border border-white/6 p-3">
                 <p className="text-sm text-zinc-300">{attempt.logSummary}</p>
                 <p className="mt-1 text-xs text-zinc-600">
-                  Attempt {index + 1} · {attempt.status} · {attempt.sandboxId} · exit {attempt.exitCode ?? 'pending'}
+                  Attempt {index + 1} · {attempt.status} · {attempt.contextMode} · {attempt.sandboxId} · exit {attempt.exitCode ?? 'pending'}
                 </p>
                 <div className="mt-3 grid gap-3 md:grid-cols-2">
                   <div>

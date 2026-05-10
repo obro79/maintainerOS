@@ -170,25 +170,28 @@ export class FixtureMaintainerOSRepository implements MaintainerOSRepository {
 
   async getSandboxAttempts(repositoryId = process.env.MAINTAINEROS_DEMO_REPO_ID || 'maintaineros-demo-large'): Promise<SandboxAttemptListItemViewModel[]> {
     const fixture = loadFixture(repositoryId);
-    return fixture.issues
+    const details = await Promise.all(fixture.issues
       .slice(0, 40)
-      .flatMap((issue) => toSandboxAttemptListItems(repositoryId, applyStoredClodArtifact(repositoryId, applyStoredClodArtifact(fixture.repository.id, toIssueDetail(issue, this.sourceState, repositoryId)))));
+      .map(async (issue) => applyStoredClodArtifact(repositoryId, applyStoredClodArtifact(fixture.repository.id, await toIssueDetail(issue, this.sourceState, repositoryId)))));
+    return details.flatMap((issue) => toSandboxAttemptListItems(repositoryId, issue));
   }
 
   async getVerificationQueue(repositoryId = process.env.MAINTAINEROS_DEMO_REPO_ID || 'maintaineros-demo-large'): Promise<VerificationQueueItemViewModel[]> {
     const fixture = loadFixture(repositoryId);
-    return fixture.issues
+    const details = await Promise.all(fixture.issues
       .slice(0, 40)
-      .map((issue) => applyStoredClodArtifact(repositoryId, applyStoredClodArtifact(fixture.repository.id, toIssueDetail(issue, this.sourceState, repositoryId))))
+      .map(async (issue) => applyStoredClodArtifact(repositoryId, applyStoredClodArtifact(fixture.repository.id, await toIssueDetail(issue, this.sourceState, repositoryId)))));
+    return details
       .filter((issue) => issue.pullRequest || issue.verification)
       .map((issue) => toVerificationQueueItem(repositoryId, issue));
   }
 
   async getBountyTasks(repositoryId = process.env.MAINTAINEROS_DEMO_REPO_ID || 'maintaineros-demo-large'): Promise<ClustlyBountyListItemViewModel[]> {
     const fixture = loadFixture(repositoryId);
-    return fixture.issues
+    const details = await Promise.all(fixture.issues
       .slice(0, 80)
-      .map((issue) => applyStoredClodArtifact(repositoryId, applyStoredClodArtifact(fixture.repository.id, toIssueDetail(issue, this.sourceState, repositoryId))))
+      .map(async (issue) => applyStoredClodArtifact(repositoryId, applyStoredClodArtifact(fixture.repository.id, await toIssueDetail(issue, this.sourceState, repositoryId)))));
+    return details
       .map((issue) => toClustlyBountyListItem(repositoryId, issue))
       .filter((item): item is ClustlyBountyListItemViewModel => Boolean(item));
   }
@@ -213,7 +216,7 @@ export class FixtureMaintainerOSRepository implements MaintainerOSRepository {
 }
 
 async function toIssueDetailWithPersistedTrace(repositoryId: string, fixtureRepositoryId: string, issue: FixtureIssue, sourceState: ArtifactSourceState) {
-  const detail = applyStoredClodArtifact(repositoryId, applyStoredClodArtifact(fixtureRepositoryId, toIssueDetail(issue, sourceState, repositoryId)));
+  const detail = applyStoredClodArtifact(repositoryId, applyStoredClodArtifact(fixtureRepositoryId, await toIssueDetail(issue, sourceState, repositoryId)));
   const persisted = await listPersistedTraceEvents(repositoryId, detail.number);
   if (persisted.length === 0 && repositoryId === fixtureRepositoryId) return detail;
   const fixturePersisted = repositoryId === fixtureRepositoryId ? [] : await listPersistedTraceEvents(fixtureRepositoryId, detail.number);
@@ -254,7 +257,7 @@ function toIssueCard(issue: FixtureIssue): IssueCardViewModel {
   };
 }
 
-function toIssueDetail(issue: FixtureIssue, sourceState: ArtifactSourceState = 'fixture', repositoryId = 'maintaineros-demo-large'): IssueDetailViewModel {
+async function toIssueDetail(issue: FixtureIssue, sourceState: ArtifactSourceState = 'fixture', repositoryId = 'maintaineros-demo-large'): Promise<IssueDetailViewModel> {
   const card = toIssueCard(issue);
   const decision = scoreIssue(issue);
   const routePolicy = evaluateRoutePolicy({
@@ -310,7 +313,7 @@ function toIssueDetail(issue: FixtureIssue, sourceState: ArtifactSourceState = '
       }
     : null;
   const verification = pullRequest ? buildGreptileVerification({ ...card, body: issue.body, htmlUrl: issue.htmlUrl, author: issue.author, labels: issue.labels, modelRun, workOrder, routePolicy, contextPack: null, sandboxExecutions: [], pullRequest, verification: baseVerification, bounty: issue.bounty, paymentArtifact: null, routeHistory: [], trace: [], payoutGate: emptyPayoutGate() }, pullRequest, sourceState) : null;
-  const contextPack = buildContextPackForIssue(
+  const contextPack = await buildContextPackForIssue(
     {
       id: issue.id,
       number: issue.number,
@@ -319,6 +322,8 @@ function toIssueDetail(issue: FixtureIssue, sourceState: ArtifactSourceState = '
       labels: issue.labels,
       route: card.route,
       workOrder,
+      repositoryFullName: repositoryId,
+      repositoryUrl: issue.htmlUrl.split('/issues/')[0],
     },
     sourceState,
   );

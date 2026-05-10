@@ -41,20 +41,22 @@ export async function POST(request: Request) {
     }
 
     if (result.attempt) {
+      const isLocalAgent = result.attempt.imageOrTemplate === 'local-worktree';
       await recordTraceEvent({
         repositoryId,
         issueNumber,
-        actor: 'Daytona sandbox',
+        actor: isLocalAgent ? 'Local AI runner' : 'Daytona sandbox',
         provider: 'daytona',
         sourceState: 'live',
         route: issue.route,
-        title: result.attempt.status === 'passed' ? 'Agent sandbox completed' : 'Agent sandbox failed',
+        title: result.attempt.status === 'passed' ? 'Agent execution completed' : 'Agent execution failed',
         detail: result.attempt.logSummary,
         status: result.attempt.status === 'passed' ? 'passed' : 'failed',
         artifactUrl: result.pullRequest?.htmlUrl ?? null,
         relatedId: result.attempt.sandboxId,
         filesTouched: result.attempt.filesTouched,
         payload: {
+          executor: isLocalAgent ? 'local' : 'daytona',
           commandResults: result.attempt.commandResults,
           branchName: result.attempt.branchName,
           contextMode: result.attempt.contextMode,

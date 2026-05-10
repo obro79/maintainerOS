@@ -115,11 +115,11 @@ export function buildIssueWorkflowSnapshot(issue: IssueDetailViewModel): IssueWo
     },
     {
       id: 'daytona',
-      label: 'Daytona sandbox',
+      label: 'AI runner',
       provider: 'daytona',
       status: sandbox ? sandbox.status : needsSandbox ? 'pending' : 'skipped',
       sourceState: sandbox?.sourceState ?? latestProviderEvent('daytona')?.sourceState,
-      summary: sandbox?.logSummary ?? (needsSandbox ? 'Waiting for sandbox execution evidence.' : 'Sandbox execution is not required.'),
+      summary: sandbox?.logSummary ?? (needsSandbox ? 'Waiting for AI execution evidence.' : 'AI execution is not required.'),
       evidenceIds: byProvider('daytona').map((event) => event.id),
     },
     {

@@ -134,6 +134,7 @@ function providerHealth(definition: ProviderDefinition, mode: ProviderRuntimeMod
 
 function missingEnvFor(definition: ProviderDefinition) {
   if (definition.provider === 'neon') return hasNeonConnection() ? [] : ['DATABASE_URL'];
+  if (definition.provider === 'daytona' && process.env.MAINTAINEROS_AGENT_EXECUTION_MODE === 'local') return [];
   if (definition.provider === 'greptile') {
     return [
       !process.env.GREPTILE_API_KEY ? 'GREPTILE_API_KEY' : null,
@@ -158,6 +159,9 @@ function redactUrl(value: string | undefined) {
 function onlineReadyDetail(provider: ProviderKey) {
   if (provider === 'github' && !process.env.GITHUB_TOKEN) {
     return 'Public GitHub API is available without a token; add GITHUB_TOKEN for private repos or higher rate limits.';
+  }
+  if (provider === 'daytona' && process.env.MAINTAINEROS_AGENT_EXECUTION_MODE === 'local') {
+    return 'Local AI PR execution is enabled; this machine will run git and verification commands instead of Daytona.';
   }
   return 'Provider config is present; smoke test can attempt a real call.';
 }

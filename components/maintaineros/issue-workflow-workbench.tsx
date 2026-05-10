@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Dialog } from '@base-ui/react/dialog';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -97,6 +98,7 @@ const STATUS_LABEL: Record<IssueWorkflowStatus, string> = {
 
 export function IssueWorkflowWorkbench({ org, repo, issueNumber, initialIssue, onClose }: IssueWorkflowWorkbenchProps) {
   const open = issueNumber != null;
+  const router = useRouter();
   const [issue, setIssue] = useState<IssueDetailViewModel | null>(initialIssue ?? null);
   const [lastRefresh, setLastRefresh] = useState<{ issueNumber: number; at: string } | null>(null);
   const [loading, setLoading] = useState(false);
@@ -251,6 +253,11 @@ export function IssueWorkflowWorkbench({ org, repo, issueNumber, initialIssue, o
                     </main>
 
                     <aside className="shrink-0 border-t border-white/8 bg-[#080d14] p-4 xl:min-h-0 xl:overflow-y-auto xl:border-l xl:border-t-0">
+                      <AgentRunPanel
+                        repositoryId={`${org}/${repo}`}
+                        issue={effectiveIssue}
+                        onCompleted={() => router.refresh()}
+                      />
                       <NodeInspector node={inspectedNode} currentNodeId={snapshot?.currentNodeId ?? null} issue={snapshot?.issue ?? null} basePath={basePath} />
                     </aside>
                   </div>
@@ -261,6 +268,83 @@ export function IssueWorkflowWorkbench({ org, repo, issueNumber, initialIssue, o
         </AnimatePresence>
       </Dialog.Portal>
     </Dialog.Root>
+  );
+}
+
+function AgentRunPanel({ repositoryId, issue, onCompleted }: { repositoryId: string; issue: IssueDetailViewModel | null; onCompleted: () => void }) {
+  const [token, setToken] = useState('');
+  const [running, setRunning] = useState(false);
+  const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
+  const agentAllowed = issue?.route === 'agent-solvable' && issue.routePolicy.automationAllowed;
+
+  async function runAgent() {
+    if (!issue || running) return;
+    setRunning(true);
+    setMessage(null);
+    try {
+      const headers: Record<string, string> = { 'content-type': 'application/json' };
+      if (token.trim()) headers.authorization = `Bearer ${token.trim()}`;
+      const response = await fetch('/api/maintaineros/run-agent', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ repositoryId, issueNumber: issue.number }),
+      });
+      const payload = await response.json().catch(() => ({})) as { ok?: boolean; error?: string; pullRequest?: { htmlUrl?: string; number?: number } };
+      if (!response.ok || payload.ok === false) {
+        throw new Error(payload.error ?? 'AI PR creation failed.');
+      }
+      setMessage({
+        tone: 'ok',
+        text: payload.pullRequest?.number ? `PR #${payload.pullRequest.number} created.` : 'AI execution recorded.',
+      });
+      onCompleted();
+    } catch (error) {
+      setMessage({ tone: 'error', text: error instanceof Error ? error.message : 'AI PR creation failed.' });
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  return (
+    <div className="mb-4 rounded-xl border border-white/8 bg-black/20 p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="font-sans text-sm font-semibold text-white">AI PR creator</p>
+          <p className="mt-1 font-sans text-xs text-zinc-500">{agentAllowed ? 'Ready for the AI lane.' : 'Only AI-lane issues can run.'}</p>
+        </div>
+        <span className={agentAllowed ? 'rounded-full border border-blue-500/25 bg-blue-500/10 px-2 py-0.5 font-sans text-[10px] uppercase text-blue-300' : 'rounded-full border border-white/10 px-2 py-0.5 font-sans text-[10px] uppercase text-zinc-500'}>
+          {agentAllowed ? 'AI' : 'blocked'}
+        </span>
+      </div>
+
+      <label className="mt-3 block">
+        <span className="font-sans text-[10px] uppercase tracking-[0.18em] text-zinc-700">Workflow token</span>
+        <input
+          value={token}
+          onChange={(event) => setToken(event.target.value)}
+          type="password"
+          autoComplete="off"
+          className="mt-1 w-full rounded-lg border border-white/10 bg-[#05080d] px-3 py-2 font-sans text-xs text-zinc-200 outline-none transition-colors focus:border-blue-500/40"
+          placeholder="optional in dev"
+        />
+      </label>
+
+      <button
+        type="button"
+        disabled={!issue || !agentAllowed || running}
+        onClick={runAgent}
+        className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-blue-500/25 bg-blue-500/10 px-3 py-2 font-sans text-xs font-medium text-blue-200 transition-colors hover:border-blue-400/35 hover:bg-blue-500/15 disabled:cursor-not-allowed disabled:opacity-45"
+      >
+        {running ? <Loader2 className="size-3.5 animate-spin" /> : <GitPullRequest className="size-3.5" />}
+        {running ? 'Creating PR...' : 'Run AI PR'}
+      </button>
+
+      {message && (
+        <p className={cn('mt-2 font-sans text-xs leading-relaxed', message.tone === 'ok' ? 'text-zinc-400' : 'text-amber-300')}>
+          {message.text}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -648,6 +732,7 @@ function providerLabel(provider: IssueWorkflowProvider) {
   if (provider === 'pull-request') return 'GitHub PR';
   if (provider === 'work-order') return 'Work order';
   if (provider === 'terminal') return 'Workflow';
+  if (provider === 'daytona') return 'AI runner';
   return provider.charAt(0).toUpperCase() + provider.slice(1);
 }
 

@@ -21,7 +21,7 @@ const QUICKSTART_STEPS = [
   {
     n: '01',
     label: 'Connect your repo',
-    body: 'Go to /connect and authorize read access via GitHub OAuth. MaintainerOS only requests the minimum scopes needed — read:issues and read:org. We never write to your repo without explicit action.',
+    body: 'Go to /connect, sign in with public GitHub OAuth, and choose a public repository to import. This flow does not request private-repo scopes or write access.',
   },
   {
     n: '02',

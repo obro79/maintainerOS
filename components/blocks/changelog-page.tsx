@@ -66,7 +66,7 @@ const ENTRIES: ChangelogEntry[] = [
     version: 'v0.7.2', date: 'Mar 10, 2026', tag: 'Release',
     icon: Shield, iconColor: 'text-blue-400', dotColor: 'bg-blue-500',
     items: [
-      { type: 'new',  text: 'GitHub OAuth read-only scope enforcement — no write tokens stored'   },
+      { type: 'new',  text: 'GitHub OAuth public-only connect flow — no private-repo scopes requested' },
       { type: 'impr', text: 'CSV export now includes confidence score and rationale summary'      },
       { type: 'fix',  text: 'Pagination fixed for repos with >500 open issues'                   },
     ],

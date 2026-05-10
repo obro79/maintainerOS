@@ -10,7 +10,7 @@ const repos = [
     owner: "maintaineros",
     name: "ledgerkit",
     fullName: "maintaineros/ledgerkit",
-    issueCount: Number(process.env.MAINTAINEROS_LARGE_FIXTURE_COUNT ?? 40),
+    issueCount: Number(process.env.MAINTAINEROS_LARGE_FIXTURE_COUNT ?? 400),
     description: "Payment ledger library with a long-lived maintainer backlog."
   },
   {
@@ -18,7 +18,7 @@ const repos = [
     owner: "maintaineros",
     name: "hooksmith",
     fullName: "maintaineros/hooksmith",
-    issueCount: Number(process.env.MAINTAINEROS_MEDIUM_FIXTURE_COUNT ?? 20),
+    issueCount: Number(process.env.MAINTAINEROS_MEDIUM_FIXTURE_COUNT ?? 200),
     description: "React hooks utility repo with mixed bugs, docs gaps, and feature requests."
   }
 ];

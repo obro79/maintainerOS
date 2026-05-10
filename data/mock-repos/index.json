@@ -4,13 +4,13 @@
       "id": "maintaineros-demo-large",
       "file": "data/mock-repos/maintaineros-demo-large.json",
       "fullName": "maintaineros/ledgerkit",
-      "issueCount": 40
+      "issueCount": 400
     },
     {
       "id": "maintaineros-demo-medium",
       "file": "data/mock-repos/maintaineros-demo-medium.json",
       "fullName": "maintaineros/hooksmith",
-      "issueCount": 20
+      "issueCount": 200
     }
   ]
 }

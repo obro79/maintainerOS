@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Dialog } from '@base-ui/react/dialog';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -15,7 +15,10 @@ import {
   GitBranch,
   GitPullRequest,
   Loader2,
+  Minus,
+  Move,
   Network,
+  Plus,
   RefreshCw,
   ShieldCheck,
   X,
@@ -44,24 +47,25 @@ interface IssueApiPayload {
   error?: string;
 }
 
-const CANVAS = { width: 1340, height: 390 };
+const CANVAS = { width: 1720, height: 310 };
+const DEFAULT_GRAPH_SCALE = 0.64;
 
 const NODE_POSITIONS: Record<IssueWorkflowNodeId, { x: number; y: number }> = {
-  github: { x: 112, y: 200 },
-  clod: { x: 282, y: 200 },
-  'work-order': { x: 452, y: 200 },
-  nia: { x: 622, y: 120 },
-  daytona: { x: 792, y: 120 },
-  'pull-request': { x: 962, y: 120 },
-  greptile: { x: 962, y: 280 },
-  clustly: { x: 1132, y: 280 },
-  terminal: { x: 1248, y: 200 },
+  github: { x: 112, y: 178 },
+  clod: { x: 282, y: 178 },
+  'work-order': { x: 452, y: 178 },
+  nia: { x: 622, y: 178 },
+  daytona: { x: 792, y: 178 },
+  'pull-request': { x: 962, y: 178 },
+  greptile: { x: 1132, y: 178 },
+  clustly: { x: 1302, y: 178 },
+  terminal: { x: 1472, y: 178 },
 };
 
 const GROUPS = [
-  { label: 'Intake', x: 28, y: 96, width: 510, height: 208 },
-  { label: 'Agent path', x: 566, y: 44, width: 486, height: 142 },
-  { label: 'Proof and release', x: 888, y: 222, width: 410, height: 122 },
+  { label: 'Intake', x: 28, y: 92, width: 510, height: 174 },
+  { label: 'Agent path', x: 566, y: 92, width: 488, height: 174 },
+  { label: 'Proof and release', x: 1076, y: 92, width: 484, height: 174 },
 ];
 
 const PROVIDER_ICON: Record<IssueWorkflowProvider, LucideIcon> = {
@@ -273,11 +277,82 @@ function WorkflowGraph({
   selectedNodeId: IssueWorkflowNodeId;
   onSelectNode: (nodeId: IssueWorkflowNodeId) => void;
 }) {
+  const [scale, setScale] = useState(DEFAULT_GRAPH_SCALE);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const dragRef = useRef<{ pointerId: number; startX: number; startY: number; originX: number; originY: number } | null>(null);
+  const zoom = (delta: number) => setScale((current) => clampGraphScale(current + delta));
+  const resetView = () => {
+    setScale(DEFAULT_GRAPH_SCALE);
+    setPan({ x: 0, y: 0 });
+  };
+
   return (
-    <div className="min-h-full min-w-full bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.10)_1px,transparent_0)] [background-size:18px_18px] p-4">
-      <div className="relative mx-auto" style={{ width: CANVAS.width, height: CANVAS.height }}>
+    <div
+      className={cn(
+        'relative min-h-full min-w-full touch-none overflow-hidden bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.10)_1px,transparent_0)] [background-size:18px_18px]',
+        dragging ? 'cursor-grabbing' : 'cursor-grab',
+      )}
+      onPointerDown={(event) => {
+        if (isInteractiveTarget(event.target)) return;
+        dragRef.current = {
+          pointerId: event.pointerId,
+          startX: event.clientX,
+          startY: event.clientY,
+          originX: pan.x,
+          originY: pan.y,
+        };
+        event.currentTarget.setPointerCapture(event.pointerId);
+        setDragging(true);
+      }}
+      onPointerMove={(event) => {
+        const drag = dragRef.current;
+        if (!drag || drag.pointerId !== event.pointerId) return;
+        setPan({
+          x: drag.originX + event.clientX - drag.startX,
+          y: drag.originY + event.clientY - drag.startY,
+        });
+      }}
+      onPointerUp={(event) => {
+        if (dragRef.current?.pointerId === event.pointerId) {
+          dragRef.current = null;
+          setDragging(false);
+          event.currentTarget.releasePointerCapture(event.pointerId);
+        }
+      }}
+      onPointerCancel={() => {
+        dragRef.current = null;
+        setDragging(false);
+      }}
+    >
+      <div className="absolute left-4 top-4 z-20 flex items-center gap-1 rounded-lg border border-white/10 bg-[#080d14]/90 p-1 text-zinc-400 shadow-xl shadow-black/30 backdrop-blur">
+        <button type="button" className="inline-flex size-7 items-center justify-center rounded-md hover:bg-white/8 hover:text-white" onClick={() => zoom(-0.1)} aria-label="Zoom out">
+          <Minus className="size-3.5" />
+        </button>
+        <span className="min-w-10 text-center text-[11px] tabular-nums text-zinc-500">{Math.round(scale * 100)}%</span>
+        <button type="button" className="inline-flex size-7 items-center justify-center rounded-md hover:bg-white/8 hover:text-white" onClick={() => zoom(0.1)} aria-label="Zoom in">
+          <Plus className="size-3.5" />
+        </button>
+        <button type="button" className="inline-flex size-7 items-center justify-center rounded-md hover:bg-white/8 hover:text-white" onClick={resetView} aria-label="Reset graph view">
+          <RefreshCw className="size-3.5" />
+        </button>
+        <span className="ml-1 hidden items-center gap-1 border-l border-white/10 pl-2 pr-1 text-[11px] text-zinc-600 md:inline-flex">
+          <Move className="size-3" />
+          Drag canvas
+        </span>
+      </div>
+
+      <div
+        className="absolute left-1/2 top-1/2"
+        style={{
+          width: CANVAS.width,
+          height: CANVAS.height,
+          transform: `translate(-50%, -50%) translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
+          transformOrigin: 'center',
+        }}
+      >
         <motion.div
-          className="absolute left-8 top-5 z-10 flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/8 px-3 py-1.5 text-[11px] text-emerald-300"
+          className="absolute left-8 top-7 z-10 flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/8 px-3 py-1.5 text-[11px] text-emerald-300"
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25 }}
@@ -343,6 +418,14 @@ function WorkflowGraph({
       </div>
     </div>
   );
+}
+
+function clampGraphScale(value: number) {
+  return Math.min(1.35, Math.max(0.5, Math.round(value * 100) / 100));
+}
+
+function isInteractiveTarget(target: EventTarget | null) {
+  return target instanceof HTMLElement && Boolean(target.closest('button,a,input,select,textarea'));
 }
 
 function WorkflowNodeCard({

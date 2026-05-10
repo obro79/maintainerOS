@@ -40,7 +40,7 @@ export interface ImportGitHubInput {
 export function validateImportInput(input: Partial<ImportGitHubInput>): ImportGitHubInput {
   const owner = input.owner?.trim();
   const repo = input.repo?.trim();
-  const limit = Number(input.limit ?? 40);
+  const limit = Number(input.limit ?? 100);
 
   if (!owner || !/^[a-zA-Z0-9_.-]+$/.test(owner)) {
     throw new Error('owner must be a GitHub owner name.');

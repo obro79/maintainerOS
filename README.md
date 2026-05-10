@@ -6,6 +6,8 @@ MaintainerOSS is the open-source workspace for MaintainerOS.
 
 MaintainerOS helps open-source maintainers turn issue backlogs into action: agents fix safe issues, maintainers review risky ones, and bounties become Clustly tasks with USDC payout artifacts released only after PR verification.
 
+MaintainerOS PRs are expected to pass repository verification checks before landing in `main`.
+
 This repo is a single-root Next.js app. The application routes live in `app/`, reusable UI lives in `components/`, and MaintainerOS provider/domain code lives in `lib/maintaineros/`.
 
 ## Demo Principle

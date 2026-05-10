@@ -6,7 +6,7 @@ import type { IssueDetailViewModel } from '@/lib/maintaineros/types';
 
 function ArtifactSection({ title, sourceState, children }: { title: string; sourceState?: IssueDetailViewModel['modelRun']['sourceState']; children: React.ReactNode }) {
   return (
-    <section className="rounded-xl border border-white/8 bg-[#080d14] p-4">
+    <section className="rounded-lg border border-[#F9F7F7]/12 bg-[#0A111A] p-4">
       <div className="mb-2 flex items-center justify-between gap-3">
         <h3 className="text-sm font-semibold text-white">{title}</h3>
         {sourceState && <EvidenceBadge sourceState={sourceState} />}
@@ -19,9 +19,9 @@ function ArtifactSection({ title, sourceState, children }: { title: string; sour
 export function IssueArtifactStack({ issue }: { issue: IssueDetailViewModel | null }) {
   if (!issue) {
     return (
-      <div className="rounded-xl border border-white/8 bg-white/[0.02] p-6">
+      <div className="rounded-lg border border-[#F9F7F7]/12 bg-[#F9F7F7]/[0.025] p-6">
         <p className="text-sm font-semibold text-white">No issue selected</p>
-        <p className="mt-2 text-sm text-zinc-500">Select an issue to inspect its work order, context, sandbox, PR, verification, and payout artifacts.</p>
+        <p className="mt-2 text-sm text-[#F9F7F7]/56">Select an issue to inspect its work order, context, sandbox, PR, verification, and payout artifacts.</p>
       </div>
     );
   }
@@ -29,32 +29,32 @@ export function IssueArtifactStack({ issue }: { issue: IssueDetailViewModel | nu
   return (
     <div className="grid gap-3">
       <ArtifactSection title="Work order">
-        <p className="text-sm text-zinc-300">{issue.workOrder.title}</p>
-        <p className="mt-1 text-xs text-zinc-600">{issue.workOrder.status} · {issue.workOrder.assigneeKind}{issue.workOrder.generatedBy ? ` · ${issue.workOrder.generatedBy}` : ''}</p>
-        {issue.workOrder.rationale && <p className="mt-2 text-xs leading-relaxed text-zinc-500">{issue.workOrder.rationale}</p>}
-        <div className="mt-3 rounded-lg border border-white/6 p-3">
-          <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-700">Route policy</p>
-          <p className={issue.routePolicy.automationAllowed ? 'mt-1 text-xs text-emerald-300' : 'mt-1 text-xs text-amber-300'}>
+        <p className="text-sm text-[#F9F7F7]/76">{issue.workOrder.title}</p>
+        <p className="mt-1 text-xs text-[#F9F7F7]/40">{issue.workOrder.status} · {issue.workOrder.assigneeKind}{issue.workOrder.generatedBy ? ` · ${issue.workOrder.generatedBy}` : ''}</p>
+        {issue.workOrder.rationale && <p className="mt-2 text-xs leading-relaxed text-[#F9F7F7]/56">{issue.workOrder.rationale}</p>}
+        <div className="mt-3 rounded-lg border border-[#F9F7F7]/10 p-3">
+          <p className="text-[10px] uppercase tracking-[0.2em] text-[#F9F7F7]/28">Route policy</p>
+          <p className={issue.routePolicy.automationAllowed ? 'mt-1 text-xs text-[#DBE2EF]' : 'mt-1 text-xs text-[#DBE2EF]'}>
             {issue.routePolicy.executionMode.toUpperCase()} · {issue.routePolicy.automationAllowed ? 'automation allowed' : 'automation blocked'}
           </p>
-          <p className="mt-2 text-xs text-zinc-500">{issue.routePolicy.reasons.join(' ')}</p>
+          <p className="mt-2 text-xs text-[#F9F7F7]/56">{issue.routePolicy.reasons.join(' ')}</p>
         </div>
         <div className="mt-3 grid gap-2 md:grid-cols-2">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-700">Acceptance</p>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-[#F9F7F7]/28">Acceptance</p>
             <ul className="mt-1 space-y-1">
               {issue.workOrder.acceptanceChecks.slice(0, 4).map((check) => (
-                <li key={check} className="text-xs text-zinc-500">{check}</li>
+                <li key={check} className="text-xs text-[#F9F7F7]/56">{check}</li>
               ))}
             </ul>
           </div>
           <div>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-700">Files</p>
-            <p className="mt-1 text-xs text-zinc-500">{issue.workOrder.suggestedFiles.join(', ') || 'unknown'}</p>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-[#F9F7F7]/28">Files</p>
+            <p className="mt-1 text-xs text-[#F9F7F7]/56">{issue.workOrder.suggestedFiles.join(', ') || 'unknown'}</p>
             {issue.workOrder.suggestedCommands && issue.workOrder.suggestedCommands.length > 0 && (
               <div className="mt-2 space-y-1">
                 {issue.workOrder.suggestedCommands.map((command) => (
-                  <code key={command} className="block rounded-lg border border-white/6 px-2 py-1 text-xs text-zinc-500">{command}</code>
+                  <code key={command} className="block rounded-lg border border-[#F9F7F7]/10 px-2 py-1 text-xs text-[#F9F7F7]/56">{command}</code>
                 ))}
               </div>
             )}
@@ -66,17 +66,17 @@ export function IssueArtifactStack({ issue }: { issue: IssueDetailViewModel | nu
         {issue.routeHistory.length > 0 ? (
           <div className="space-y-2">
             {issue.routeHistory.map((attempt) => (
-              <div key={attempt.id} className="rounded-lg border border-white/6 p-3">
+              <div key={attempt.id} className="rounded-lg border border-[#F9F7F7]/10 p-3">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-[10px] text-zinc-600">#{attempt.sequence}</span>
-                  <span className="text-sm font-medium text-zinc-300">
+                  <span className="font-sans text-[10px] text-[#F9F7F7]/40">#{attempt.sequence}</span>
+                  <span className="text-sm font-medium text-[#F9F7F7]/76">
                     {attempt.fromRoute ? `${ROUTE_LABEL[attempt.fromRoute]} -> ${ROUTE_LABEL[attempt.toRoute]}` : ROUTE_LABEL[attempt.toRoute]}
                   </span>
-                  <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase text-zinc-500">{attempt.trigger}</span>
-                  <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase text-zinc-500">{attempt.status}</span>
+                  <span className="rounded-full border border-[#F9F7F7]/12 px-2 py-0.5 text-[10px] uppercase text-[#F9F7F7]/56">{attempt.trigger}</span>
+                  <span className="rounded-full border border-[#F9F7F7]/12 px-2 py-0.5 text-[10px] uppercase text-[#F9F7F7]/56">{attempt.status}</span>
                 </div>
-                <p className="mt-2 text-xs leading-relaxed text-zinc-500">{attempt.reason}</p>
-                <div className="mt-2 flex flex-wrap gap-3 text-xs text-zinc-600">
+                <p className="mt-2 text-xs leading-relaxed text-[#F9F7F7]/56">{attempt.reason}</p>
+                <div className="mt-2 flex flex-wrap gap-3 text-xs text-[#F9F7F7]/40">
                   {attempt.model && <span>Model: {attempt.model}</span>}
                   {attempt.costCents != null && <span>Cost: {attempt.costCents}c</span>}
                   <span>{new Date(attempt.occurredAt).toISOString()}</span>
@@ -85,21 +85,21 @@ export function IssueArtifactStack({ issue }: { issue: IssueDetailViewModel | nu
             ))}
           </div>
         ) : (
-          <p className="text-sm text-zinc-300">No retry or reroute history has been recorded yet.</p>
+          <p className="text-sm text-[#F9F7F7]/76">No retry or reroute history has been recorded yet.</p>
         )}
       </ArtifactSection>
 
       <ArtifactSection title="CLōD model run" sourceState={issue.modelRun.sourceState}>
-        <p className="text-sm text-zinc-300">{issue.modelRun.model} · {issue.modelRun.tier}</p>
-        <p className="mt-1 text-xs text-zinc-600">{issue.modelRun.purpose} · {issue.modelRun.status} · {issue.modelRun.latencyMs}ms</p>
-        <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-zinc-500 md:grid-cols-4">
+        <p className="text-sm text-[#F9F7F7]/76">{issue.modelRun.model} · {issue.modelRun.tier}</p>
+        <p className="mt-1 text-xs text-[#F9F7F7]/40">{issue.modelRun.purpose} · {issue.modelRun.status} · {issue.modelRun.latencyMs}ms</p>
+        <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-[#F9F7F7]/56 md:grid-cols-4">
           <span>Input: {issue.modelRun.inputTokens ?? 'unknown'}</span>
           <span>Output: {issue.modelRun.outputTokens ?? 'unknown'}</span>
           <span>Cost: {issue.modelRun.estimatedCostCents == null ? 'unknown' : `${issue.modelRun.estimatedCostCents}c`}</span>
           <span>Baseline: {issue.modelRun.premiumBaselineCents == null ? 'unknown' : `${issue.modelRun.premiumBaselineCents}c`}</span>
         </div>
-        <p className="mt-2 text-xs leading-relaxed text-zinc-500">{issue.modelRun.selectionReason}</p>
-        {issue.modelRun.fallbackReason && <p className="mt-2 text-xs leading-relaxed text-amber-300">{issue.modelRun.fallbackReason}</p>}
+        <p className="mt-2 text-xs leading-relaxed text-[#F9F7F7]/56">{issue.modelRun.selectionReason}</p>
+        {issue.modelRun.fallbackReason && <p className="mt-2 text-xs leading-relaxed text-[#DBE2EF]">{issue.modelRun.fallbackReason}</p>}
       </ArtifactSection>
 
       <ArtifactSection title="Nia context pack" sourceState={issue.contextPack?.sourceState}>
@@ -109,40 +109,40 @@ export function IssueArtifactStack({ issue }: { issue: IssueDetailViewModel | nu
       <ArtifactSection title="Daytona sandbox" sourceState={issue.sandboxExecutions[0]?.sourceState}>
         {issue.sandboxExecutions.length > 0 ? (
           <div className="space-y-3">
-            <p className="mt-2 text-xs text-amber-300">Sandbox output is execution evidence only. Greptile verification decides correctness in Phase 5.</p>
+            <p className="mt-2 text-xs text-[#DBE2EF]">Sandbox output is execution evidence only. Greptile verification decides correctness in Phase 5.</p>
             {issue.sandboxExecutions.map((attempt, index) => (
-              <div key={attempt.id} className="rounded-lg border border-white/6 p-3">
-                <p className="text-sm text-zinc-300">{attempt.logSummary}</p>
-                <p className="mt-1 text-xs text-zinc-600">
+              <div key={attempt.id} className="rounded-lg border border-[#F9F7F7]/10 p-3">
+                <p className="text-sm text-[#F9F7F7]/76">{attempt.logSummary}</p>
+                <p className="mt-1 text-xs text-[#F9F7F7]/40">
                   Attempt {index + 1} · {attempt.status} · {attempt.contextMode} · {attempt.sandboxId} · exit {attempt.exitCode ?? 'pending'}
                 </p>
                 <div className="mt-3 grid gap-3 md:grid-cols-2">
                   <div>
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-700">Command results</p>
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-[#F9F7F7]/28">Command results</p>
                     <div className="mt-2 space-y-1">
                       {attempt.commandResults.map((command) => (
-                        <code key={`${attempt.id}-${command.command}`} className="block rounded-lg border border-white/6 px-2 py-1 text-xs text-zinc-500">
+                        <code key={`${attempt.id}-${command.command}`} className="block rounded-lg border border-[#F9F7F7]/10 px-2 py-1 text-xs text-[#F9F7F7]/56">
                           {command.status} · {command.command} · exit {command.exitCode ?? 'n/a'}
                         </code>
                       ))}
                     </div>
                   </div>
                   <div>
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-700">Files touched</p>
-                    <p className="mt-2 text-xs text-zinc-500">{attempt.filesTouched.join(', ') || 'none recorded'}</p>
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-[#F9F7F7]/28">Files touched</p>
+                    <p className="mt-2 text-xs text-[#F9F7F7]/56">{attempt.filesTouched.join(', ') || 'none recorded'}</p>
                     {attempt.pullRequestUrl && (
-                      <a className="mt-2 inline-flex text-xs text-blue-300" href={attempt.pullRequestUrl}>
+                      <a className="mt-2 inline-flex text-xs text-[#DBE2EF]" href={attempt.pullRequestUrl}>
                         PR artifact
                       </a>
                     )}
-                    {attempt.failureReason && <p className="mt-2 text-xs text-red-300">{attempt.failureReason}</p>}
+                    {attempt.failureReason && <p className="mt-2 text-xs text-[#DBE2EF]">{attempt.failureReason}</p>}
                   </div>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-sm text-zinc-300">No sandbox attempt is attached yet for this route.</p>
+          <p className="text-sm text-[#F9F7F7]/76">No sandbox attempt is attached yet for this route.</p>
         )}
       </ArtifactSection>
 
@@ -150,77 +150,77 @@ export function IssueArtifactStack({ issue }: { issue: IssueDetailViewModel | nu
         {issue.verification ? (
           <div>
             {issue.pullRequest && (
-              <p className="text-sm text-zinc-300">
-                PR #{issue.pullRequest.number}: <a className="text-blue-300" href={issue.pullRequest.htmlUrl}>{issue.pullRequest.title}</a>
+              <p className="text-sm text-[#F9F7F7]/76">
+                PR #{issue.pullRequest.number}: <a className="text-[#DBE2EF]" href={issue.pullRequest.htmlUrl}>{issue.pullRequest.title}</a>
               </p>
             )}
-            <p className="mt-2 text-sm text-zinc-300">{issue.verification.summary}</p>
+            <p className="mt-2 text-sm text-[#F9F7F7]/76">{issue.verification.summary}</p>
             {issue.verification.isStale && (
-              <p className="mt-2 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+              <p className="mt-2 rounded-lg border border-[#DBE2EF]/20 bg-[#DBE2EF]/10 px-3 py-2 text-xs text-[#DBE2EF]">
                 SHA mismatch blocks completion and payout until Greptile reruns on the current PR head.
               </p>
             )}
-            <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-zinc-500 md:grid-cols-4">
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-[#F9F7F7]/56 md:grid-cols-4">
               <span>Status: {issue.verification.status}</span>
               <span>Findings: {issue.verification.blockingFindingsCount}</span>
               <span>Verified: {issue.verification.verifiedSha ?? 'pending'}</span>
               <span>Current: {issue.verification.currentSha ?? 'unknown'}</span>
             </div>
-            <p className="mt-2 text-xs text-zinc-500">{issue.verification.riskSummary}</p>
-            {issue.verification.failureReason && <p className="mt-2 text-xs text-red-300">{issue.verification.failureReason}</p>}
+            <p className="mt-2 text-xs text-[#F9F7F7]/56">{issue.verification.riskSummary}</p>
+            {issue.verification.failureReason && <p className="mt-2 text-xs text-[#DBE2EF]">{issue.verification.failureReason}</p>}
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               <div>
-                <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-700">Criteria</p>
+                <p className="text-[10px] uppercase tracking-[0.2em] text-[#F9F7F7]/28">Criteria</p>
                 <ul className="mt-2 space-y-1">
                   {issue.verification.criteria.slice(0, 4).map((criterion) => (
-                    <li key={criterion} className="text-xs text-zinc-500">{criterion}</li>
+                    <li key={criterion} className="text-xs text-[#F9F7F7]/56">{criterion}</li>
                   ))}
                 </ul>
               </div>
               <div>
-                <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-700">Files inspected</p>
-                <p className="mt-2 text-xs text-zinc-500">{(issue.verification.filesInspected ?? issue.verification.filesTouched).join(', ') || 'none recorded'}</p>
+                <p className="text-[10px] uppercase tracking-[0.2em] text-[#F9F7F7]/28">Files inspected</p>
+                <p className="mt-2 text-xs text-[#F9F7F7]/56">{(issue.verification.filesInspected ?? issue.verification.filesTouched).join(', ') || 'none recorded'}</p>
                 {(issue.verification.blockingFindings ?? []).map((finding) => (
-                  <p key={finding} className="mt-2 text-xs text-amber-300">{finding}</p>
+                  <p key={finding} className="mt-2 text-xs text-[#DBE2EF]">{finding}</p>
                 ))}
               </div>
             </div>
           </div>
         ) : (
-          <p className="text-sm text-zinc-300">No Greptile proof is linked yet. Completion and payout stay blocked until fresh verification passes.</p>
+          <p className="text-sm text-[#F9F7F7]/76">No Greptile proof is linked yet. Completion and payout stay blocked until fresh verification passes.</p>
         )}
       </ArtifactSection>
 
       <ArtifactSection title="Clustly release gate" sourceState={issue.paymentArtifact?.sourceState}>
         {issue.route !== 'bounty-worthy' ? (
-          <p className="text-sm text-zinc-300">No payout artifact: Clustly is only used for bounty-worthy issues.</p>
+          <p className="text-sm text-[#F9F7F7]/76">No payout artifact: Clustly is only used for bounty-worthy issues.</p>
         ) : (
           <div>
             {issue.paymentArtifact ? (
               <>
-                <p className="text-sm text-zinc-300">{issue.paymentArtifact.releaseReason}</p>
-                <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-zinc-500 md:grid-cols-4">
+                <p className="text-sm text-[#F9F7F7]/76">{issue.paymentArtifact.releaseReason}</p>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-[#F9F7F7]/56 md:grid-cols-4">
                   <span>Status: {issue.paymentArtifact.status}</span>
                   <span>Amount: {(issue.paymentArtifact.amountCents / 100).toFixed(0)} {issue.paymentArtifact.currency}</span>
                   <span>Funding: {issue.paymentArtifact.fundingMode ?? 'manual-browser'}</span>
                   <span>Claim: {issue.paymentArtifact.claimId ?? 'pending'}</span>
                 </div>
-                {issue.paymentArtifact.taskUrl && <a className="mt-2 inline-flex text-xs text-blue-300" href={issue.paymentArtifact.taskUrl}>Open Clustly task</a>}
-                {issue.paymentArtifact.artifactUrl && <a className="ml-3 mt-2 inline-flex text-xs text-blue-300" href={issue.paymentArtifact.artifactUrl}>Release artifact</a>}
+                {issue.paymentArtifact.taskUrl && <a className="mt-2 inline-flex text-xs text-[#DBE2EF]" href={issue.paymentArtifact.taskUrl}>Open Clustly task</a>}
+                {issue.paymentArtifact.artifactUrl && <a className="ml-3 mt-2 inline-flex text-xs text-[#DBE2EF]" href={issue.paymentArtifact.artifactUrl}>Release artifact</a>}
               </>
             ) : (
-              <p className="text-sm text-zinc-300">Bounty route selected, but no Clustly task artifact is attached yet.</p>
+              <p className="text-sm text-[#F9F7F7]/76">Bounty route selected, but no Clustly task artifact is attached yet.</p>
             )}
-            <div className="mt-3 rounded-lg border border-white/6 p-3">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-700">Release gate</p>
-              <p className={issue.payoutGate.canRelease ? 'mt-1 text-xs text-emerald-300' : 'mt-1 text-xs text-amber-300'}>
+            <div className="mt-3 rounded-lg border border-[#F9F7F7]/10 p-3">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-[#F9F7F7]/28">Release gate</p>
+              <p className={issue.payoutGate.canRelease ? 'mt-1 text-xs text-[#DBE2EF]' : 'mt-1 text-xs text-[#DBE2EF]'}>
                 {issue.payoutGate.canRelease ? 'Release allowed' : 'Release blocked'}
               </p>
               {!issue.payoutGate.canRelease && (
                 <ul className="mt-2 space-y-1">
                   {issue.payoutGate.reasonDetails.map((reason) => (
-                    <li key={reason.code} className="text-xs text-zinc-500">
-                      <span className="font-mono text-zinc-600">{reason.code}</span> · {reason.message}
+                    <li key={reason.code} className="text-xs text-[#F9F7F7]/56">
+                      <span className="font-sans text-[#F9F7F7]/40">{reason.code}</span> · {reason.message}
                     </li>
                   ))}
                 </ul>

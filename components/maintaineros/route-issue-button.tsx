@@ -33,11 +33,11 @@ export function RouteIssueButton({ repositoryId, issueNumber }: { repositoryId: 
         type="button"
         onClick={run}
         disabled={status === 'running'}
-        className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs text-emerald-300 disabled:cursor-not-allowed disabled:opacity-60"
+        className="rounded-lg border border-[#3F72AF]/30 bg-[#3F72AF]/10 px-3 py-1.5 text-xs text-[#DBE2EF] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {status === 'running' ? 'Running CLōD...' : 'Run CLōD route'}
       </button>
-      {message && <span className={status === 'failed' ? 'text-xs text-red-300' : 'text-xs text-zinc-500'}>{message}</span>}
+      {message && <span className={status === 'failed' ? 'text-xs text-[#DBE2EF]' : 'text-xs text-[#F9F7F7]/56'}>{message}</span>}
     </div>
   );
 }

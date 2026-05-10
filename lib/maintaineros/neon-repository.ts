@@ -419,10 +419,7 @@ function emptyIssueDetail(repositoryId: string): IssueDetailViewModel {
     paymentArtifact: null,
     routeHistory: [],
     trace: [],
-    payoutGate: {
-      canRelease: false,
-      reasons: ['No live issue is available.'],
-    },
+    payoutGate: emptyPayoutGate(),
   };
 }
 

@@ -133,6 +133,7 @@ function buildAttempt(
     imageOrTemplate: 'maintaineros-node-20',
     repoRef: `${repositoryId}@main`,
     branchName: `maintaineros/issue-${issue.number}-${options.suffix}`,
+    contextMode: issue.contextPack?.id ? 'nia-enriched' : 'baseline',
     contextPackId: issue.contextPack?.id ?? null,
     requestedCommands: commands,
     completedCommands: options.completedCommands,

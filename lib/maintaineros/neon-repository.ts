@@ -27,6 +27,7 @@ import { hidePayoutArtifactsForNonClustlyRoutes } from './payout';
 import { listPersistedTraceEvents, mergeTraceEvents } from './trace-events';
 import { buildDeterministicWorkOrder } from './work-orders';
 import { buildRouteHistoryFromTrace } from './route-history';
+import { getProviderHealth } from './provider-runtime';
 
 interface RepositoryRow {
   id: string;
@@ -112,7 +113,7 @@ export class NeonMaintainerOSRepository implements MaintainerOSRepository {
           { provider: 'github', sourceState: 'live', status: 'connected', label: 'GitHub', lastRunAt: latestImportRun?.finishedAt ?? undefined, detail: latestImportRun ? `${latestImportRun.importedIssueCount} imported, ${latestImportRun.skippedPullRequestCount} PRs skipped.` : 'Ready for GitHub import.' },
           { provider: 'neon', sourceState: 'live', status: 'connected', label: 'Neon', lastRunAt: latestImportRun?.finishedAt ?? undefined, detail: 'Reading imported issues from Neon.' },
           { provider: 'clod', sourceState: 'planned', status: 'planned', label: 'CLōD', detail: 'Routing artifacts land in Phase 2.' },
-          { provider: 'nia', sourceState: 'planned', status: 'planned', label: 'Nia', detail: 'Context packs land in Phase 3.' },
+          buildNiaProviderStatus(),
           { provider: 'daytona', sourceState: 'planned', status: 'planned', label: 'Daytona', detail: 'Sandbox dispatch lands in Phase 4.' },
           { provider: 'greptile', sourceState: 'planned', status: 'planned', label: 'Greptile', detail: 'Verification lands in Phase 5.' },
           { provider: 'clustly', sourceState: 'planned', status: 'planned', label: 'Clustly', detail: 'Bounty rail lands in Phase 6.' },
@@ -162,7 +163,7 @@ export class NeonMaintainerOSRepository implements MaintainerOSRepository {
 }
 
 async function toIssueDetailWithPersistedTrace(repositoryId: string, issue: IssueRow) {
-  const detail = applyStoredClodArtifact(repositoryId, toIssueDetail(issue));
+  const detail = applyStoredClodArtifact(repositoryId, await toIssueDetail(issue));
   const persisted = await listPersistedTraceEvents(repositoryId, detail.number);
   if (persisted.length === 0) return detail;
   return {
@@ -219,7 +220,7 @@ function toIssueCard(issue: IssueRow): IssueCardViewModel {
   };
 }
 
-function toIssueDetail(issue: IssueRow, persistedTrace: IssueTraceEventViewModel[] = []): IssueDetailViewModel {
+async function toIssueDetail(issue: IssueRow, persistedTrace: IssueTraceEventViewModel[] = []): Promise<IssueDetailViewModel> {
   const card = toIssueCard(issue);
   const labels = normalizeLabels(issue.labels);
   const decision = scoreIssue({
@@ -258,7 +259,7 @@ function toIssueDetail(issue: IssueRow, persistedTrace: IssueTraceEventViewModel
     routePolicy,
     suggestedFiles,
   });
-  const contextPack = buildContextPackForIssue(
+  const contextPack = await buildContextPackForIssue(
     {
       id: issue.id,
       number: issue.number,
@@ -267,6 +268,8 @@ function toIssueDetail(issue: IssueRow, persistedTrace: IssueTraceEventViewModel
       labels,
       route: decision.route,
       workOrder,
+      repositoryFullName: issue.repository_id,
+      repositoryUrl: issue.html_url.split('/issues/')[0],
     },
     'live',
   );
@@ -363,19 +366,85 @@ function buildLiveTrace(issue: IssueRow, route: ExecutionRoute, model: string, c
 }
 
 function emptyIssueDetail(repositoryId: string): IssueDetailViewModel {
-  return toIssueDetail({
+  return {
     id: `${repositoryId}-empty`,
-    repository_id: repositoryId,
     number: 0,
     title: 'No imported issues yet',
+    lane: 'clarify',
+    route: 'close-or-clarify',
+    confidence: 0,
+    risk: 'low',
+    complexity: 'unknown',
+    rationale: 'No live issues have been imported yet.',
+    routeDelay: 0,
     body: 'Run the GitHub import endpoint to populate this repository.',
+    htmlUrl: '#',
     author: 'maintaineros',
     labels: [],
-    comments_count: 0,
-    html_url: '#',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  });
+    modelRun: {
+      provider: 'clod',
+      sourceState: 'planned',
+      model: 'none',
+      tier: 'cheap-open',
+      purpose: 'routing',
+      status: 'fallback',
+      selectionReason: 'No issue is available for model selection.',
+      latencyMs: 0,
+      inputTokens: null,
+      outputTokens: null,
+      estimatedCostCents: null,
+      premiumBaselineCents: null,
+    },
+    workOrder: {
+      title: 'No issue selected',
+      status: 'blocked',
+      assigneeKind: 'unassigned',
+      acceptanceChecks: [],
+      suggestedFiles: [],
+      suggestedCommands: [],
+    },
+    routePolicy: {
+      executionMode: 'clarify',
+      automationAllowed: false,
+      sandboxAllowed: false,
+      requiresHumanReview: false,
+      requiresPaidWork: false,
+      reasons: ['No live issue is available.'],
+      safetyChecks: [],
+    },
+    contextPack: null,
+    sandboxExecutions: [],
+    pullRequest: null,
+    verification: null,
+    bounty: null,
+    paymentArtifact: null,
+    routeHistory: [],
+    trace: [],
+    payoutGate: {
+      canRelease: false,
+      reasons: ['No live issue is available.'],
+    },
+  };
+}
+
+function buildNiaProviderStatus(): NonNullable<DashboardViewModel['providerStatuses']>[number] {
+  const health = getProviderHealth('nia');
+  if (health?.configured) {
+    return {
+      provider: 'nia',
+      sourceState: health.sourceState,
+      status: 'connected',
+      label: 'Nia',
+      detail: 'Live unified search is configured for context-pack retrieval.',
+    };
+  }
+  return {
+    provider: 'nia',
+    sourceState: health?.sourceState ?? 'planned',
+    status: 'planned',
+    label: 'Nia',
+    detail: health?.detail ?? 'Nia context packs fall back to deterministic fixture context.',
+  };
 }
 
 function buildBuckets(issues: IssueCardViewModel[]): RouteBucketViewModel[] {
@@ -393,10 +462,44 @@ function buildBuckets(issues: IssueCardViewModel[]): RouteBucketViewModel[] {
 }
 
 function liveEvaluation(sampleSize: number): EvaluationSummaryViewModel {
+  const rows: EvaluationSummaryViewModel['rows'] = sampleSize > 0
+    ? [
+        {
+          id: 'live-baseline-planned',
+          label: 'Live baseline attempts pending verification evidence',
+          sampleId: 'live-imported-issues',
+          pairState: 'unpaired',
+          contextMode: 'baseline',
+          sourceState: 'live',
+          verificationStatus: 'pending',
+          failureCategory: null,
+          retryCount: 0,
+          escalated: false,
+          modelCostCents: null,
+          premiumBaselineCostCents: null,
+          costEvidence: 'unknown',
+        },
+        {
+          id: 'live-nia-enriched-planned',
+          label: 'Live Nia-enriched attempts pending verification evidence',
+          sampleId: 'live-imported-issues',
+          pairState: 'unpaired',
+          contextMode: 'nia-enriched',
+          sourceState: 'live',
+          verificationStatus: 'pending',
+          failureCategory: null,
+          retryCount: 0,
+          escalated: false,
+          modelCostCents: null,
+          premiumBaselineCostCents: null,
+          costEvidence: 'unknown',
+        },
+      ]
+    : [];
   return {
     sampleSize,
     sourceState: 'live',
-    sampleLabel: 'Live imported issue set; eval rows require verification artifacts.',
+    sampleLabel: 'Live imported issue set; planned rows require Greptile verification artifacts before lift is claimed.',
     comparisonKind: 'planned',
     baselinePassedCount: 0,
     baselineTotalCount: 0,
@@ -411,8 +514,8 @@ function liveEvaluation(sampleSize: number): EvaluationSummaryViewModel {
     costEvidence: 'unknown',
     premiumOnlyCostPerVerifiedFixCents: null,
     cheapFirstSavingsPct: null,
-    commonFailureReasons: ['Evals require Phase 8 verification samples.'],
-    rows: [],
+    commonFailureReasons: ['Evals require Greptile verification samples before pass-rate lift is claimed.'],
+    rows,
   };
 }
 

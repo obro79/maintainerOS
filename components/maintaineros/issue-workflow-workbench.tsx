@@ -44,24 +44,24 @@ interface IssueApiPayload {
   error?: string;
 }
 
-const CANVAS = { width: 1180, height: 430 };
+const CANVAS = { width: 1340, height: 390 };
 
 const NODE_POSITIONS: Record<IssueWorkflowNodeId, { x: number; y: number }> = {
-  github: { x: 90, y: 215 },
-  clod: { x: 240, y: 215 },
-  'work-order': { x: 390, y: 215 },
-  nia: { x: 540, y: 125 },
-  daytona: { x: 690, y: 125 },
-  'pull-request': { x: 840, y: 125 },
-  greptile: { x: 840, y: 305 },
-  clustly: { x: 990, y: 305 },
-  terminal: { x: 1090, y: 215 },
+  github: { x: 112, y: 200 },
+  clod: { x: 282, y: 200 },
+  'work-order': { x: 452, y: 200 },
+  nia: { x: 622, y: 120 },
+  daytona: { x: 792, y: 120 },
+  'pull-request': { x: 962, y: 120 },
+  greptile: { x: 962, y: 280 },
+  clustly: { x: 1132, y: 280 },
+  terminal: { x: 1248, y: 200 },
 };
 
 const GROUPS = [
-  { label: 'Intake', x: 28, y: 108, width: 430, height: 214 },
-  { label: 'Agent path', x: 488, y: 48, width: 430, height: 154 },
-  { label: 'Proof and release', x: 778, y: 248, width: 374, height: 128 },
+  { label: 'Intake', x: 28, y: 96, width: 510, height: 208 },
+  { label: 'Agent path', x: 566, y: 44, width: 486, height: 142 },
+  { label: 'Proof and release', x: 888, y: 222, width: 410, height: 122 },
 ];
 
 const PROVIDER_ICON: Record<IssueWorkflowProvider, LucideIcon> = {
@@ -274,8 +274,20 @@ function WorkflowGraph({
   onSelectNode: (nodeId: IssueWorkflowNodeId) => void;
 }) {
   return (
-    <div className="min-h-full min-w-full bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.10)_1px,transparent_0)] [background-size:18px_18px] p-5">
+    <div className="min-h-full min-w-full bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.10)_1px,transparent_0)] [background-size:18px_18px] p-4">
       <div className="relative mx-auto" style={{ width: CANVAS.width, height: CANVAS.height }}>
+        <motion.div
+          className="absolute left-8 top-5 z-10 flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/8 px-3 py-1.5 text-[11px] text-emerald-300"
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25 }}
+        >
+          <span className="relative flex size-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+            <span className="relative inline-flex size-2 rounded-full bg-emerald-400" />
+          </span>
+          Working through issue
+        </motion.div>
         {GROUPS.map((group) => (
           <motion.div
             key={group.label}
@@ -294,7 +306,7 @@ function WorkflowGraph({
             const from = NODE_POSITIONS[edge.from];
             const to = NODE_POSITIONS[edge.to];
             const tone = edgeTone(edge.status);
-            const active = edge.status === 'running' || edge.status === 'pending' || edge.status === 'blocked';
+            const active = edge.status !== 'skipped';
             return (
               <motion.line
                 key={`${edge.from}-${edge.to}-${edge.status}`}
@@ -303,12 +315,12 @@ function WorkflowGraph({
                 x2={to.x}
                 y2={to.y}
                 stroke={tone.stroke}
-                strokeWidth={active ? 2.5 : 1.6}
+                strokeWidth={active ? 2.25 : 1.5}
                 strokeLinecap="round"
                 strokeDasharray={tone.dash}
                 initial={{ pathLength: 0, opacity: 0 }}
                 animate={{ pathLength: 1, opacity: tone.opacity, strokeDashoffset: active ? [0, -18] : 0 }}
-                transition={{ pathLength: { duration: 0.45, delay: index * 0.04 }, strokeDashoffset: { duration: 1.4, repeat: active ? Infinity : 0, ease: 'linear' } }}
+                transition={{ pathLength: { duration: 0.45, delay: index * 0.04 }, strokeDashoffset: { duration: 1.1, repeat: active ? Infinity : 0, ease: 'linear' } }}
               />
             );
           })}
@@ -356,7 +368,7 @@ function WorkflowNodeCard({
       type="button"
       onClick={onSelect}
       className={cn(
-        'absolute w-[142px] -translate-x-1/2 -translate-y-1/2 rounded-lg border bg-[#080d14] p-3 text-left shadow-lg shadow-black/20 outline-none transition-colors',
+        'absolute w-[164px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-lg border bg-[#080d14] p-2.5 text-left shadow-lg shadow-black/20 outline-none transition-colors',
         tone.border,
         selected ? 'ring-2 ring-white/20' : 'hover:border-white/20',
         node.status === 'skipped' && 'opacity-60',
@@ -368,6 +380,14 @@ function WorkflowNodeCard({
       transition={{ duration: 0.25, delay: index * 0.035, ease: [0.22, 1, 0.36, 1] }}
       aria-pressed={selected}
     >
+      {node.status !== 'skipped' && (
+        <motion.span
+          className={cn('absolute inset-x-0 top-0 h-px opacity-70', tone.bar)}
+          initial={{ x: '-100%' }}
+          animate={{ x: '100%' }}
+          transition={{ duration: current ? 0.9 : 1.8, repeat: Infinity, ease: 'linear', delay: index * 0.08 }}
+        />
+      )}
       {current && (
         <motion.span
           className={cn('absolute -right-1 -top-1 size-3 rounded-full', tone.dot)}
@@ -375,16 +395,16 @@ function WorkflowNodeCard({
           transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
         />
       )}
-      <div className="flex items-center gap-2">
+      <div className="flex min-w-0 items-center gap-2">
         <span className={cn('inline-flex size-6 shrink-0 items-center justify-center rounded-md border', tone.icon)}>
           <Icon className="size-3.5" />
         </span>
-        <div className="min-w-0">
+        <div className="flex min-w-0 flex-1 items-baseline gap-2">
           <p className="truncate text-xs font-semibold text-white">{node.label}</p>
-          <p className={cn('mt-0.5 text-[10px] font-mono uppercase', tone.text)}>{STATUS_LABEL[node.status]}</p>
+          <p className={cn('shrink-0 text-[9px] font-mono uppercase', tone.text)}>{STATUS_LABEL[node.status]}</p>
         </div>
       </div>
-      <p className="mt-2 line-clamp-2 text-[11px] leading-relaxed text-zinc-500">{node.summary}</p>
+      <p className="mt-2 truncate text-[11px] leading-relaxed text-zinc-500">{node.summary}</p>
     </motion.button>
   );
 }
@@ -552,6 +572,7 @@ function nodeTone(status: IssueWorkflowStatus) {
       text: 'text-red-300',
       dot: 'bg-red-400',
       icon: 'border-red-500/30 bg-red-500/10 text-red-300',
+      bar: 'bg-red-300',
     };
   }
   if (status === 'blocked' || status === 'stale') {
@@ -560,6 +581,7 @@ function nodeTone(status: IssueWorkflowStatus) {
       text: 'text-amber-300',
       dot: 'bg-amber-400',
       icon: 'border-amber-500/30 bg-amber-500/10 text-amber-300',
+      bar: 'bg-amber-300',
     };
   }
   if (status === 'running' || status === 'pending' || status === 'escalated') {
@@ -568,6 +590,7 @@ function nodeTone(status: IssueWorkflowStatus) {
       text: 'text-blue-300',
       dot: 'bg-blue-400',
       icon: 'border-blue-500/30 bg-blue-500/10 text-blue-300',
+      bar: 'bg-blue-300',
     };
   }
   if (status === 'skipped') {
@@ -576,6 +599,7 @@ function nodeTone(status: IssueWorkflowStatus) {
       text: 'text-zinc-600',
       dot: 'bg-zinc-600',
       icon: 'border-white/8 bg-white/[0.03] text-zinc-500',
+      bar: 'bg-zinc-600',
     };
   }
   return {
@@ -583,6 +607,7 @@ function nodeTone(status: IssueWorkflowStatus) {
     text: 'text-emerald-300',
     dot: 'bg-emerald-400',
     icon: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
+    bar: 'bg-emerald-300',
   };
 }
 

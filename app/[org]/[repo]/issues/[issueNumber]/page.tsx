@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { IssueArtifactStack } from '@/components/maintaineros/issue-artifact-stack';
 import { PhaseShell } from '@/components/maintaineros/phase-shell';
 import { RouteIssueButton } from '@/components/maintaineros/route-issue-button';
+import { WorkflowControls } from '@/components/maintaineros/workflow-controls';
 import { getMaintainerOSRepository } from '@/lib/maintaineros/repository';
 
 interface Props {
@@ -25,14 +26,15 @@ export default async function IssuePage({ params }: Props) {
       providerStatuses={dashboard.providerStatuses}
     >
       <div className="flex flex-wrap gap-2">
-        <Link className="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-zinc-400" href={`/${org}/${repo}/issues/${issueNumber}/trace`}>
+        <Link className="rounded-lg border border-[#F9F7F7]/12 px-3 py-1.5 text-xs text-[#F9F7F7]/68" href={`/${org}/${repo}/issues/${issueNumber}/trace`}>
           View trace
         </Link>
-        <Link className="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-zinc-400" href={`/${org}/${repo}/proof`}>
+        <Link className="rounded-lg border border-[#F9F7F7]/12 px-3 py-1.5 text-xs text-[#F9F7F7]/68" href={`/${org}/${repo}/proof`}>
           View proof
         </Link>
       </div>
       {issue && <RouteIssueButton repositoryId={`${org}/${repo}`} issueNumber={Number(issueNumber)} />}
+      {issue && <WorkflowControls repositoryId={`${org}/${repo}`} issue={issue} />}
       <IssueArtifactStack issue={issue} />
     </PhaseShell>
   );

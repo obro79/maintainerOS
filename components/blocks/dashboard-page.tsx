@@ -73,55 +73,14 @@ const LANE_META = {
   },
 } satisfies Record<LaneKey, { title: string; copy: string; icon: ElementType }>;
 
-const FALLBACK_REPOS: Repo[] = [
-  { id: 'acme/frontend', label: 'acme/frontend' },
-  { id: 'acme/api', label: 'acme/api' },
-];
-
-const FALLBACK_ISSUES: Record<LaneKey, DashboardIssue[]> = {
-  agent: [
-    {
-      number: 111,
-      title: 'Add cursor-based pagination to /issues endpoint',
-      labels: [
-        { name: 'enhancement', color: 'ECD852' },
-        { name: 'api', color: 'FBF7DA' },
-      ],
-      user: 'johndoe',
-      daysAgo: 2,
-    },
-  ],
-  review: [
-    {
-      number: 87,
-      title: 'Upgrade path for v1 to v2 webhook format',
-      labels: [{ name: 'breaking-change', color: '842E65' }],
-      user: 'maintainer',
-      daysAgo: 10,
-    },
-  ],
-  bounty: [
-    {
-      number: 112,
-      title: 'Redis queue drains silently on OOM restart',
-      labels: [
-        { name: 'infra', color: 'ECD852' },
-        { name: 'bug', color: '842E65' },
-      ],
-      user: 'reporter',
-      daysAgo: 2,
-    },
-  ],
-  clarify: [
-    {
-      number: 99,
-      title: 'Clarify expected retry semantics on 408',
-      labels: [{ name: 'question', color: 'FBF7DA' }],
-      user: 'contributor',
-      daysAgo: 5,
-    },
-  ],
-};
+function emptyColumnIssues(): Record<LaneKey, DashboardIssue[]> {
+  return {
+    agent: [],
+    review: [],
+    bounty: [],
+    clarify: [],
+  };
+}
 
 function labelStyle(label: GhLabel) {
   const hex = label.color.replace('#', '').padEnd(6, '0');
@@ -316,10 +275,11 @@ function ActivityFeed({ items }: { items: ActivityEntry[] }) {
 }
 
 export function DashboardPage() {
-  const [repos, setRepos] = useState<Repo[]>(FALLBACK_REPOS);
-  const [selectedRepo, setSelectedRepo] = useState(FALLBACK_REPOS[0].id);
+  const [repos, setRepos] = useState<Repo[]>([]);
+  const [reposLoading, setReposLoading] = useState(true);
+  const [selectedRepo, setSelectedRepo] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [columnIssues, setColumnIssues] = useState<Record<LaneKey, DashboardIssue[]>>(FALLBACK_ISSUES);
+  const [columnIssues, setColumnIssues] = useState<Record<LaneKey, DashboardIssue[]>>(() => emptyColumnIssues());
   const [loadedLaneRepos, setLoadedLaneRepos] = useState<Partial<Record<LaneKey, string>>>({});
   const [dispatchingIssues, setDispatchingIssues] = useState<Set<number>>(new Set());
   const [selectedIssue, setSelectedIssue] = useState<{ issue: DashboardIssue; laneKey: LaneKey } | null>(null);
@@ -335,15 +295,27 @@ export function DashboardPage() {
   }, []);
 
   useEffect(() => {
+    let canceled = false;
     fetch('/api/dashboard/repos')
       .then((response) => response.json())
       .then((data: Repo[]) => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (!canceled && Array.isArray(data)) {
           setRepos(data);
-          setSelectedRepo(data[0].id);
+          setSelectedRepo((current) => current || data[0]?.id || '');
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!canceled) {
+          setRepos([]);
+          setSelectedRepo('');
+        }
+      })
+      .finally(() => {
+        if (!canceled) setReposLoading(false);
+      });
+    return () => {
+      canceled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -361,7 +333,7 @@ export function DashboardPage() {
         })
         .catch(() => {
           if (!canceled) {
-            setColumnIssues((current) => ({ ...current, [laneKey]: FALLBACK_ISSUES[laneKey] }));
+            setColumnIssues((current) => ({ ...current, [laneKey]: [] }));
           }
         })
         .finally(() => {
@@ -387,10 +359,13 @@ export function DashboardPage() {
     return () => document.removeEventListener('mousedown', onMouseDown);
   }, [dropdownOpen]);
 
-  const selectedLabel = repos.find((repo) => repo.id === selectedRepo)?.label ?? selectedRepo;
-  const loadingCols = new Set(LANES.filter((laneKey) => loadedLaneRepos[laneKey] !== selectedRepo));
+  const selectedRepoLabel = repos.find((repo) => repo.id === selectedRepo)?.label;
+  const selectedLabel = reposLoading
+    ? 'Loading repositories'
+    : selectedRepoLabel ?? (selectedRepo || 'No repository selected');
+  const loadingCols = new Set(selectedRepo ? LANES.filter((laneKey) => loadedLaneRepos[laneKey] !== selectedRepo) : []);
   const totalIssues = LANES.reduce((sum, laneKey) => sum + (columnIssues[laneKey]?.length ?? 0), 0);
-  const isLoading = loadingCols.size > 0;
+  const isLoading = reposLoading || loadingCols.size > 0;
 
   const startDispatch = useCallback(() => {
     if (dispatching) return;
@@ -465,6 +440,7 @@ export function DashboardPage() {
               <div ref={dropdownRef} className="relative">
                 <button
                   onClick={() => setDropdownOpen((open) => !open)}
+                  disabled={repos.length === 0}
                   className="inline-flex h-10 min-w-[180px] items-center justify-between gap-3 rounded-md border border-[#F9F7F7]/12 bg-black/20 px-3 text-sm text-[#F9F7F7]/84 transition-colors hover:border-[#F9F7F7]/24"
                 >
                   {selectedLabel}
@@ -478,10 +454,15 @@ export function DashboardPage() {
                       exit={{ opacity: 0, y: 4 }}
                       className="absolute right-0 top-full z-20 mt-2 min-w-full overflow-hidden rounded-md border border-[#F9F7F7]/12 bg-[#0A111A] shadow-2xl shadow-black/40"
                     >
+                      {repos.length === 0 && (
+                        <div className="px-3 py-2.5 text-sm text-[#F9F7F7]/42">No imported repositories</div>
+                      )}
                       {repos.map((repo) => (
                         <button
                           key={repo.id}
                           onClick={() => {
+                            setColumnIssues(emptyColumnIssues());
+                            setLoadedLaneRepos({});
                             setSelectedRepo(repo.id);
                             setDropdownOpen(false);
                           }}
@@ -507,7 +488,7 @@ export function DashboardPage() {
               { label: 'Total issues', value: isLoading ? '--' : String(totalIssues) },
               { label: 'Routed', value: '100%' },
               { label: 'Avg confidence', value: '87%' },
-              { label: 'Repos', value: String(repos.length) },
+              { label: 'Repos', value: reposLoading ? '--' : String(repos.length) },
             ].map((stat) => (
               <div key={stat.label} className="border-r border-[#F9F7F7]/10 px-4 py-5 last:border-r-0">
                 <div className="text-2xl font-semibold tracking-tight text-white">{stat.value}</div>

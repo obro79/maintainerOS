@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -27,8 +28,9 @@ export function SiteNav() {
         transition={{ duration: 0.4, ease: 'easeOut' }}
         className="mx-auto mt-4 max-w-[1040px]">
         <div className="flex items-center justify-between rounded-lg border border-[#F9F7F7]/12 bg-black/70 px-3 py-2 shadow-2xl shadow-black/35 backdrop-blur-xl">
-          <Link href="/" className="px-2 text-[15px] font-semibold tracking-tight text-white">
-            MaintainerOS
+          <Link href="/" className="flex items-center gap-2 px-2">
+            <Image src="/MaintainerOS.png" alt="MaintainerOS" width={32} height={32} className="h-8 w-auto" priority />
+            <span className="text-[15px] font-semibold tracking-tight text-white">MaintainerOS</span>
           </Link>
 
           <nav className="hidden lg:flex items-center gap-1">

@@ -21,7 +21,7 @@ export default async function VerificationPage({ params }: Props) {
       repository={dashboard.repository}
       providerStatuses={dashboard.providerStatuses}
     >
-      <p className="rounded-xl border border-blue-500/20 bg-blue-500/8 p-3 text-xs leading-relaxed text-blue-200">
+      <p className="rounded-lg border border-[#3F72AF]/20 bg-[#3F72AF]/8 p-3 text-xs leading-relaxed text-[#DBE2EF]">
         Greptile is the completion trust boundary. Linked PRs, sandbox logs, and merged status are evidence, but only fresh passed verification can unblock completion or payout.
       </p>
       <VerificationQueue items={items} />

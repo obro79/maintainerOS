@@ -44,9 +44,9 @@ export function DemoResetPanel({ scenarios, selectedScenarioId }: DemoResetPanel
 
   return (
     <div className="grid gap-4">
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/8 bg-[#080d14] p-3">
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-[#F9F7F7]/12 bg-[#0A111A] p-3">
         <button
-          className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-1.5 text-xs text-zinc-400 hover:text-white disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-lg border border-[#F9F7F7]/12 px-3 py-1.5 text-xs text-[#F9F7F7]/68 hover:text-white disabled:opacity-50"
           disabled={isPending}
           onClick={() => runAction('reset')}
           type="button"
@@ -55,7 +55,7 @@ export function DemoResetPanel({ scenarios, selectedScenarioId }: DemoResetPanel
           Reset local demo state
         </button>
         <button
-          className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-1.5 text-xs text-zinc-400 hover:text-white disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-lg border border-[#F9F7F7]/12 px-3 py-1.5 text-xs text-[#F9F7F7]/68 hover:text-white disabled:opacity-50"
           disabled={isPending}
           onClick={() => runAction('rerun-import')}
           type="button"
@@ -64,7 +64,7 @@ export function DemoResetPanel({ scenarios, selectedScenarioId }: DemoResetPanel
           Rerun GitHub import
         </button>
         <button
-          className="inline-flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs text-emerald-300 hover:bg-emerald-500/15 disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-lg border border-[#3F72AF]/30 bg-[#3F72AF]/10 px-3 py-1.5 text-xs text-[#DBE2EF] hover:bg-[#3F72AF]/15 disabled:opacity-50"
           disabled={isPending}
           onClick={() => runAction('replay-artifacts')}
           type="button"
@@ -72,27 +72,27 @@ export function DemoResetPanel({ scenarios, selectedScenarioId }: DemoResetPanel
           <Play className="size-3.5" />
           Replay provider artifacts
         </button>
-        {message && <span className="text-xs text-zinc-500">{message}</span>}
+        {message && <span className="text-xs text-[#F9F7F7]/56">{message}</span>}
       </div>
 
       {scenarios.map((scenario) => {
         const active = selected === scenario.id;
         return (
-          <div key={scenario.id} className="rounded-xl border border-white/8 bg-[#080d14] p-4">
+          <div key={scenario.id} className="rounded-lg border border-[#F9F7F7]/12 bg-[#0A111A] p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-semibold text-white">{scenario.label}</h3>
-                  {active && <CheckCircle2 className="size-3.5 text-emerald-400" />}
+                  {active && <CheckCircle2 className="size-3.5 text-[#3F72AF]" />}
                 </div>
-                <p className="mt-1 text-xs text-zinc-600">Issue #{scenario.targetIssueNumber} · {scenario.expectedRoute}</p>
+                <p className="mt-1 text-xs text-[#F9F7F7]/40">Issue #{scenario.targetIssueNumber} · {scenario.expectedRoute}</p>
               </div>
               <EvidenceBadge sourceState={scenario.sourceState} />
             </div>
-            <p className="mt-2 text-sm text-zinc-500">{scenario.description}</p>
+            <p className="mt-2 text-sm text-[#F9F7F7]/56">{scenario.description}</p>
             <div className="mt-3 flex flex-wrap gap-2">
               <button
-                className="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-zinc-400 hover:text-white disabled:opacity-50"
+                className="rounded-lg border border-[#F9F7F7]/12 px-3 py-1.5 text-xs text-[#F9F7F7]/68 hover:text-white disabled:opacity-50"
                 disabled={isPending || active}
                 onClick={() => runAction('select', scenario.id)}
                 type="button"
@@ -100,7 +100,7 @@ export function DemoResetPanel({ scenarios, selectedScenarioId }: DemoResetPanel
                 {pendingAction === 'select' && selected === scenario.id ? 'Selecting...' : active ? 'Selected' : 'Select scenario'}
               </button>
               {scenario.traceAnchors.map((anchor) => (
-                <span key={anchor} className="rounded-full border border-white/8 px-2 py-1 text-[10px] font-mono text-zinc-600">
+                <span key={anchor} className="rounded-full border border-[#F9F7F7]/12 px-2 py-1 text-[10px] font-sans text-[#F9F7F7]/40">
                   #{anchor}
                 </span>
               ))}

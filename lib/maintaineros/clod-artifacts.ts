@@ -134,8 +134,13 @@ function readStore(): ClodArtifactFile {
 }
 
 function writeStore(file: ClodArtifactFile) {
-  mkdirSync(dirname(STORE_PATH), { recursive: true });
-  writeFileSync(STORE_PATH, `${JSON.stringify(file, null, 2)}\n`);
+  try {
+    mkdirSync(dirname(STORE_PATH), { recursive: true });
+    writeFileSync(STORE_PATH, `${JSON.stringify(file, null, 2)}\n`);
+  } catch {
+    // Vercel functions cannot persist arbitrary project files at runtime.
+    // The route still records durable provider and trace rows in Neon.
+  }
 }
 
 function formatCost(value: number | null) {

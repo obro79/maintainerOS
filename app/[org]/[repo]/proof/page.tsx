@@ -1,6 +1,8 @@
 import Link from 'next/link';
+import { cookies } from 'next/headers';
 import { PhaseShell } from '@/components/maintaineros/phase-shell';
 import { SponsorProofPanel } from '@/components/maintaineros/sponsor-proof-panel';
+import { DEMO_SCENARIO_COOKIE, getDemoScenario } from '@/lib/maintaineros/demo-scenarios';
 import { getMaintainerOSRepository } from '@/lib/maintaineros/repository';
 import type { SponsorProofViewModel } from '@/lib/maintaineros/types';
 
@@ -18,6 +20,8 @@ const PROOF: SponsorProofViewModel[] = [
 
 export default async function ProofPage({ params }: Props) {
   const { org, repo } = await params;
+  const cookieStore = await cookies();
+  const scenario = getDemoScenario(cookieStore.get(DEMO_SCENARIO_COOKIE)?.value);
   const dashboard = await getMaintainerOSRepository().getDashboard(`${org}/${repo}`);
   return (
     <PhaseShell
@@ -30,7 +34,7 @@ export default async function ProofPage({ params }: Props) {
         {PROOF.map((proof) => (
           <div key={proof.provider} className="space-y-2">
             <SponsorProofPanel proof={proof} />
-            <Link className="inline-flex rounded-lg border border-white/10 px-3 py-1.5 text-xs text-zinc-400 hover:text-white" href={`/${org}/${repo}/issues/41/trace#${proofTraceAnchor(proof.provider)}`}>
+            <Link className="inline-flex rounded-lg border border-white/10 px-3 py-1.5 text-xs text-zinc-400 hover:text-white" href={`/${org}/${repo}/issues/${scenario.targetIssueNumber}/trace#${proofTraceAnchor(proof.provider, scenario.traceAnchors)}`}>
               View trace evidence
             </Link>
           </div>
@@ -40,7 +44,9 @@ export default async function ProofPage({ params }: Props) {
   );
 }
 
-function proofTraceAnchor(provider: SponsorProofViewModel['provider']) {
+function proofTraceAnchor(provider: SponsorProofViewModel['provider'], anchors: string[]) {
+  const providerAnchor = anchors.find((anchor) => anchor.includes(provider));
+  if (providerAnchor) return providerAnchor;
   if (provider === 'greptile') return 'issue-41-verification';
   if (provider === 'clustly') return 'issue-41-payout-gate';
   if (provider === 'daytona') return 'issue-41-attempt-1-dispatched';

@@ -21,6 +21,7 @@ import { buildContextPackForIssue, buildNiaTraceEvent } from './nia-context';
 import { buildSandboxExecutionsForIssue, buildSandboxTraceEvents, toSandboxAttemptListItems } from './daytona';
 import { toVerificationQueueItem } from './verification';
 import { toClustlyBountyListItem } from './payments';
+import { listPersistedTraceEvents, mergeTraceEvents } from './trace-events';
 
 interface RepositoryRow {
   id: string;
@@ -69,7 +70,7 @@ export class NeonMaintainerOSRepository implements MaintainerOSRepository {
         [repository.id],
       );
       const cards = issues.rows.map(toIssueCard);
-      const details = issues.rows.map((issue) => applyStoredClodArtifact(repository.id, toIssueDetail(issue)));
+      const details = await Promise.all(issues.rows.map((issue) => toIssueDetailWithPersistedTrace(repository.id, issue)));
       const selectedIssue = details[0] ?? emptyIssueDetail(repository.id);
       const latestImportRun = await getLatestImportRun(client, repository.owner, repository.name);
 
@@ -121,7 +122,7 @@ export class NeonMaintainerOSRepository implements MaintainerOSRepository {
         `select * from maintaineros_issues where repository_id = $1 and number = $2 limit 1`,
         [repository.id, issueNumber],
       );
-      return result.rows[0] ? applyStoredClodArtifact(repository.id, toIssueDetail(result.rows[0])) : null;
+      return result.rows[0] ? toIssueDetailWithPersistedTrace(repository.id, result.rows[0]) : null;
     });
   }
 
@@ -151,6 +152,16 @@ export class NeonMaintainerOSRepository implements MaintainerOSRepository {
       .map((issue) => toClustlyBountyListItem(dashboard.repository.id, issue))
       .filter((item): item is ClustlyBountyListItemViewModel => Boolean(item));
   }
+}
+
+async function toIssueDetailWithPersistedTrace(repositoryId: string, issue: IssueRow) {
+  const detail = applyStoredClodArtifact(repositoryId, toIssueDetail(issue));
+  const persisted = await listPersistedTraceEvents(repositoryId, detail.number);
+  if (persisted.length === 0) return detail;
+  return {
+    ...detail,
+    trace: mergeTraceEvents(detail.trace, persisted),
+  };
 }
 
 async function findRepository(client: PgClient, repositoryId: string): Promise<RepositoryRow> {

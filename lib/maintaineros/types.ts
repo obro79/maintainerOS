@@ -254,6 +254,10 @@ export interface DemoResetScenarioViewModel {
   label: string;
   sourceState: ArtifactSourceState;
   description: string;
+  repositoryId: string;
+  targetIssueNumber: number;
+  expectedRoute: ExecutionRoute;
+  traceAnchors: string[];
 }
 
 export interface IssueTraceEventViewModel {

@@ -1,5 +1,6 @@
 import type { ImportRunViewModel } from './types';
 import { withPostgres } from './postgres';
+import { recordTraceEvent } from './trace-events';
 
 interface GitHubIssueResponse {
   id: number;
@@ -130,6 +131,27 @@ export async function importGitHubIssues(input: ImportGitHubInput): Promise<Impo
           ],
         );
       }
+
+      await Promise.all(issues.map((issue) => recordTraceEvent({
+        id: `${repositoryId}-${issue.number}-github-import-${runId}`,
+        repositoryId,
+        issueNumber: issue.number,
+        actor: 'GitHub import',
+        provider: 'github',
+        sourceState: 'live',
+        title: `Imported issue #${issue.number}`,
+        detail: 'Live GitHub issue metadata, labels, author, timestamps, URL, and body were persisted.',
+        status: 'succeeded',
+        artifactUrl: issue.html_url,
+        relatedId: runId,
+        at: finishedAt.toISOString(),
+        payload: {
+          runId,
+          owner: input.owner,
+          repo: input.repo,
+          skippedPullRequestCount,
+        },
+      })));
 
       const status: ImportRunViewModel['status'] = issues.length > 0 ? 'succeeded' : 'partial';
       await client.query(

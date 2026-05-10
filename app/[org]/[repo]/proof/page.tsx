@@ -22,8 +22,18 @@ export default async function ProofPage({ params }: Props) {
       eyebrow={`${org}/${repo} · proof`}
       title="Sponsor Proof"
       description="Judging evidence for every sponsor used inside the MaintainerOS product path."
+      repository={dashboard.repository}
       providerStatuses={dashboard.providerStatuses}
     >
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        {dashboard.providerStatuses?.map((provider) => (
+          <div key={provider.provider} className="rounded-xl border border-white/8 bg-[#080d14] p-3">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-700">{provider.label}</p>
+            <p className="mt-1 text-sm font-semibold capitalize text-white">{provider.status}</p>
+            <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-zinc-600">{provider.detail}</p>
+          </div>
+        ))}
+      </div>
       <div className="grid gap-3 md:grid-cols-2">
         {proofItems.map((proof) => (
           <div key={proof.provider} className="space-y-2">

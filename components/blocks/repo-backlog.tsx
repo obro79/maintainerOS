@@ -13,6 +13,12 @@ import type { DashboardViewModel } from '@/lib/maintaineros/types';
 
 type LaneFilter = 'all' | 'agent' | 'review' | 'bounty' | 'clarify';
 
+function normalizeInitialLane(raw?: string | null): LaneFilter {
+  const v = raw?.toLowerCase();
+  if (v === 'agent' || v === 'review' || v === 'bounty' || v === 'clarify') return v;
+  return 'all';
+}
+
 const ISSUES = [
   { id: 112, title: 'Redis queue drains silently on OOM restart',           lane: 'bounty',  conf: 94, risk: 'High', age: '2d',  labels: ['infra','bug']             },
   { id: 111, title: 'Add cursor-based pagination to /issues endpoint',      lane: 'agent',   conf: 89, risk: 'Low',  age: '2d',  labels: ['api','enhancement']       },
@@ -33,8 +39,8 @@ const ISSUES = [
 
 type LaneLimitedKey = Exclude<LaneFilter, 'all'>;
 
-export function RepoBacklog({ dashboard }: { dashboard?: DashboardViewModel }) {
-  const [filter, setFilter] = useState<LaneFilter>('all');
+export function RepoBacklog({ dashboard, initialLane }: { dashboard?: DashboardViewModel; initialLane?: string | null }) {
+  const [filter, setFilter] = useState<LaneFilter>(() => normalizeInitialLane(initialLane));
   const [search, setSearch] = useState('');
   const [overriding, setOverriding] = useState<number | null>(null);
   const issues = dashboard

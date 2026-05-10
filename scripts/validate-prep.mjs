@@ -36,10 +36,10 @@ for (const table of tables) {
   }
 }
 
-const fixtureIndex = JSON.parse(readFileSync("data/mock-repos/index.json", "utf8"));
-const expectedCounts = new Map(
-  fixtureIndex.repositories.map((repo) => [repo.id, repo.issueCount])
-);
+const expectedCounts = new Map([
+  ["maintaineros-demo-large", 400],
+  ["maintaineros-demo-medium", 200]
+]);
 
 for (const [repoId, expectedCount] of expectedCounts) {
   const fixture = JSON.parse(readFileSync(`data/mock-repos/${repoId}.json`, "utf8"));

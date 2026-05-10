@@ -13,6 +13,7 @@
     "test:issue-workflow": "tsc --module CommonJS --moduleResolution Node --target ES2022 --lib ES2022,DOM --skipLibCheck --outDir /tmp/maintaineross-issue-workflow-test scripts/issue-workflow-projection-smoke.ts && node /tmp/maintaineross-issue-workflow-test/scripts/issue-workflow-projection-smoke.js",
     "test:ai-execution-artifacts": "tsc --module CommonJS --moduleResolution Node --target ES2022 --lib ES2022,DOM --skipLibCheck --outDir /tmp/maintaineross-ai-execution-test scripts/ai-execution-artifacts-smoke.ts && node /tmp/maintaineross-ai-execution-test/scripts/ai-execution-artifacts-smoke.js",
     "test:routing-policy": "tsc --module CommonJS --moduleResolution Node --target ES2022 --lib ES2022,DOM --skipLibCheck --outDir /tmp/maintaineross-routing-policy-test scripts/routing-policy-smoke.ts && node /tmp/maintaineross-routing-policy-test/scripts/routing-policy-smoke.js",
+    "test:agent-execution": "tsc --module CommonJS --moduleResolution Node --target ES2022 --lib ES2023,DOM --skipLibCheck --outDir /tmp/maintaineross-agent-execution-test scripts/agent-execution-smoke.ts && node /tmp/maintaineross-agent-execution-test/scripts/agent-execution-smoke.js",
     "test:connect-oauth": "node scripts/connect-oauth-smoke.mjs",
     "fixtures:generate": "node scripts/generate-mock-backlog.mjs",
     "github:seed-demo": "node scripts/seed-github-demo-repos.mjs",
@@ -20,7 +21,7 @@
     "preview:styles": "node scripts/preview-style-prototypes.mjs",
     "prep:check": "node scripts/validate-prep.mjs",
     "backend:check": "node scripts/validate-backend-policy.mjs",
-    "ci": "npm run lint && npm run typecheck && npm run test:verification-payout && npm run test:issue-workflow && npm run test:ai-execution-artifacts && npm run test:routing-policy && npm run test:connect-oauth && npm run prep:check && npm run backend:check && npm run build"
+    "ci": "npm run lint && npm run typecheck && npm run test:verification-payout && npm run test:issue-workflow && npm run test:ai-execution-artifacts && npm run test:routing-policy && npm run test:agent-execution && npm run test:connect-oauth && npm run prep:check && npm run backend:check && npm run build"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",

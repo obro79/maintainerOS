@@ -124,13 +124,23 @@ async function ensureMaintainerSchema(client: PgClient) {
       source_state text not null,
       repository_id text,
       issue_number integer,
+      run_id text,
       artifact_url text,
+      log_url text,
+      screenshot_url text,
       latency_ms integer,
       error_message text,
       request_meta jsonb not null default '{}'::jsonb,
       response_meta jsonb not null default '{}'::jsonb,
       occurred_at timestamptz not null default now()
     )
+  `);
+
+  await client.query(`
+    alter table maintaineros_provider_runs
+      add column if not exists run_id text,
+      add column if not exists log_url text,
+      add column if not exists screenshot_url text
   `);
 
   await client.query(`

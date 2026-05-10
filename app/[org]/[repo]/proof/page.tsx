@@ -4,25 +4,19 @@ import { PhaseShell } from '@/components/maintaineros/phase-shell';
 import { SponsorProofPanel } from '@/components/maintaineros/sponsor-proof-panel';
 import { DEMO_SCENARIO_COOKIE, getDemoScenario } from '@/lib/maintaineros/demo-scenarios';
 import { getMaintainerOSRepository } from '@/lib/maintaineros/repository';
+import { mergeSponsorProof } from '@/lib/maintaineros/sponsor-proof';
 import type { SponsorProofViewModel } from '@/lib/maintaineros/types';
 
 interface Props {
   params: Promise<{ org: string; repo: string }>;
 }
 
-const PROOF: SponsorProofViewModel[] = [
-  { provider: 'clod', sourceState: 'planned', title: 'CLōD product-path call', status: 'pending', summary: 'Phase 2 records model, tier, cost, latency, and work-order output.' },
-  { provider: 'nia', sourceState: 'planned', title: 'Nia context pack', status: 'pending', summary: 'Phase 3 records source IDs, snippets, citations, and commands.' },
-  { provider: 'daytona', sourceState: 'planned', title: 'Daytona-style sandbox', status: 'pending', summary: 'Phase 4 records sandbox metadata, commands, logs, and files touched.' },
-  { provider: 'greptile', sourceState: 'planned', title: 'Greptile verification', status: 'pending', summary: 'Phase 5 records pass/fail/stale proof bundles.' },
-  { provider: 'clustly', sourceState: 'planned', title: 'Clustly task rail', status: 'pending', summary: 'Phase 6 records task lifecycle and release gate evidence.' },
-];
-
 export default async function ProofPage({ params }: Props) {
   const { org, repo } = await params;
   const cookieStore = await cookies();
   const scenario = getDemoScenario(cookieStore.get(DEMO_SCENARIO_COOKIE)?.value);
   const dashboard = await getMaintainerOSRepository().getDashboard(`${org}/${repo}`);
+  const proofItems = mergeSponsorProof(dashboard.sponsorProof);
   return (
     <PhaseShell
       eyebrow={`${org}/${repo} · proof`}
@@ -31,7 +25,7 @@ export default async function ProofPage({ params }: Props) {
       providerStatuses={dashboard.providerStatuses}
     >
       <div className="grid gap-3 md:grid-cols-2">
-        {PROOF.map((proof) => (
+        {proofItems.map((proof) => (
           <div key={proof.provider} className="space-y-2">
             <SponsorProofPanel proof={proof} />
             <Link className="inline-flex rounded-lg border border-white/10 px-3 py-1.5 text-xs text-zinc-400 hover:text-white" href={`/${org}/${repo}/issues/${scenario.targetIssueNumber}/trace#${proofTraceAnchor(proof.provider, scenario.traceAnchors)}`}>

@@ -325,7 +325,10 @@ function WorkflowGraph({
         setDragging(false);
       }}
     >
-      <div className="absolute left-4 top-4 z-20 flex items-center gap-1 rounded-lg border border-white/10 bg-[#080d14]/90 p-1 text-zinc-400 shadow-xl shadow-black/30 backdrop-blur">
+      <div
+        className="absolute left-4 top-4 z-20 flex items-center gap-1 rounded-lg border border-white/10 bg-[#080d14]/90 p-1 text-zinc-400 shadow-xl shadow-black/30 backdrop-blur"
+        onPointerDown={(event) => event.stopPropagation()}
+      >
         <button type="button" className="inline-flex size-7 items-center justify-center rounded-md hover:bg-white/8 hover:text-white" onClick={() => zoom(-0.1)} aria-label="Zoom out">
           <Minus className="size-3.5" />
         </button>
@@ -425,7 +428,7 @@ function clampGraphScale(value: number) {
 }
 
 function isInteractiveTarget(target: EventTarget | null) {
-  return target instanceof HTMLElement && Boolean(target.closest('button,a,input,select,textarea'));
+  return target instanceof Element && Boolean(target.closest('button,a,input,select,textarea'));
 }
 
 function WorkflowNodeCard({

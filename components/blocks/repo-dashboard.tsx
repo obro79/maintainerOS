@@ -9,7 +9,9 @@ import { StatCard } from '@/components/ui/stat-card';
 import { DonutChart } from '@/components/ui/donut-chart';
 import { LaneBadge } from '@/components/ui/lane-badge';
 import { DataSourceBanner } from '@/components/maintaineros/data-source-banner';
+import { IssueWorkflowWorkbench } from '@/components/maintaineros/issue-workflow-workbench';
 import { ProviderStatusBar } from '@/components/maintaineros/provider-status-bar';
+import { useWorkflowIssueUrl } from '@/components/maintaineros/use-workflow-issue-url';
 import { ROUTE_LABEL } from '@/lib/maintaineros/types';
 import type { DashboardViewModel } from '@/lib/maintaineros/types';
 
@@ -43,6 +45,7 @@ interface RepoDashboardProps {
 }
 
 export function RepoDashboard({ org, repo, dashboard }: RepoDashboardProps) {
+  const { workflowIssueNumber, openWorkflowIssue, closeWorkflowIssue } = useWorkflowIssueUrl();
   const laneDist = dashboard
     ? ([
         { key: 'agent', count: dashboard.buckets.find(bucket => bucket.lane === 'agent')?.count ?? 0 },
@@ -57,6 +60,9 @@ export function RepoDashboard({ org, repo, dashboard }: RepoDashboardProps) {
 
   const totalIssues = dashboard?.issues.length ?? 78;
   const selectedIssue = dashboard?.selectedIssue;
+  const selectedWorkflowIssue = workflowIssueNumber
+    ? dashboard?.issueDetails.find((issue) => issue.number === workflowIssueNumber) ?? null
+    : null;
   const routedPct = dashboard && dashboard.repository.openIssueCount > 0
     ? Math.round((dashboard.issues.length / dashboard.repository.openIssueCount) * 100)
     : 91;
@@ -182,7 +188,16 @@ export function RepoDashboard({ org, repo, dashboard }: RepoDashboardProps) {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, delay: 0.18 }}
-            className="rounded-xl border border-white/8 bg-[#080d14] overflow-hidden">
+            role="button"
+            tabIndex={0}
+            onClick={() => openWorkflowIssue(selectedIssue.number)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                openWorkflowIssue(selectedIssue.number);
+              }
+            }}
+            className="cursor-pointer rounded-xl border border-white/8 bg-[#080d14] overflow-hidden">
             <div className="px-5 py-3.5 border-b border-white/6 flex items-center gap-2">
               <GitPullRequest className="size-3.5 text-blue-400" />
               <span className="font-heading font-semibold text-sm text-white">Selected Issue</span>
@@ -206,10 +221,10 @@ export function RepoDashboard({ org, repo, dashboard }: RepoDashboardProps) {
                 <span className="rounded-lg border border-white/6 px-3 py-2">Complexity: {selectedIssue.complexity}</span>
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
-                <Link className="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-zinc-400 hover:text-white" href={`/${org}/${repo}/issues/${selectedIssue.number}`}>
+                <Link className="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-zinc-400 hover:text-white" href={`/${org}/${repo}/issues/${selectedIssue.number}`} onClick={(event) => event.stopPropagation()}>
                   Detail
                 </Link>
-                <Link className="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-zinc-400 hover:text-white" href={`/${org}/${repo}/issues/${selectedIssue.number}/trace`}>
+                <Link className="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-zinc-400 hover:text-white" href={`/${org}/${repo}/issues/${selectedIssue.number}/trace`} onClick={(event) => event.stopPropagation()}>
                   Trace
                 </Link>
               </div>
@@ -233,7 +248,18 @@ export function RepoDashboard({ org, repo, dashboard }: RepoDashboardProps) {
               const l = lane(item.lane);
               const issueNumber = item.id.replace('#', '');
               return (
-                <div key={item.id} className="flex items-stretch hover:bg-white/[0.02] transition-colors group cursor-pointer">
+                <div
+                  key={item.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => openWorkflowIssue(Number(issueNumber))}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      openWorkflowIssue(Number(issueNumber));
+                    }
+                  }}
+                  className="flex items-stretch hover:bg-white/[0.02] transition-colors group cursor-pointer">
                   {/* Lane bar */}
                   <div className={cn('w-1 shrink-0', l.tw.bg)} />
                   <div className="flex-1 min-w-0 px-4 py-3">
@@ -252,6 +278,7 @@ export function RepoDashboard({ org, repo, dashboard }: RepoDashboardProps) {
                     <Link
                       className="ml-3 rounded-md border border-white/8 px-1.5 py-1 text-[10px] text-zinc-600 hover:text-zinc-300"
                       href={`/${org}/${repo}/issues/${issueNumber}/trace`}
+                      onClick={(event) => event.stopPropagation()}
                     >
                       Trace
                     </Link>
@@ -284,6 +311,15 @@ export function RepoDashboard({ org, repo, dashboard }: RepoDashboardProps) {
           </div>
         </motion.div>
       </div>
+      {dashboard && (
+        <IssueWorkflowWorkbench
+          org={org}
+          repo={repo}
+          issueNumber={workflowIssueNumber}
+          initialIssue={selectedWorkflowIssue}
+          onClose={closeWorkflowIssue}
+        />
+      )}
     </div>
   );
 }

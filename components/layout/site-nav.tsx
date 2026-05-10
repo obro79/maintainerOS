@@ -10,7 +10,6 @@ import { cn } from '@/lib/utils';
 
 const navItems = [
   { name: 'Product', href: '/#product' },
-  { name: 'Dashboard', href: '/vercel/next.js' },
   { name: 'Pricing',      href: '/pricing'       },
   { name: 'Docs',         href: '/docs'          },
   { name: 'Changelog',    href: '/changelog'     },

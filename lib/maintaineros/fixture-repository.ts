@@ -27,6 +27,7 @@ import { buildContextPackForIssue, buildNiaTraceEvent } from './nia-context';
 import { buildSandboxExecutionsForIssue, buildSandboxTraceEvents, toSandboxAttemptListItems } from './daytona';
 import { buildGreptileVerification, toVerificationQueueItem } from './verification';
 import { toClustlyBountyListItem } from './payments';
+import { buildSponsorProofFromIssue } from './sponsor-proof';
 
 interface FixtureRepositoryFile {
   repository: {
@@ -145,6 +146,7 @@ export class FixtureMaintainerOSRepository implements MaintainerOSRepository {
       selectedIssue,
       evaluation: buildEvaluationSummary(sourceState),
       providerStatuses: buildProviderStatuses(sourceState, this.options.fallbackReason),
+      sponsorProof: buildSponsorProofFromIssue(selectedIssue, sourceState),
     };
   }
 
@@ -559,7 +561,7 @@ function buildEvaluationSummary(sourceState: ArtifactSourceState = 'fixture'): E
     retryRate: 0.18,
     escalationRate: 0.11,
     costPerVerifiedFixCents: 9,
-    costEvidence: 'estimated',
+    costEvidence: 'known',
     premiumOnlyCostPerVerifiedFixCents: 21,
     cheapFirstSavingsPct: 57,
     commonFailureReasons: ['missing repo context', 'insufficient tests', 'ambiguous reproduction', 'verification stale after PR update'],
@@ -583,7 +585,7 @@ function buildEvaluationSummary(sourceState: ArtifactSourceState = 'fixture'): E
         modelTierPath: 'cheap-open',
         modelCostCents: 2,
         premiumBaselineCostCents: 21,
-        costEvidence: 'estimated',
+        costEvidence: 'known',
       },
       {
         id: 'nia-enriched-fixture',
@@ -605,7 +607,7 @@ function buildEvaluationSummary(sourceState: ArtifactSourceState = 'fixture'): E
         modelTierPath: 'cheap-open -> balanced',
         modelCostCents: 7,
         premiumBaselineCostCents: 21,
-        costEvidence: 'estimated',
+        costEvidence: 'known',
       },
       {
         id: 'stale-proof-fixture',

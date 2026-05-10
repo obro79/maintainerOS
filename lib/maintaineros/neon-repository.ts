@@ -21,6 +21,8 @@ import { buildContextPackForIssue, buildNiaTraceEvent } from './nia-context';
 import { buildSandboxExecutionsForIssue, buildSandboxTraceEvents, toSandboxAttemptListItems } from './daytona';
 import { toVerificationQueueItem } from './verification';
 import { toClustlyBountyListItem } from './payments';
+import { listSponsorProofRuns } from './provider-runs';
+import { mergeSponsorProof } from './sponsor-proof';
 
 interface RepositoryRow {
   id: string;
@@ -72,6 +74,7 @@ export class NeonMaintainerOSRepository implements MaintainerOSRepository {
       const details = issues.rows.map((issue) => applyStoredClodArtifact(repository.id, toIssueDetail(issue)));
       const selectedIssue = details[0] ?? emptyIssueDetail(repository.id);
       const latestImportRun = await getLatestImportRun(client, repository.owner, repository.name);
+      const sponsorProof = mergeSponsorProof(await listSponsorProofRuns(client, repository.id));
 
       return {
         repository: {
@@ -110,6 +113,7 @@ export class NeonMaintainerOSRepository implements MaintainerOSRepository {
           { provider: 'greptile', sourceState: 'planned', status: 'planned', label: 'Greptile', detail: 'Verification lands in Phase 5.' },
           { provider: 'clustly', sourceState: 'planned', status: 'planned', label: 'Clustly', detail: 'Bounty rail lands in Phase 6.' },
         ],
+        sponsorProof,
       };
     });
   }

@@ -12,7 +12,7 @@ export function parseAgentPatchPackage(content: unknown): AgentPatchPackage {
 
   let parsed: Partial<AgentPatchPackage>;
   try {
-    parsed = JSON.parse(content) as Partial<AgentPatchPackage>;
+    parsed = JSON.parse(extractJsonObject(content)) as Partial<AgentPatchPackage>;
   } catch {
     throw new Error('CLŌD patch response was not valid JSON.');
   }
@@ -42,4 +42,15 @@ export function parseAgentPatchPackage(content: unknown): AgentPatchPackage {
 
 function stringValue(value: unknown) {
   return typeof value === 'string' && value.trim() ? value.trim() : '';
+}
+
+function extractJsonObject(content: string) {
+  const trimmed = content.trim();
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1]?.trim();
+  if (fenced) return fenced;
+  if (trimmed.startsWith('{')) return trimmed;
+  const start = trimmed.indexOf('{');
+  const end = trimmed.lastIndexOf('}');
+  if (start >= 0 && end > start) return trimmed.slice(start, end + 1);
+  return trimmed;
 }

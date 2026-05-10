@@ -14,6 +14,22 @@ equal(patch.branchName, 'maintaineros/issue-1-normalize-labels');
 equal(patch.verificationCommands.length, 2);
 ok(patch.unifiedDiff.includes('diff --git'));
 
+const fencedPatch = parseAgentPatchPackage(`Here is the patch package:
+
+\`\`\`json
+${JSON.stringify({
+  summary: 'Document OAuth setup.',
+  branchName: 'maintaineros/issue-9-oauth-docs',
+  commitMessage: 'Document OAuth callback setup',
+  filesIntended: ['docs/oauth.md'],
+  unifiedDiff: 'diff --git a/docs/oauth.md b/docs/oauth.md\n--- a/docs/oauth.md\n+++ b/docs/oauth.md\n@@ -1 +1 @@\n-old\n+new\n',
+  verificationCommands: ['npm run lint'],
+})}
+\`\`\``);
+
+equal(fencedPatch.branchName, 'maintaineros/issue-9-oauth-docs');
+equal(fencedPatch.filesIntended[0], 'docs/oauth.md');
+
 throws(
   () => parseAgentPatchPackage(JSON.stringify({
     summary: 'Bad package',

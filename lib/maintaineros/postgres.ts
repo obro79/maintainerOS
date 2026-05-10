@@ -106,7 +106,24 @@ async function ensureMaintainerSchema(client: PgClient) {
       add column if not exists labels jsonb not null default '[]'::jsonb,
       add column if not exists comments_count integer not null default 0,
       add column if not exists state text not null default 'open',
-      add column if not exists closed_at timestamptz
+      add column if not exists closed_at timestamptz,
+      add column if not exists provider_issue_id text,
+      add column if not exists node_id text,
+      add column if not exists author_metadata jsonb not null default '{}'::jsonb,
+      add column if not exists author_association text,
+      add column if not exists assignees jsonb not null default '[]'::jsonb,
+      add column if not exists milestone jsonb,
+      add column if not exists labels_full jsonb not null default '[]'::jsonb,
+      add column if not exists reactions jsonb,
+      add column if not exists comments_url text,
+      add column if not exists events_url text,
+      add column if not exists timeline_url text,
+      add column if not exists repository_url text,
+      add column if not exists api_url text,
+      add column if not exists state_reason text,
+      add column if not exists locked boolean not null default false,
+      add column if not exists active_lock_reason text,
+      add column if not exists raw_payload jsonb not null default '{}'::jsonb
   `);
 
   await client.query(`

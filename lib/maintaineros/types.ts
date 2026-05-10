@@ -274,6 +274,21 @@ export interface IssueTraceEventViewModel {
   filesTouched?: string[];
 }
 
+export interface RouteAttemptViewModel {
+  id: string;
+  sequence: number;
+  fromRoute: ExecutionRoute | null;
+  toRoute: ExecutionRoute;
+  trigger: 'initial-route' | 'retry' | 'reroute' | 'manual-override';
+  status: 'selected' | 'failed' | 'superseded' | 'blocked';
+  reason: string;
+  occurredAt: string;
+  sourceState?: ArtifactSourceState;
+  model?: string;
+  costCents?: number;
+  evidenceEventIds: string[];
+}
+
 export interface IssueDetailViewModel extends IssueCardViewModel {
   body: string;
   htmlUrl: string;
@@ -287,6 +302,7 @@ export interface IssueDetailViewModel extends IssueCardViewModel {
   verification: VerificationViewModel | null;
   bounty: BountyViewModel | null;
   paymentArtifact: PaymentArtifactViewModel | null;
+  routeHistory: RouteAttemptViewModel[];
   trace: IssueTraceEventViewModel[];
   payoutGate: {
     canRelease: boolean;

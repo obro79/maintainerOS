@@ -1,6 +1,12 @@
 import type { IssueDetailViewModel } from './types';
 import { isVerificationStale } from './verification';
 
+export const NON_CLUSTLY_ROUTE_REASON = 'Clustly payout artifacts are hidden because this issue is not routed to the bounty lane.';
+
+export function isClustlyEligibleRoute(issue: Pick<IssueDetailViewModel, 'route'>) {
+  return issue.route === 'bounty-worthy';
+}
+
 export function canReleasePayout(issue: Pick<IssueDetailViewModel, 'route' | 'bounty' | 'pullRequest' | 'verification'>) {
   const reasons: string[] = [];
 
@@ -16,5 +22,19 @@ export function canReleasePayout(issue: Pick<IssueDetailViewModel, 'route' | 'bo
   return {
     canRelease: reasons.length === 0,
     reasons,
+  };
+}
+
+export function hidePayoutArtifactsForNonClustlyRoutes(issue: IssueDetailViewModel): IssueDetailViewModel {
+  if (isClustlyEligibleRoute(issue)) return issue;
+
+  return {
+    ...issue,
+    bounty: null,
+    paymentArtifact: null,
+    payoutGate: {
+      canRelease: false,
+      reasons: [NON_CLUSTLY_ROUTE_REASON],
+    },
   };
 }

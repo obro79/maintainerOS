@@ -107,4 +107,13 @@ for (const [repoId, expectedCount] of expectedCounts) {
   }
 }
 
+const largeFixture = JSON.parse(readFileSync("data/mock-repos/maintaineros-demo-large.json", "utf8"));
+const nonClustlyArtifactIssue = largeFixture.issues.find(
+  (issue) => issue.classification?.route !== "bounty-worthy" && issue.paymentArtifact
+);
+
+if (!nonClustlyArtifactIssue) {
+  throw new Error("Expected a non-bounty fixture issue with a raw payment artifact for payout suppression coverage");
+}
+
 console.log("MaintainerOS prep check passed.");

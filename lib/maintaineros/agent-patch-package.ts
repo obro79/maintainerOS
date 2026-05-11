@@ -5,6 +5,12 @@ export interface AgentPatchPackage {
   filesIntended: string[];
   unifiedDiff: string;
   verificationCommands: string[];
+  fileEdits: AgentFileEdit[];
+}
+
+export interface AgentFileEdit {
+  path: string;
+  content: string;
 }
 
 export function parseAgentPatchPackage(content: unknown): AgentPatchPackage {
@@ -21,6 +27,7 @@ export function parseAgentPatchPackage(content: unknown): AgentPatchPackage {
   const branchName = stringValue(parsed.branchName).replace(/^refs\/heads\//, '');
   const commitMessage = stringValue(parsed.commitMessage);
   const unifiedDiff = normalizeUnifiedDiff(stringValue(parsed.unifiedDiff));
+  const fileEdits = parseFileEdits(parsed);
 
   if (!summary) throw new Error('Patch package missing summary.');
   if (!branchName || !/^[-a-zA-Z0-9/_]+$/.test(branchName)) throw new Error('Patch package has an invalid branch name.');
@@ -37,7 +44,27 @@ export function parseAgentPatchPackage(content: unknown): AgentPatchPackage {
     verificationCommands: Array.isArray(parsed.verificationCommands) && parsed.verificationCommands.length > 0
       ? parsed.verificationCommands.map(String).slice(0, 8)
       : ['npm test', 'npm run lint'],
+    fileEdits,
   };
+}
+
+function parseFileEdits(parsed: Partial<AgentPatchPackage> & { fileEdits?: unknown }): AgentFileEdit[] {
+  if (!Array.isArray(parsed.fileEdits)) return [];
+  return parsed.fileEdits
+    .map((edit) => {
+      if (!edit || typeof edit !== 'object') return null;
+      const value = edit as { path?: unknown; content?: unknown };
+      const path = stringValue(value.path);
+      const content = typeof value.content === 'string' ? value.content : '';
+      if (!isSafeRelativePath(path)) return null;
+      return { path, content };
+    })
+    .filter((edit): edit is AgentFileEdit => Boolean(edit))
+    .slice(0, 10);
+}
+
+function isSafeRelativePath(path: string) {
+  return Boolean(path) && !path.startsWith('/') && !path.split('/').includes('..') && !path.includes('\0');
 }
 
 function stringValue(value: unknown) {

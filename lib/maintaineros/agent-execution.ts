@@ -165,12 +165,15 @@ function executionCommands(repositoryId: string, issue: IssueDetailViewModel, pa
   if (!token) throw new Error('GITHUB_TOKEN is required for agent branch push and PR creation.');
   const [owner, repo] = repositoryId.split('/');
   const cloneUrl = `https://x-access-token:${token}@github.com/${owner}/${repo}.git`;
+  const encodedPatch = Buffer.from(patchPackage.unifiedDiff, 'utf8').toString('base64');
   return [
     `rm -rf /tmp/maintaineros-agent-${issue.number}`,
     `git clone ${shellQuote(cloneUrl)} /tmp/maintaineros-agent-${issue.number}`,
+    `cd /tmp/maintaineros-agent-${issue.number} && git config user.name 'MaintainerOS Agent' && git config user.email 'maintaineros-agent@users.noreply.github.com'`,
     `cd /tmp/maintaineros-agent-${issue.number} && git switch -c ${shellQuote(patchPackage.branchName)}`,
-    `cd /tmp/maintaineros-agent-${issue.number} && cat > /tmp/maintaineros-agent-${issue.number}.patch <<'PATCH'\n${patchPackage.unifiedDiff}\nPATCH\n git apply /tmp/maintaineros-agent-${issue.number}.patch`,
-    ...patchPackage.verificationCommands.map((command) => `cd /tmp/maintaineros-agent-${issue.number} && ${command}`),
+    `cd /tmp/maintaineros-agent-${issue.number} && printf %s ${shellQuote(encodedPatch)} | base64 -d > /tmp/maintaineros-agent-${issue.number}.patch && git apply /tmp/maintaineros-agent-${issue.number}.patch`,
+    `cd /tmp/maintaineros-agent-${issue.number} && git diff --check`,
+    ...safeVerificationCommands(patchPackage.verificationCommands).map((command) => `cd /tmp/maintaineros-agent-${issue.number} && ${command}`),
     `cd /tmp/maintaineros-agent-${issue.number} && git add ${patchPackage.filesIntended.map(shellQuote).join(' ')} && git commit -m ${shellQuote(patchPackage.commitMessage)}`,
     `cd /tmp/maintaineros-agent-${issue.number} && git push origin ${shellQuote(patchPackage.branchName)}`,
     `cd /tmp/maintaineros-agent-${issue.number} && git rev-parse HEAD`,
@@ -300,6 +303,15 @@ function stringValue(value: unknown) {
 
 function githubWorkflowToken() {
   return process.env.GITHUB_TOKEN?.trim();
+}
+
+function safeVerificationCommands(commands: string[]) {
+  const allowedPrefixes = ['npm ', 'npm test', 'pnpm ', 'yarn ', 'bun ', 'node ', 'npx ', 'tsc ', 'grep ', 'ls ', 'test '];
+  return commands
+    .map((command) => command.trim())
+    .filter((command) => allowedPrefixes.some((prefix) => command === prefix.trim() || command.startsWith(prefix)))
+    .filter((command) => !/[;&|<>`$]/.test(command))
+    .slice(0, 5);
 }
 
 function assertRepositoryId(repositoryId: string) {

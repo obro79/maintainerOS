@@ -31,6 +31,18 @@ ${JSON.stringify({
 equal(fencedPatch.branchName, 'maintaineros/issue-9-oauth-docs');
 equal(fencedPatch.filesIntended[0], 'docs/oauth.md');
 
+const normalizedNewFilePatch = parseAgentPatchPackage(JSON.stringify({
+  summary: 'Document OAuth setup.',
+  branchName: 'docs/oauth-setup',
+  commitMessage: 'Document OAuth setup',
+  filesIntended: ['docs/oauth.md'],
+  unifiedDiff: 'diff --git a/docs/oauth.md b/docs/oauth.md\nindex 0000000..1111111 100644\n--- a/docs/oauth.md\n+++ b/docs/oauth.md\n@@ -0,0 +1 @@\n+OAuth docs\n',
+  verificationCommands: ['npm test'],
+}));
+
+ok(normalizedNewFilePatch.unifiedDiff.includes('--- /dev/null'));
+ok(normalizedNewFilePatch.unifiedDiff.includes('+++ b/docs/oauth.md'));
+
 throws(
   () => parseAgentPatchPackage(JSON.stringify({
     summary: 'Bad package',

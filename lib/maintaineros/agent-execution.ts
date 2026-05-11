@@ -1,5 +1,5 @@
 import { redactAgentCommandForEvidence } from './agent-command-evidence';
-import { parseAgentPatchPackage, type AgentPatchPackage } from './agent-patch-package';
+import { parseAgentPatchPackage, type AgentFileEdit, type AgentPatchPackage } from './agent-patch-package';
 import { recordProviderRun } from './provider-runs';
 import type { IssueDetailViewModel, PullRequestViewModel, SandboxCommandResultViewModel, SandboxExecutionViewModel } from './types';
 
@@ -172,8 +172,9 @@ async function requestClodPatchPayload(
           role: 'system',
           content: [
             'Return one JSON object only. No markdown.',
-            'Required schema: {summary:string, branchName:string, commitMessage:string, filesIntended:string[], unifiedDiff:string, verificationCommands:string[]}.',
+            'Required schema: {summary:string, branchName:string, commitMessage:string, filesIntended:string[], unifiedDiff:string, verificationCommands:string[], fileEdits:{path:string,content:string}[]}.',
             'filesIntended must be an array of file paths, not a map.',
+            'fileEdits must include the complete final UTF-8 content for every changed text file. This is the source of truth for applying text changes.',
             'unifiedDiff must be one git apply compatible patch string beginning with diff --git.',
             'Use repositorySnapshot before writing the diff. Existing files must be modified with real context, not recreated as new files.',
             'Do not invent duplicate context lines in unifiedDiff. The patch must apply cleanly with git apply --recount.',
@@ -262,18 +263,30 @@ function executionCommands(repositoryId: string, issue: IssueDetailViewModel, pa
   const [owner, repo] = repositoryId.split('/');
   const cloneUrl = `https://x-access-token:${token}@github.com/${owner}/${repo}.git`;
   const encodedPatch = Buffer.from(patchPackage.unifiedDiff, 'utf8').toString('base64');
+  const applyCommands = patchPackage.fileEdits.length > 0
+    ? fileEditCommands(issue.number, patchPackage.fileEdits)
+    : [`cd /tmp/maintaineros-agent-${issue.number} && printf %s ${shellQuote(encodedPatch)} | base64 -d > /tmp/maintaineros-agent-${issue.number}.patch && git apply --recount /tmp/maintaineros-agent-${issue.number}.patch`];
   return [
     `rm -rf /tmp/maintaineros-agent-${issue.number}`,
     `git clone ${shellQuote(cloneUrl)} /tmp/maintaineros-agent-${issue.number}`,
     `cd /tmp/maintaineros-agent-${issue.number} && git config user.name 'MaintainerOS Agent' && git config user.email 'maintaineros-agent@users.noreply.github.com'`,
     `cd /tmp/maintaineros-agent-${issue.number} && git switch -c ${shellQuote(patchPackage.branchName)}`,
-    `cd /tmp/maintaineros-agent-${issue.number} && printf %s ${shellQuote(encodedPatch)} | base64 -d > /tmp/maintaineros-agent-${issue.number}.patch && git apply --recount /tmp/maintaineros-agent-${issue.number}.patch`,
+    ...applyCommands,
     `cd /tmp/maintaineros-agent-${issue.number} && git diff --check`,
     ...safeVerificationCommands(patchPackage.verificationCommands).map((command) => `cd /tmp/maintaineros-agent-${issue.number} && ${command}`),
     `cd /tmp/maintaineros-agent-${issue.number} && git add ${patchPackage.filesIntended.map(shellQuote).join(' ')} && git commit -m ${shellQuote(patchPackage.commitMessage)}`,
     `cd /tmp/maintaineros-agent-${issue.number} && git push origin ${shellQuote(patchPackage.branchName)}`,
     `cd /tmp/maintaineros-agent-${issue.number} && git rev-parse HEAD`,
   ];
+}
+
+function fileEditCommands(issueNumber: number, fileEdits: AgentFileEdit[]) {
+  return fileEdits.map((edit) => {
+    const encodedContent = Buffer.from(edit.content, 'utf8').toString('base64');
+    const path = shellQuote(edit.path);
+    const dirname = shellQuote(edit.path.includes('/') ? edit.path.slice(0, edit.path.lastIndexOf('/')) : '.');
+    return `cd /tmp/maintaineros-agent-${issueNumber} && mkdir -p ${dirname} && printf %s ${shellQuote(encodedContent)} | base64 -d > ${path}`;
+  });
 }
 
 async function createDaytonaSandbox(repositoryId: string, issueNumber: number) {

@@ -43,6 +43,20 @@ const normalizedNewFilePatch = parseAgentPatchPackage(JSON.stringify({
 ok(normalizedNewFilePatch.unifiedDiff.includes('--- /dev/null'));
 ok(normalizedNewFilePatch.unifiedDiff.includes('+++ b/docs/oauth.md'));
 
+const packageWithFileEdits = parseAgentPatchPackage(JSON.stringify({
+  summary: 'Document OAuth setup.',
+  branchName: 'docs/oauth-setup',
+  commitMessage: 'Document OAuth setup',
+  filesIntended: ['docs/oauth.md'],
+  unifiedDiff: 'diff --git a/docs/oauth.md b/docs/oauth.md\n--- a/docs/oauth.md\n+++ b/docs/oauth.md\n@@ -1 +1 @@\n-old\n+new\n',
+  verificationCommands: ['npm test'],
+  fileEdits: [{ path: 'docs/oauth.md', content: '# OAuth Notes\n\nPublic repo only.\n' }],
+}));
+
+equal(packageWithFileEdits.fileEdits.length, 1);
+equal(packageWithFileEdits.fileEdits[0]?.path, 'docs/oauth.md');
+ok(packageWithFileEdits.fileEdits[0]?.content.includes('Public repo only.'));
+
 throws(
   () => parseAgentPatchPackage(JSON.stringify({
     summary: 'Bad package',

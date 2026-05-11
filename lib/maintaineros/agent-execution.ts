@@ -103,11 +103,12 @@ export async function runAgentExecution(issue: IssueDetailViewModel, repositoryI
 export async function generateClodPatchPackage(issue: IssueDetailViewModel, repositoryId: string): Promise<AgentPatchPackage> {
   if (!process.env.CLOD_API_KEY) throw new Error('CLOD_API_KEY is required to generate an agent patch.');
   const baseUrl = (process.env.CLOD_BASE_URL || 'https://api.clod.io/v1').replace(/\/$/, '');
-  const firstPayload = await requestClodPatchPayload(baseUrl, issue, repositoryId, true);
+  const repositorySnapshot = await buildRepositorySnapshot(repositoryId, issue);
+  const firstPayload = await requestClodPatchPayload(baseUrl, issue, repositoryId, repositorySnapshot, true);
   try {
     return parseAgentPatchPackage(firstPayload?.choices?.[0]?.message?.content);
   } catch (error) {
-    const retryPayload = await requestClodPatchPayload(baseUrl, issue, repositoryId, false);
+    const retryPayload = await requestClodPatchPayload(baseUrl, issue, repositoryId, repositorySnapshot, false);
     try {
       return parseAgentPatchPackage(retryPayload?.choices?.[0]?.message?.content);
     } catch {
@@ -120,7 +121,13 @@ export async function generateClodPatchPackage(issue: IssueDetailViewModel, repo
   }
 }
 
-async function requestClodPatchPayload(baseUrl: string, issue: IssueDetailViewModel, repositoryId: string, includeContextPack: boolean) {
+async function requestClodPatchPayload(
+  baseUrl: string,
+  issue: IssueDetailViewModel,
+  repositoryId: string,
+  repositorySnapshot: RepositorySnapshot,
+  includeContextPack: boolean,
+) {
   const response = await fetch(`${baseUrl}/chat/completions`, {
     method: 'POST',
     headers: {
@@ -140,6 +147,7 @@ async function requestClodPatchPayload(baseUrl: string, issue: IssueDetailViewMo
             'Required schema: {summary:string, branchName:string, commitMessage:string, filesIntended:string[], unifiedDiff:string, verificationCommands:string[]}.',
             'filesIntended must be an array of file paths, not a map.',
             'unifiedDiff must be one git apply compatible patch string beginning with diff --git.',
+            'Use repositorySnapshot before writing the diff. Existing files must be modified with real context, not recreated as new files.',
             'Keep changes scoped to the issue and do not include unrelated files.',
           ].join(' '),
         },
@@ -149,6 +157,7 @@ async function requestClodPatchPayload(baseUrl: string, issue: IssueDetailViewMo
             repositoryId,
             issue: { number: issue.number, title: issue.title, body: issue.body, labels: issue.labels },
             workOrder: issue.workOrder,
+            repositorySnapshot,
             contextPack: includeContextPack ? issue.contextPack : null,
           }),
         },
@@ -158,6 +167,62 @@ async function requestClodPatchPayload(baseUrl: string, issue: IssueDetailViewMo
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(payload?.error?.message || `CLŌD patch request failed with ${response.status}.`);
   return payload;
+}
+
+interface RepositorySnapshot {
+  defaultRef: string;
+  files: Array<{ path: string; exists: boolean; content: string }>;
+}
+
+interface GitHubTreeResponse {
+  tree?: Array<{ path?: string; type?: string; size?: number }>;
+}
+
+interface GitHubContentResponse {
+  type?: string;
+  encoding?: string;
+  content?: string;
+}
+
+async function buildRepositorySnapshot(repositoryId: string, issue: IssueDetailViewModel): Promise<RepositorySnapshot> {
+  const [owner, repo] = repositoryId.split('/');
+  const defaultRef = 'main';
+  const suggestedFiles = issue.workOrder.suggestedFiles.filter(Boolean);
+  if (!suggestedFiles.length) return { defaultRef, files: [] };
+
+  const tree = await githubJson<GitHubTreeResponse>(`https://api.github.com/repos/${owner}/${repo}/git/trees/${defaultRef}?recursive=1`);
+  const paths = (tree.tree ?? [])
+    .filter((item) => item.type === 'blob' && item.path && (item.size ?? 0) <= 20_000)
+    .map((item) => item.path as string)
+    .filter((path) => suggestedFiles.some((suggested) => suggested.endsWith('/') ? path.startsWith(suggested) : path === suggested))
+    .slice(0, 8);
+
+  const files = await Promise.all(paths.map(async (path) => {
+    const encodedPath = path.split('/').map(encodeURIComponent).join('/');
+    const content = await githubJson<GitHubContentResponse>(`https://api.github.com/repos/${owner}/${repo}/contents/${encodedPath}?ref=${defaultRef}`);
+    return {
+      path,
+      exists: content.type === 'file',
+      content: content.encoding === 'base64' && content.content
+        ? Buffer.from(content.content, 'base64').toString('utf8').slice(0, 12_000)
+        : '',
+    };
+  }));
+
+  return { defaultRef, files };
+}
+
+async function githubJson<T>(url: string): Promise<T> {
+  const headers: HeadersInit = {
+    Accept: 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28',
+    'User-Agent': 'MaintainerOS-agent',
+  };
+  const token = githubWorkflowToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const response = await fetch(url, { headers });
+  if (!response.ok) return {} as T;
+  return response.json().catch(() => ({})) as Promise<T>;
 }
 
 function executionCommands(repositoryId: string, issue: IssueDetailViewModel, patchPackage: AgentPatchPackage) {

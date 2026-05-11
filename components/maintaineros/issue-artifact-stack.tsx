@@ -168,6 +168,20 @@ export function IssueArtifactStack({ issue }: { issue: IssueDetailViewModel | nu
             </div>
             <p className="mt-2 text-xs text-[#F9F7F7]/56">{issue.verification.riskSummary}</p>
             {issue.verification.failureReason && <p className="mt-2 text-xs text-[#DBE2EF]">{issue.verification.failureReason}</p>}
+            {(issue.verification.comments ?? []).length > 0 && (
+              <div className="mt-4 rounded-lg border border-[#F9F7F7]/10 p-3">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-[#F9F7F7]/28">Greptile comments</p>
+                <div className="mt-2 space-y-2">
+                  {(issue.verification.comments ?? []).slice(0, 4).map((comment) => (
+                    <a key={comment.id} className="block rounded-lg border border-[#F9F7F7]/10 p-2 text-xs text-[#F9F7F7]/56 hover:border-[#DBE2EF]/30 hover:text-[#DBE2EF]" href={comment.htmlUrl}>
+                      <span className="text-[#F9F7F7]/76">{comment.authorLogin}</span>
+                      {comment.path && <span className="text-[#F9F7F7]/40"> · {comment.path}{comment.line ? `:${comment.line}` : ''}</span>}
+                      <span className="mt-1 block leading-relaxed">{comment.body}</span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               <div>
                 <p className="text-[10px] uppercase tracking-[0.2em] text-[#F9F7F7]/28">Criteria</p>

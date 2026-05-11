@@ -71,7 +71,7 @@ export async function POST(request: Request) {
         title: result.pullRequest!.title,
         baseBranch: result.pullRequest!.baseBranch ?? 'main',
         branchName: result.pullRequest!.branchName,
-        headSha: result.pullRequest!.headSha,
+        headSha: result.pullRequest!.headSha ?? 'unknown',
         status: result.pullRequest!.status,
         htmlUrl: result.pullRequest!.htmlUrl,
         authorLogin: result.pullRequest!.authorLogin,

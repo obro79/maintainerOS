@@ -23,10 +23,10 @@ export function VerificationQueue({ items }: { items: VerificationQueueItemViewM
       </div>
       <div className="divide-y divide-[#F9F7F7]/8">
         {items.map((item) => (
-          <div key={`${item.issueNumber}-${item.verification.status}`} className="grid grid-cols-[1.2fr_0.8fr_1fr_0.8fr_0.6fr] gap-3 px-4 py-3">
+          <div key={`${item.issueNumber ?? 'pr'}-${item.pullRequest?.number ?? 'none'}-${item.verification.status}`} className="grid grid-cols-[1.2fr_0.8fr_1fr_0.8fr_0.6fr] gap-3 px-4 py-3">
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="font-sans text-[10px] text-[#F9F7F7]/40">#{item.issueNumber}</span>
+                <span className="font-sans text-[10px] text-[#F9F7F7]/40">{item.issueNumber ? `#${item.issueNumber}` : 'PR only'}</span>
                 <EvidenceBadge sourceState={item.verification.sourceState ?? 'planned'} />
               </div>
               <p className="mt-1 truncate text-sm text-[#F9F7F7]/88">{item.issueTitle}</p>
@@ -36,7 +36,7 @@ export function VerificationQueue({ items }: { items: VerificationQueueItemViewM
               {item.pullRequest ? (
                 <>
                   <a className="text-[#DBE2EF]" href={item.pullRequest.htmlUrl}>#{item.pullRequest.number}</a>
-                  <p className="mt-1 truncate">{item.pullRequest.headSha}</p>
+                  <p className="mt-1 truncate">{item.pullRequest.headSha ?? 'head sha unknown'}</p>
                   <p className="mt-1">{item.pullRequest.status}</p>
                 </>
               ) : (
@@ -49,6 +49,11 @@ export function VerificationQueue({ items }: { items: VerificationQueueItemViewM
               <p className="mt-1">Findings: {item.verification.blockingFindingsCount}</p>
               <p className="mt-1 truncate">Verified: {item.verification.verifiedSha ?? 'pending'}</p>
               <p className="mt-1 truncate">Current: {item.verification.currentSha ?? item.pullRequest?.headSha ?? 'unknown'}</p>
+              {(item.verification.comments ?? []).slice(0, 2).map((comment) => (
+                <a key={comment.id} className="mt-2 block truncate text-blue-300" href={comment.htmlUrl}>
+                  {comment.authorLogin}: {comment.body}
+                </a>
+              ))}
             </div>
             <p className="text-xs text-[#F9F7F7]/56">{item.blockingReason}</p>
             <div className="flex justify-end gap-2 text-xs">

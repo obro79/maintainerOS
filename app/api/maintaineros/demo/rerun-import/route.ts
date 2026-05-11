@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { createDemoSessionId, DEMO_SESSION_COOKIE, getDemoScenario } from '@/lib/maintaineros/demo-scenarios';
 import { importGitHubIssues } from '@/lib/maintaineros/github-import';
+import { GITHUB_IMPORT_DEFAULT_LIMIT } from '@/lib/maintaineros/limits';
 import { recordTraceEvent } from '@/lib/maintaineros/trace-events';
 
 export const runtime = 'nodejs';
@@ -15,7 +16,7 @@ export async function POST(request: Request) {
 
   const target = githubTargetForScenario(scenario.repositoryId);
   try {
-    const run = await importGitHubIssues({ ...target, limit: 40 });
+    const run = await importGitHubIssues({ ...target, limit: GITHUB_IMPORT_DEFAULT_LIMIT });
     await recordTraceEvent({
       id: `${scenario.repositoryId}-${scenario.targetIssueNumber}-demo-rerun-import-${sessionId}`,
       repositoryId: scenario.repositoryId,

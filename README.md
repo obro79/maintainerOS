@@ -36,3 +36,5 @@ npm run ci
 ```
 
 The checked-in prep path includes GitHub demo seeding, a Neon schema, env template, generated 400/200 issue fallback backlogs, and a lightweight CI check.
+
+GitHub imports default to the first 5,000 open issues so large public repositories can populate the live dashboard without manual limit changes. The import path also captures open pull requests and Greptile comments so verification queues can show live review evidence.

@@ -104,7 +104,11 @@ export function buildGreptileVerification(issue: IssueDetailViewModel, pullReque
 }
 
 export function toVerificationQueueItem(repositoryId: string, issue: IssueDetailViewModel): VerificationQueueItemViewModel {
-  const verification = issue.verification ?? (issue.pullRequest ? buildGreptileVerification(issue, issue.pullRequest, 'fixture') : pendingWithoutPr(issue));
+  const verification = issue.pullRequest && issue.verification?.sourceState === 'live'
+    ? issue.verification
+    : issue.pullRequest
+      ? buildGreptileVerification(issue, issue.pullRequest, issue.verification?.sourceState ?? 'fixture')
+      : issue.verification ?? pendingWithoutPr(issue);
   return {
     issueNumber: issue.number,
     issueTitle: issue.title,

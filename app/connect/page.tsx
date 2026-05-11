@@ -1,8 +1,11 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
 import { motion } from 'framer-motion';
-import { ShieldCheck, Clock, CreditCard, ChevronRight } from 'lucide-react';
+import { ShieldCheck, Clock, CreditCard, ChevronRight, Loader2 } from 'lucide-react';
+import { GITHUB_IMPORT_DEFAULT_LIMIT, GITHUB_IMPORT_MAX_LIMIT } from '@/lib/maintaineros/limits';
 import { cn } from '@/lib/utils';
 
 function GitHubMark() {
@@ -27,6 +30,41 @@ const STEPS = [
 ];
 
 export default function ConnectPage() {
+  const [owner, setOwner] = useState('');
+  const [repo, setRepo] = useState('');
+  const [limit, setLimit] = useState(String(GITHUB_IMPORT_DEFAULT_LIMIT));
+  const [status, setStatus] = useState<'idle' | 'importing' | 'succeeded' | 'failed'>('idle');
+  const [message, setMessage] = useState('');
+
+  async function submitImport(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setStatus('importing');
+    setMessage('');
+
+    const numericLimit = Math.min(Math.max(Number(limit) || GITHUB_IMPORT_DEFAULT_LIMIT, 1), GITHUB_IMPORT_MAX_LIMIT);
+    setLimit(String(numericLimit));
+
+    try {
+      const response = await fetch('/api/maintaineros/import-github', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ owner, repo, limit: numericLimit }),
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error ?? 'GitHub import failed.');
+      }
+
+      const importedIssues = payload.run?.importedIssueCount ?? 0;
+      const importedPullRequests = payload.run?.importedPullRequestCount ?? 0;
+      setStatus('succeeded');
+      setMessage(`Imported ${importedIssues} issues and ${importedPullRequests} PRs.`);
+    } catch (error) {
+      setStatus('failed');
+      setMessage(error instanceof Error ? error.message : 'GitHub import failed.');
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#030509] font-sans text-white flex overflow-x-hidden">
 
@@ -144,20 +182,65 @@ export default function ConnectPage() {
               </p>
             </div>
 
-            {/* OAuth button */}
-            <motion.button
-              whileHover={{ scale: 1.02, y: -1 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full flex items-center justify-center gap-3 px-6 py-3.5 rounded-xl bg-white text-black font-semibold text-[15px] shadow-2xl shadow-black/50 hover:bg-zinc-100 transition-all duration-200 mb-3 cursor-pointer">
-              <GitHubMark />
-              Continue with GitHub
-            </motion.button>
+            <form onSubmit={submitImport} className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block">
+                  <span className="mb-1.5 block text-[10px] uppercase tracking-[0.18em] text-zinc-600">Owner</span>
+                  <input
+                    value={owner}
+                    onChange={(event) => setOwner(event.target.value)}
+                    required
+                    autoComplete="off"
+                    placeholder="vercel"
+                    className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 text-sm text-white outline-none transition-colors placeholder:text-zinc-700 focus:border-emerald-500/50"
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block text-[10px] uppercase tracking-[0.18em] text-zinc-600">Repo</span>
+                  <input
+                    value={repo}
+                    onChange={(event) => setRepo(event.target.value)}
+                    required
+                    autoComplete="off"
+                    placeholder="next.js"
+                    className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 text-sm text-white outline-none transition-colors placeholder:text-zinc-700 focus:border-emerald-500/50"
+                  />
+                </label>
+              </div>
+              <label className="block">
+                <span className="mb-1.5 block text-[10px] uppercase tracking-[0.18em] text-zinc-600">Import limit</span>
+                <input
+                  value={limit}
+                  onChange={(event) => setLimit(event.target.value)}
+                  required
+                  type="number"
+                  min={1}
+                  max={GITHUB_IMPORT_MAX_LIMIT}
+                  step={1}
+                  className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 text-sm text-white outline-none transition-colors focus:border-emerald-500/50"
+                />
+              </label>
+              <motion.button
+                type="submit"
+                disabled={status === 'importing'}
+                whileHover={{ scale: status === 'importing' ? 1 : 1.02, y: status === 'importing' ? 0 : -1 }}
+                whileTap={{ scale: status === 'importing' ? 1 : 0.98 }}
+                className="mb-3 flex w-full cursor-pointer items-center justify-center gap-3 rounded-xl bg-white px-6 py-3.5 text-[15px] font-semibold text-black shadow-2xl shadow-black/50 transition-all duration-200 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60">
+                {status === 'importing' ? <Loader2 className="size-5 animate-spin" /> : <GitHubMark />}
+                {status === 'importing' ? 'Importing backlog' : 'Import GitHub repo'}
+              </motion.button>
+              {message && (
+                <p className={cn(
+                  'rounded-xl border px-3 py-2 text-xs leading-relaxed',
+                  status === 'succeeded' ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-200' : 'border-red-500/20 bg-red-500/10 text-red-200',
+                )}>
+                  {message}
+                </p>
+              )}
+            </form>
 
-            <p className="text-xs text-zinc-600 text-center mb-8">
-              By continuing you agree to the{' '}
-              <Link href="#" className="text-zinc-500 hover:text-zinc-300 underline underline-offset-2 transition-colors">Terms</Link>
-              {' '}and{' '}
-              <Link href="#" className="text-zinc-500 hover:text-zinc-300 underline underline-offset-2 transition-colors">Privacy Policy</Link>.
+            <p className="mb-8 mt-3 text-center text-xs text-zinc-600">
+              Imports up to {GITHUB_IMPORT_MAX_LIMIT.toLocaleString()} open issues and PRs with read-only GitHub access.
             </p>
 
             {/* Trust stats */}

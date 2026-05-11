@@ -23,6 +23,13 @@ export interface GreptileQueryPayload {
   sources?: unknown;
 }
 
+export interface GreptileRepositoryStatusPayload {
+  status?: unknown;
+  sha?: unknown;
+  filesProcessed?: unknown;
+  numFiles?: unknown;
+}
+
 export function buildGreptileHeaders(apiKey: string, githubToken: string): HeadersInit {
   return {
     Authorization: `Bearer ${apiKey}`,
@@ -40,6 +47,10 @@ export function buildGreptileRepositoryRequest(repositoryId: string, branch: str
     reload: false,
     notify: false,
   };
+}
+
+export function buildGreptileRepositoryStatusPath(repositoryId: string, branch: string) {
+  return `/repositories/${encodeURIComponent(`github:${branch}:${repositoryId}`)}`;
 }
 
 export function buildGreptileQueryRequest(input: {

@@ -125,6 +125,9 @@ assertIncludes(files.agentExecution, 'process/execute', 'agent execution runs co
 assertIncludes(files.greptileShape, 'https://api.greptile.com/v2', 'Greptile defaults to the documented v2 API root');
 assertIncludes(files.greptile, '/repositories', 'Greptile verification indexes repository branches before querying');
 assertIncludes(files.greptile, '/query', 'Greptile verification queries indexed repositories for PR proof');
+assertIncludes(files.greptile, 'buildGreptileRepositoryStatusPath', 'Greptile verification waits for branch indexing before querying');
+assertIncludes(files.greptile, 'check-runs', 'Greptile verification can fall back to GitHub review/check evidence');
+assertIncludes(files.greptile, '@greptileai', 'Greptile verification tells maintainers how to trigger review evidence when pending');
 assertIncludes(files.greptileShape, 'X-GitHub-Token', 'Greptile requests include the GitHub token header');
 assertIncludes(files.greptile, 'GREPTILE_GITHUB_TOKEN || process.env.GITHUB_TOKEN', 'Greptile can use a dedicated or shared GitHub token');
 assertIncludes(files.verifyPrRoute, 'requestMeta', 'verification provider runs store Greptile request metadata');

@@ -3,6 +3,7 @@ import {
   buildGreptileHeaders,
   buildGreptileQueryRequest,
   buildGreptileRepositoryRequest,
+  buildGreptileRepositoryStatusPath,
   GREPTILE_DEFAULT_BASE_URL,
   normalizeGreptileQueryVerification,
 } from '../lib/maintaineros/greptile-shape';
@@ -39,6 +40,10 @@ deepEqual(buildGreptileRepositoryRequest('obro79/maintainerOS', pullRequest.bran
   reload: false,
   notify: false,
 });
+equal(
+  buildGreptileRepositoryStatusPath('obro79/maintainerOS', pullRequest.branchName),
+  '/repositories/github%3Aof%2Fagent-flow-routing-ui%3Aobro79%2FmaintainerOS',
+);
 
 const headers = buildGreptileHeaders('greptile-key', 'github-token') as Record<string, string>;
 equal(headers.Authorization, 'Bearer greptile-key');

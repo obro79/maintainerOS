@@ -94,7 +94,8 @@ export async function POST(request: Request) {
       filesTouched: result.verification.filesTouched,
     });
 
-    return NextResponse.json({ ok: result.ok, verification: persisted.viewModel, error: result.errorMessage ?? null }, { status: result.ok ? 200 : 502 });
+    const status = result.ok ? 200 : result.verification.status === 'pending' ? 202 : 502;
+    return NextResponse.json({ ok: result.ok, verification: persisted.viewModel, error: result.errorMessage ?? null }, { status });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown Greptile verification error.';
     return NextResponse.json({ ok: false, error: message }, { status: 500 });

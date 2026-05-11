@@ -236,7 +236,7 @@ function executionCommands(repositoryId: string, issue: IssueDetailViewModel, pa
     `git clone ${shellQuote(cloneUrl)} /tmp/maintaineros-agent-${issue.number}`,
     `cd /tmp/maintaineros-agent-${issue.number} && git config user.name 'MaintainerOS Agent' && git config user.email 'maintaineros-agent@users.noreply.github.com'`,
     `cd /tmp/maintaineros-agent-${issue.number} && git switch -c ${shellQuote(patchPackage.branchName)}`,
-    `cd /tmp/maintaineros-agent-${issue.number} && printf %s ${shellQuote(encodedPatch)} | base64 -d > /tmp/maintaineros-agent-${issue.number}.patch && git apply /tmp/maintaineros-agent-${issue.number}.patch`,
+    `cd /tmp/maintaineros-agent-${issue.number} && printf %s ${shellQuote(encodedPatch)} | base64 -d > /tmp/maintaineros-agent-${issue.number}.patch && git apply --recount /tmp/maintaineros-agent-${issue.number}.patch`,
     `cd /tmp/maintaineros-agent-${issue.number} && git diff --check`,
     ...safeVerificationCommands(patchPackage.verificationCommands).map((command) => `cd /tmp/maintaineros-agent-${issue.number} && ${command}`),
     `cd /tmp/maintaineros-agent-${issue.number} && git add ${patchPackage.filesIntended.map(shellQuote).join(' ')} && git commit -m ${shellQuote(patchPackage.commitMessage)}`,

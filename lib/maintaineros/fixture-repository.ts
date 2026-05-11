@@ -32,6 +32,7 @@ import { listPersistedTraceEvents, mergeTraceEvents } from './trace-events';
 import { buildDeterministicWorkOrder } from './work-orders';
 import { buildSponsorProofFromIssue } from './sponsor-proof';
 import { buildRouteHistoryFromTrace } from './route-history';
+import { ROUTED_ISSUE_DISPLAY_LIMIT } from './limits';
 
 interface FixtureRepositoryFile {
   repository: {
@@ -108,8 +109,9 @@ export class FixtureMaintainerOSRepository implements MaintainerOSRepository {
   async getDashboard(repositoryId = process.env.MAINTAINEROS_DEMO_REPO_ID || 'maintaineros-demo-large'): Promise<DashboardViewModel> {
     const fixture = loadFixture(repositoryId);
     const sourceState = this.sourceState;
-    const issues = fixture.issues.slice(0, 40).map(toIssueCard);
-    const issueDetails = await Promise.all(fixture.issues.slice(0, 40).map((issue) => toIssueDetailWithPersistedTrace(repositoryId, fixture.repository.id, issue, sourceState)));
+    const routedIssues = fixture.issues.slice(0, ROUTED_ISSUE_DISPLAY_LIMIT);
+    const issues = routedIssues.map(toIssueCard);
+    const issueDetails = await Promise.all(routedIssues.map((issue) => toIssueDetailWithPersistedTrace(repositoryId, fixture.repository.id, issue, sourceState)));
     const selectedIssue = await toIssueDetailWithPersistedTrace(repositoryId, fixture.repository.id, fixture.issues.find((issue) => issue.number === 41) ?? fixture.issues[0], sourceState);
 
     return {
@@ -172,7 +174,7 @@ export class FixtureMaintainerOSRepository implements MaintainerOSRepository {
   async getSandboxAttempts(repositoryId = process.env.MAINTAINEROS_DEMO_REPO_ID || 'maintaineros-demo-large'): Promise<SandboxAttemptListItemViewModel[]> {
     const fixture = loadFixture(repositoryId);
     const details = await Promise.all(fixture.issues
-      .slice(0, 40)
+      .slice(0, ROUTED_ISSUE_DISPLAY_LIMIT)
       .map(async (issue) => applyStoredClodArtifact(repositoryId, applyStoredClodArtifact(fixture.repository.id, await toIssueDetail(issue, this.sourceState, repositoryId)))));
     return details.flatMap((issue) => toSandboxAttemptListItems(repositoryId, issue));
   }
@@ -180,7 +182,7 @@ export class FixtureMaintainerOSRepository implements MaintainerOSRepository {
   async getVerificationQueue(repositoryId = process.env.MAINTAINEROS_DEMO_REPO_ID || 'maintaineros-demo-large'): Promise<VerificationQueueItemViewModel[]> {
     const fixture = loadFixture(repositoryId);
     const details = await Promise.all(fixture.issues
-      .slice(0, 40)
+      .slice(0, ROUTED_ISSUE_DISPLAY_LIMIT)
       .map(async (issue) => applyStoredClodArtifact(repositoryId, applyStoredClodArtifact(fixture.repository.id, await toIssueDetail(issue, this.sourceState, repositoryId)))));
     return details
       .filter((issue) => issue.pullRequest || issue.verification)
@@ -588,7 +590,7 @@ function buildPullRequestTraceEvents(issue: FixtureIssue, pullRequest: IssueDeta
       detail: `${pullRequest.authorLogin} opened ${pullRequest.branchName}; owner=${pullRequest.authorOwnerType}; automationOwned=${pullRequest.automationOwned}; MaintainerOS tied the PR back to issue #${issue.number}.`,
       status: pullRequest.status === 'closed' ? 'blocked' : 'succeeded',
       artifactUrl: pullRequest.htmlUrl,
-      relatedId: pullRequest.headSha,
+      relatedId: pullRequest.headSha ?? undefined,
       filesTouched: workOrder.suggestedFiles,
     },
   ];

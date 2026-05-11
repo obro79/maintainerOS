@@ -119,7 +119,7 @@ function buildAutomationPullRequestTraceEvent(
     detail: `${pullRequest.authorLogin} opened ${pullRequest.branchName}; owner=${pullRequest.authorOwnerType}; automationOwned=${pullRequest.automationOwned}. Greptile verification is still required before completion.`,
     status: 'succeeded',
     artifactUrl: pullRequest.htmlUrl,
-    relatedId: pullRequest.headSha,
+    relatedId: pullRequest.headSha ?? undefined,
   };
 }
 

@@ -10,6 +10,7 @@ import {
   type IssueCardViewModel,
   type IssueDetailViewModel,
   type IssueTraceEventViewModel,
+  type GreptileCommentViewModel,
   type MaintainerOSRepository,
   type PullRequestViewModel,
   type RouteBucketViewModel,
@@ -33,6 +34,7 @@ import { buildRouteHistoryFromTrace } from './route-history';
 import { listTraceEvents, mergeTraceEvents } from './trace-events';
 import { getProviderHealth } from './provider-runtime';
 import { getWorkflowArtifacts, type WorkflowArtifacts } from './workflow-state';
+import { ROUTED_ISSUE_DISPLAY_LIMIT } from './limits';
 
 interface RepositoryRow {
   id: string;
@@ -64,6 +66,7 @@ interface ImportRunRow {
   repo: string;
   requested_limit: number;
   imported_issue_count: number;
+  imported_pull_request_count: number;
   skipped_pull_request_count: number;
   status: ImportRunViewModel['status'];
   source_state: ImportRunViewModel['sourceState'];
@@ -75,22 +78,46 @@ interface ImportRunRow {
 interface PullRequestRow {
   id: string;
   repository_id: string;
-  issue_number: number;
+  issue_number: number | null;
+  linked_issue_number: number | null;
   issue_id: string | null;
   work_order_id: string | null;
   provider: 'github';
   number: number;
   title: string;
+  body?: string;
   base_branch: string | null;
   branch_name: string;
-  head_sha: string;
+  head_sha: string | null;
   html_url: string;
+  author?: string;
   author_login: string;
   author_owner_type: PullRequestViewModel['authorOwnerType'];
   automation_owned: boolean;
   status: PullRequestViewModel['status'];
+  state?: 'open' | 'closed' | 'merged';
+  draft?: boolean;
   linked_at: Date | string | null;
   source_state: ArtifactSourceState;
+  merged_at: Date | string | null;
+  created_at: Date | string | null;
+  updated_at: Date | string | null;
+}
+
+interface PullRequestCommentRow {
+  id: string;
+  pull_request_number: number;
+  author: string;
+  body: string;
+  html_url: string;
+  path: string | null;
+  line: number | null;
+  created_at: Date | string | null;
+}
+
+interface PullRequestEvidenceMaps {
+  pullRequestsByIssue: Map<number, PullRequestRow>;
+  commentsByPullRequest: Map<number, GreptileCommentViewModel[]>;
 }
 
 interface VerificationRunRow {
@@ -116,11 +143,12 @@ export class NeonMaintainerOSRepository implements MaintainerOSRepository {
     return withPostgres(async (client) => {
       const repository = await findRepository(client, repositoryId);
       const issues = await client.query<IssueRow>(
-        `select * from maintaineros_issues where repository_id = $1 order by updated_at desc nulls last, number desc limit 40`,
-        [repository.id],
+        `select * from maintaineros_issues where repository_id = $1 order by updated_at desc nulls last, number desc limit $2`,
+        [repository.id, ROUTED_ISSUE_DISPLAY_LIMIT],
       );
+      const evidence = await loadPullRequestEvidence(client, repository.id);
       const cards = issues.rows.map(toIssueCard);
-      const details = await Promise.all(issues.rows.map((issue) => toIssueDetailWithPersistedTrace(client, repository.id, issue)));
+      const details = await Promise.all(issues.rows.map((issue) => toIssueDetailWithPersistedTrace(client, repository.id, issue, evidence)));
       const selectedIssue = details[0] ?? emptyIssueDetail(repository.id);
       const latestImportRun = await getLatestImportRun(client, repository.owner, repository.name);
       const sponsorProof = mergeSponsorProof(await listSponsorProofRuns(client, repository.id));
@@ -154,7 +182,7 @@ export class NeonMaintainerOSRepository implements MaintainerOSRepository {
         selectedIssue,
         evaluation: liveEvaluation(cards.length),
         providerStatuses: [
-          { provider: 'github', sourceState: 'live', status: 'connected', label: 'GitHub', lastRunAt: latestImportRun?.finishedAt ?? undefined, detail: latestImportRun ? `${latestImportRun.importedIssueCount} imported, ${latestImportRun.skippedPullRequestCount} PRs skipped.` : 'Ready for GitHub import.' },
+          { provider: 'github', sourceState: 'live', status: 'connected', label: 'GitHub', lastRunAt: latestImportRun?.finishedAt ?? undefined, detail: latestImportRun ? `${latestImportRun.importedIssueCount} issues and ${latestImportRun.importedPullRequestCount ?? 0} PRs imported.` : 'Ready for GitHub import.' },
           { provider: 'neon', sourceState: 'live', status: 'connected', label: 'Neon', lastRunAt: latestImportRun?.finishedAt ?? undefined, detail: 'Reading imported issues from Neon.' },
           { provider: 'clod', sourceState: 'planned', status: 'planned', label: 'CLōD', detail: 'Routing artifacts land in Phase 2.' },
           buildNiaProviderStatus(),
@@ -175,7 +203,8 @@ export class NeonMaintainerOSRepository implements MaintainerOSRepository {
         [repository.id, issueNumber],
       );
       if (!result.rows[0]) return null;
-      return toIssueDetailWithPersistedTrace(client, repository.id, result.rows[0]);
+      const evidence = await loadPullRequestEvidence(client, repository.id);
+      return toIssueDetailWithPersistedTrace(client, repository.id, result.rows[0], evidence);
     });
   }
 
@@ -196,7 +225,19 @@ export class NeonMaintainerOSRepository implements MaintainerOSRepository {
 
   async getVerificationQueue(repositoryId = process.env.MAINTAINEROS_DEMO_REPO_ID || ''): Promise<VerificationQueueItemViewModel[]> {
     const dashboard = await this.getDashboard(repositoryId);
-    return dashboard.issueDetails.map((issue) => toVerificationQueueItem(dashboard.repository.id, issue));
+    const linkedPullRequestNumbers = new Set(dashboard.issueDetails.flatMap((issue) => issue.pullRequest ? [issue.pullRequest.number] : []));
+    const pullRequestItems = await withPostgres(async (client) => {
+      const repository = await findRepository(client, repositoryId);
+      const pullRequests = await listPullRequests(client, repository.id);
+      const comments = await listGreptileComments(client, repository.id);
+      return pullRequests
+        .filter((pullRequest) => !linkedPullRequestNumbers.has(pullRequest.number))
+        .map((pullRequest) => toPullRequestVerificationItem(pullRequest, comments.get(pullRequest.number) ?? []));
+    });
+    return [
+      ...dashboard.issueDetails.map((issue) => toVerificationQueueItem(dashboard.repository.id, issue)),
+      ...pullRequestItems,
+    ];
   }
 
   async getBountyTasks(repositoryId = process.env.MAINTAINEROS_DEMO_REPO_ID || ''): Promise<ClustlyBountyListItemViewModel[]> {
@@ -207,12 +248,37 @@ export class NeonMaintainerOSRepository implements MaintainerOSRepository {
   }
 }
 
-async function toIssueDetailWithPersistedTrace(client: PgClient, repositoryId: string, issue: IssueRow) {
+async function toIssueDetailWithPersistedTrace(client: PgClient, repositoryId: string, issue: IssueRow, evidence?: PullRequestEvidenceMaps) {
   const [persistedTrace, workflowArtifacts] = await Promise.all([
     listTraceEvents(client, repositoryId, issue.number),
     getWorkflowArtifacts(client, repositoryId, issue.number),
   ]);
-  return applyStoredClodArtifact(repositoryId, await toIssueDetail(client, issue, persistedTrace, workflowArtifacts));
+  let pullRequest = evidence?.pullRequestsByIssue.get(issue.number) ?? null;
+  pullRequest ??= await findPullRequestForIssue(client, repositoryId, issue.number);
+  let comments: GreptileCommentViewModel[] = [];
+  if (pullRequest) {
+    comments = evidence?.commentsByPullRequest.get(pullRequest.number) ?? [];
+    if (comments.length === 0 && !evidence) {
+      comments = await listGreptileCommentsForPullRequest(client, repositoryId, pullRequest.number);
+    }
+  }
+  const detail = applyStoredClodArtifact(repositoryId, await toIssueDetail(client, issue, persistedTrace, workflowArtifacts));
+  const detailWithPullRequest = pullRequest ? attachPullRequestEvidence(detail, pullRequest, comments) : detail;
+  return detailWithPullRequest;
+}
+
+function attachPullRequestEvidence(detail: IssueDetailViewModel, pullRequest: PullRequestRow, comments: GreptileCommentViewModel[]): IssueDetailViewModel {
+  const pullRequestView = toPullRequestViewModel(pullRequest);
+  const verification = buildLiveGreptileVerification(pullRequestView, comments);
+  const withEvidence = hidePayoutArtifactsForNonClustlyRoutes({
+    ...detail,
+    pullRequest: pullRequestView,
+    verification,
+  });
+  return {
+    ...withEvidence,
+    payoutGate: canReleasePayout(withEvidence),
+  };
 }
 
 async function findRepository(client: PgClient, repositoryId: string): Promise<RepositoryRow> {
@@ -239,6 +305,153 @@ async function getLatestImportRun(client: PgClient, owner: string, repo: string)
     [owner, repo],
   );
   return result.rows[0] ? toImportRun(result.rows[0]) : null;
+}
+
+async function loadPullRequestEvidence(client: PgClient, repositoryId: string): Promise<PullRequestEvidenceMaps> {
+  const pullRequests = await listPullRequests(client, repositoryId);
+  const commentsByPullRequest = await listGreptileComments(client, repositoryId);
+  const pullRequestsByIssue = new Map<number, PullRequestRow>();
+  for (const pullRequest of pullRequests) {
+    const issueNumber = pullRequest.linked_issue_number ?? pullRequest.issue_number;
+    if (issueNumber == null || issueNumber === 0) continue;
+    if (pullRequestsByIssue.has(issueNumber)) continue;
+    pullRequestsByIssue.set(issueNumber, pullRequest);
+  }
+  return { pullRequestsByIssue, commentsByPullRequest };
+}
+
+async function findPullRequestForIssue(client: PgClient, repositoryId: string, issueNumber: number): Promise<PullRequestRow | null> {
+  const result = await client.query<PullRequestRow>(
+    `select * from maintaineros_pull_requests
+     where repository_id = $1 and (linked_issue_number = $2 or issue_number = $2)
+     order by updated_at desc nulls last, number desc
+     limit 1`,
+    [repositoryId, issueNumber],
+  );
+  return result.rows[0] ?? null;
+}
+
+async function listPullRequests(client: PgClient, repositoryId: string): Promise<PullRequestRow[]> {
+  const result = await client.query<PullRequestRow>(
+    `select * from maintaineros_pull_requests
+     where repository_id = $1
+     order by updated_at desc nulls last, number desc
+     limit 5000`,
+    [repositoryId],
+  );
+  return result.rows;
+}
+
+async function listGreptileCommentsForPullRequest(client: PgClient, repositoryId: string, pullRequestNumber: number): Promise<GreptileCommentViewModel[]> {
+  const result = await client.query<PullRequestCommentRow>(
+    `select * from maintaineros_pull_request_comments
+     where repository_id = $1 and pull_request_number = $2
+     order by created_at asc nulls last`,
+    [repositoryId, pullRequestNumber],
+  );
+  return result.rows.map(toGreptileComment);
+}
+
+async function listGreptileComments(client: PgClient, repositoryId: string): Promise<Map<number, GreptileCommentViewModel[]>> {
+  const result = await client.query<PullRequestCommentRow>(
+    `select * from maintaineros_pull_request_comments
+     where repository_id = $1
+     order by pull_request_number asc, created_at asc nulls last`,
+    [repositoryId],
+  );
+  const comments = new Map<number, GreptileCommentViewModel[]>();
+  for (const row of result.rows) {
+    const pullRequestComments = comments.get(row.pull_request_number) ?? [];
+    pullRequestComments.push(toGreptileComment(row));
+    comments.set(row.pull_request_number, pullRequestComments);
+  }
+  return comments;
+}
+
+function toPullRequestViewModel(row: PullRequestRow): PullRequestViewModel {
+  return {
+    provider: 'github',
+    id: row.id,
+    sourceState: row.source_state ?? 'live',
+    issueId: row.issue_id ?? undefined,
+    workOrderId: row.work_order_id,
+    number: row.number,
+    title: row.title,
+    baseBranch: row.base_branch,
+    branchName: row.branch_name,
+    headSha: row.head_sha,
+    status: row.draft ? 'draft' : row.merged_at ? 'merged' : row.status ?? (row.state === 'closed' ? 'closed' : 'open'),
+    htmlUrl: row.html_url,
+    authorLogin: row.author_login ?? row.author ?? 'unknown',
+    authorOwnerType: row.author_owner_type ?? 'unknown',
+    automationOwned: row.automation_owned ?? false,
+    linkedAt: toIso(row.linked_at ?? row.created_at),
+  };
+}
+
+function toGreptileComment(row: PullRequestCommentRow): GreptileCommentViewModel {
+  return {
+    id: row.id,
+    authorLogin: row.author,
+    body: row.body,
+    htmlUrl: row.html_url,
+    path: row.path,
+    line: row.line,
+    createdAt: toIso(row.created_at) ?? new Date().toISOString(),
+  };
+}
+
+function buildLiveGreptileVerification(pullRequest: PullRequestViewModel, comments: GreptileCommentViewModel[]): VerificationViewModel {
+  const hasBlockingFinding = comments.some((comment) => /block|fail|unresolved|incorrect|regression/i.test(comment.body));
+  const status: VerificationViewModel['status'] = comments.length === 0 ? 'pending' : hasBlockingFinding ? 'failed' : 'passed';
+  const summary = comments.length === 0
+    ? `PR #${pullRequest.number} is imported, but no Greptile comments were found yet.`
+    : `Greptile left ${comments.length} comment${comments.length === 1 ? '' : 's'} on PR #${pullRequest.number}.`;
+  const findings = comments.map((comment) => summarizeComment(comment.body));
+
+  return {
+    provider: 'greptile',
+    sourceState: 'live',
+    status,
+    summary,
+    criteria: ['Review imported Greptile PR comments.', 'Confirm blocking comments are resolved before merge or payout.'],
+    filesTouched: comments.flatMap((comment) => comment.path ? [comment.path] : []),
+    filesInspected: comments.flatMap((comment) => comment.path ? [comment.path] : []),
+    verifiedSha: status === 'pending' ? null : pullRequest.headSha,
+    currentSha: pullRequest.headSha,
+    blockingFindingsCount: hasBlockingFinding ? comments.length : 0,
+    blockingFindings: hasBlockingFinding ? findings : [],
+    comments,
+    riskSummary: comments.length > 0
+      ? 'Live Greptile comment evidence was imported from GitHub PR discussion and review threads.'
+      : 'No live Greptile evidence has been imported for this PR yet.',
+    failureReason: hasBlockingFinding ? 'Greptile comments appear to contain blocking findings.' : null,
+    verifiedAt: comments.at(-1)?.createdAt ?? null,
+    isStale: false,
+  };
+}
+
+function toPullRequestVerificationItem(pullRequest: PullRequestRow, comments: GreptileCommentViewModel[]): VerificationQueueItemViewModel {
+  const pullRequestView = toPullRequestViewModel(pullRequest);
+  const verification = buildLiveGreptileVerification(pullRequestView, comments);
+  return {
+    issueNumber: pullRequest.linked_issue_number ?? pullRequest.issue_number,
+    issueTitle: (pullRequest.linked_issue_number ?? pullRequest.issue_number) ? `Linked issue #${pullRequest.linked_issue_number ?? pullRequest.issue_number}` : 'No linked issue detected',
+    route: 'maintainer-review',
+    detailUrl: pullRequest.html_url,
+    traceUrl: pullRequest.html_url,
+    pullRequest: pullRequestView,
+    verification,
+    blockingReason: verification.status === 'passed'
+      ? 'Greptile comments imported.'
+      : verification.status === 'failed'
+        ? verification.failureReason ?? 'Greptile comments need review.'
+        : 'No Greptile comments imported yet.',
+  };
+}
+
+function summarizeComment(body: string) {
+  return body.replace(/\s+/g, ' ').trim().slice(0, 180);
 }
 
 function toIssueCard(issue: IssueRow): IssueCardViewModel {
@@ -442,7 +655,7 @@ function buildLivePullRequestTraceEvents(issue: IssueRow, pullRequest: PullReque
       detail: `${pullRequest.authorLogin} opened ${pullRequest.branchName}; owner=${pullRequest.authorOwnerType}; automationOwned=${pullRequest.automationOwned}.`,
       status: pullRequest.status === 'closed' ? 'blocked' : pullRequest.status === 'merged' ? 'passed' : 'succeeded',
       artifactUrl: pullRequest.htmlUrl,
-      relatedId: pullRequest.headSha,
+      relatedId: pullRequest.headSha ?? undefined,
     },
   ];
 }
@@ -693,6 +906,7 @@ function toImportRun(row: ImportRunRow): ImportRunViewModel {
     repo: row.repo,
     requestedLimit: row.requested_limit,
     importedIssueCount: row.imported_issue_count,
+    importedPullRequestCount: row.imported_pull_request_count,
     skippedPullRequestCount: row.skipped_pull_request_count,
     status: row.status,
     sourceState: row.source_state,

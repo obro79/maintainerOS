@@ -7,7 +7,7 @@ loadEnvLocal();
 
 const owner = process.env.GITHUB_IMPORT_OWNER || "vercel";
 const repo = process.env.GITHUB_IMPORT_REPO || "next.js";
-const limit = Number(process.env.NEON_SMOKE_IMPORT_LIMIT || process.env.GITHUB_IMPORT_LIMIT || "40");
+const limit = Number(process.env.NEON_SMOKE_IMPORT_LIMIT || process.env.GITHUB_IMPORT_LIMIT || "5000");
 
 if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL is required.");
@@ -31,6 +31,8 @@ if (process.env.GITHUB_TOKEN) {
 
 const repository = await githubFetch(`https://api.github.com/repos/${owner}/${repo}`);
 const { issues, skippedPullRequestCount } = await fetchIssues(owner, repo, limit);
+const pullRequests = await fetchPullRequests(owner, repo, limit);
+const greptileCommentsByPullRequest = await fetchGreptileCommentsByPullRequest(owner, repo);
 const repositoryId = `${owner}/${repo}`.toLowerCase();
 const startedAt = new Date();
 const runId = `github-${owner}-${repo}-${startedAt.getTime()}`.toLowerCase();
@@ -141,15 +143,91 @@ try {
     );
   }
 
+  for (const pullRequest of pullRequests) {
+    const linkedIssueNumber = findLinkedIssueNumber(pullRequest.body || "");
+    await client.query(
+      `insert into maintaineros_pull_requests
+        (id, repository_id, issue_number, number, title, body, author, author_login, branch_name, head_sha, base_branch, html_url, status, draft, merged_at, linked_issue_number, linked_at, created_at, updated_at, closed_at)
+       values ($1, $2, $3, $4, $5, $6, $7, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $16, $17, $18)
+       on conflict (repository_id, number) do update set
+        title = excluded.title,
+        body = excluded.body,
+        author = excluded.author,
+        author_login = excluded.author_login,
+        branch_name = excluded.branch_name,
+        head_sha = excluded.head_sha,
+        base_branch = excluded.base_branch,
+        html_url = excluded.html_url,
+        status = excluded.status,
+        draft = excluded.draft,
+        merged_at = excluded.merged_at,
+        linked_issue_number = excluded.linked_issue_number,
+        linked_at = excluded.linked_at,
+        created_at = excluded.created_at,
+        updated_at = excluded.updated_at,
+        closed_at = excluded.closed_at`,
+      [
+        String(pullRequest.id),
+        repositoryId,
+        linkedIssueNumber || 0,
+        pullRequest.number,
+        pullRequest.title,
+        pullRequest.body || "",
+        pullRequest.user?.login || "unknown",
+        pullRequest.head?.ref || "",
+        pullRequest.head?.sha || "unknown",
+        pullRequest.base?.ref || "",
+        pullRequest.html_url,
+        pullRequest.merged_at ? "merged" : pullRequest.state,
+        Boolean(pullRequest.draft),
+        pullRequest.merged_at,
+        linkedIssueNumber,
+        pullRequest.created_at,
+        pullRequest.updated_at,
+        pullRequest.closed_at
+      ]
+    );
+
+    const greptileComments = greptileCommentsByPullRequest.get(pullRequest.number) || [];
+    for (const comment of greptileComments) {
+      await client.query(
+        `insert into maintaineros_pull_request_comments
+          (id, repository_id, pull_request_number, provider, author, body, html_url, path, line, created_at, updated_at)
+         values ($1, $2, $3, 'greptile', $4, $5, $6, $7, $8, $9, $10)
+         on conflict (repository_id, pull_request_number, id) do update set
+          author = excluded.author,
+          body = excluded.body,
+          html_url = excluded.html_url,
+          path = excluded.path,
+          line = excluded.line,
+          created_at = excluded.created_at,
+          updated_at = excluded.updated_at`,
+        [
+          `${comment.kind || "comment"}-${comment.id}`,
+          repositoryId,
+          pullRequest.number,
+          comment.user?.login || "unknown",
+          comment.body || "",
+          comment.html_url,
+          comment.path || null,
+          comment.line || null,
+          comment.created_at,
+          comment.updated_at
+        ]
+      );
+    }
+  }
+
   const finishedAt = new Date();
   await client.query(
     `update maintaineros_import_runs
      set imported_issue_count = $2,
          skipped_pull_request_count = $3,
-         status = $4,
-         finished_at = $5
+         imported_pull_request_count = $4,
+         status = $5,
+         finished_at = $6
      where id = $1`,
-    [runId, issues.length, skippedPullRequestCount, issues.length > 0 ? "succeeded" : "partial", finishedAt.toISOString()]
+    [runId, issues.length, skippedPullRequestCount, pullRequests.length, issues.length > 0 || pullRequests.length > 0 ? "succeeded" : "partial", finishedAt.toISOString()]
   );
   await client.query("COMMIT");
 } catch (error) {
@@ -161,9 +239,11 @@ try {
 
 const counts = await pool.query(
   `select
-    (select count(*)::int from maintaineros_repositories where id = $1) as repositories,
-    (select count(*)::int from maintaineros_issues where repository_id = $1) as issues,
-    (select count(*)::int from maintaineros_import_runs where lower(owner) = lower($2) and lower(repo) = lower($3)) as import_runs`,
+	    (select count(*)::int from maintaineros_repositories where id = $1) as repositories,
+	    (select count(*)::int from maintaineros_issues where repository_id = $1) as issues,
+	    (select count(*)::int from maintaineros_pull_requests where repository_id = $1) as pull_requests,
+	    (select count(*)::int from maintaineros_pull_request_comments where repository_id = $1) as pull_request_comments,
+	    (select count(*)::int from maintaineros_import_runs where lower(owner) = lower($2) and lower(repo) = lower($3)) as import_runs`,
   [repositoryId, owner, repo]
 );
 
@@ -176,6 +256,7 @@ console.log(
         requestedLimit: limit,
         importedIssues: issues.length,
         skippedPullRequests: skippedPullRequestCount,
+        importedPullRequests: pullRequests.length,
         repositoryId
       },
       counts: counts.rows[0]
@@ -213,6 +294,53 @@ async function fetchIssues(ownerName, repoName, requestedLimit) {
   return { issues: output.slice(0, requestedLimit), skippedPullRequestCount };
 }
 
+async function fetchPullRequests(ownerName, repoName, requestedLimit) {
+  const output = [];
+  let page = 1;
+
+  while (output.length < requestedLimit) {
+    const perPage = 100;
+    const pagePullRequests = await githubFetch(
+      `https://api.github.com/repos/${ownerName}/${repoName}/pulls?state=open&per_page=${perPage}&page=${page}`
+    );
+    output.push(...pagePullRequests.slice(0, requestedLimit - output.length));
+    if (pagePullRequests.length < perPage) break;
+    page += 1;
+  }
+
+  return output;
+}
+
+async function fetchGreptileCommentsByPullRequest(ownerName, repoName) {
+  const [issueComments, reviewComments] = await Promise.all([
+    fetchCommentPages(`https://api.github.com/repos/${ownerName}/${repoName}/issues/comments`, "issue"),
+    fetchCommentPages(`https://api.github.com/repos/${ownerName}/${repoName}/pulls/comments`, "review")
+  ]);
+  const grouped = new Map();
+  for (const comment of [...issueComments, ...reviewComments].filter(isGreptileComment)) {
+    const pullRequestNumber = pullRequestNumberForComment(comment);
+    if (!pullRequestNumber) continue;
+    const comments = grouped.get(pullRequestNumber) || [];
+    comments.push(comment);
+    grouped.set(pullRequestNumber, comments);
+  }
+  return grouped;
+}
+
+async function fetchCommentPages(url, kind) {
+  const comments = [];
+  let page = 1;
+
+  while (page <= 10) {
+    const payload = await githubFetch(`${url}?per_page=100&page=${page}`);
+    comments.push(...payload.map((comment) => ({ ...comment, kind })));
+    if (payload.length < 100) break;
+    page += 1;
+  }
+
+  return comments;
+}
+
 async function githubFetch(url) {
   const response = await fetch(url, { headers: githubHeaders });
   if (!response.ok) {
@@ -243,6 +371,23 @@ function issueMetadata(issue) {
     })),
     labelsFull: issue.labels.map((label) => (typeof label === "string" ? { name: label } : label))
   };
+}
+
+function isGreptileComment(comment) {
+  const author = comment.user?.login.toLowerCase() || "";
+  const body = comment.body?.toLowerCase() || "";
+  return author.includes("greptile") || body.includes("greptile");
+}
+
+function findLinkedIssueNumber(body) {
+  const match = body.match(/(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)/i);
+  return match ? Number(match[1]) : null;
+}
+
+function pullRequestNumberForComment(comment) {
+  const url = comment.pull_request_url || comment.issue_url || comment.html_url;
+  const match = url.match(/\/(?:pulls|issues|pull)\/(\d+)(?:$|[#/?])/);
+  return match ? Number(match[1]) : null;
 }
 
 async function ensureMaintainerSchema(client) {
@@ -309,12 +454,74 @@ async function ensureMaintainerSchema(client) {
       repo text not null,
       requested_limit integer not null,
       imported_issue_count integer not null default 0,
+      imported_pull_request_count integer not null default 0,
       skipped_pull_request_count integer not null default 0,
       status text not null,
       source_state text not null default 'live',
       started_at timestamptz not null,
       finished_at timestamptz,
       error_message text
+    )
+  `);
+
+  await client.query(`
+    alter table maintaineros_import_runs
+      add column if not exists imported_pull_request_count integer not null default 0
+  `);
+
+	  await client.query(`
+	    create table if not exists maintaineros_pull_requests (
+	      id text primary key,
+	      repository_id text not null references maintaineros_repositories(id) on delete cascade,
+	      issue_number integer not null default 0,
+	      number integer not null,
+	      title text not null,
+	      body text not null default '',
+	      author text not null default 'unknown',
+	      author_login text not null default 'unknown',
+	      branch_name text not null default '',
+	      head_sha text not null default 'unknown',
+	      base_branch text not null default '',
+	      html_url text not null,
+	      status text not null default 'open',
+	      draft boolean not null default false,
+	      merged_at timestamptz,
+	      linked_issue_number integer,
+	      linked_at timestamptz,
+	      created_at timestamptz,
+	      updated_at timestamptz,
+	      closed_at timestamptz,
+	      unique(repository_id, number)
+	    )
+	  `);
+
+  await client.query(`
+    alter table maintaineros_pull_requests
+      add column if not exists issue_number integer not null default 0,
+      add column if not exists body text not null default '',
+      add column if not exists author text not null default 'unknown',
+      add column if not exists author_login text not null default 'unknown',
+      add column if not exists head_sha text not null default 'unknown',
+      add column if not exists status text not null default 'open',
+      add column if not exists draft boolean not null default false,
+      add column if not exists linked_issue_number integer,
+      add column if not exists linked_at timestamptz
+  `);
+
+  await client.query(`
+    create table if not exists maintaineros_pull_request_comments (
+      id text primary key,
+      repository_id text not null references maintaineros_repositories(id) on delete cascade,
+      pull_request_number integer not null,
+      provider text not null default 'greptile',
+      author text not null default 'unknown',
+      body text not null default '',
+      html_url text not null,
+      path text,
+      line integer,
+      created_at timestamptz,
+      updated_at timestamptz,
+      unique(repository_id, pull_request_number, id)
     )
   `);
 }

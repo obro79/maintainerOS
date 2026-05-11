@@ -139,7 +139,8 @@ export async function generateClodRoutingArtifact(issue: IssueDetailViewModel): 
   try {
     const baseUrl = (process.env.CLOD_BASE_URL || 'https://api.clod.io/v1').replace(/\/$/, '');
     const controller = new AbortController();
-    timeout = setTimeout(() => controller.abort(), Number(process.env.CLOD_TIMEOUT_MS || 12000));
+    const timeoutMs = Math.max(Number(process.env.CLOD_TIMEOUT_MS || 0) || 0, 300000);
+    timeout = setTimeout(() => controller.abort(), timeoutMs);
     const response = await fetch(`${baseUrl}/chat/completions`, {
       method: 'POST',
       signal: controller.signal,
@@ -149,13 +150,13 @@ export async function generateClodRoutingArtifact(issue: IssueDetailViewModel): 
       },
       body: JSON.stringify({
         model: selection.model,
-        temperature: 0.2,
-        max_completion_tokens: 500,
+        max_completion_tokens: 2000,
+        response_format: { type: 'json_object' },
         messages: [
           {
             role: 'system',
             content:
-              'You are MaintainerOS. Return strict JSON with summary, rationale, and acceptanceChecks for an open-source maintainer issue. Do not include markdown.',
+              'You are MaintainerOS. Return only compact JSON: {"summary":"one sentence","rationale":"one sentence","acceptanceChecks":["check 1","check 2","check 3"]}. Do not include markdown.',
           },
           {
             role: 'user',

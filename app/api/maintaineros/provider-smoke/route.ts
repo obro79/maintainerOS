@@ -130,7 +130,6 @@ async function smokeClod(startedAt: number, runId: string): Promise<ProviderCall
     },
     body: JSON.stringify({
       model: process.env.CLOD_CHEAP_MODEL || 'DeepSeek V3',
-      temperature: 0,
       max_completion_tokens: 20,
       messages: [
         { role: 'system', content: 'Return strict JSON.' },

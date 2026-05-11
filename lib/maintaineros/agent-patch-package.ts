@@ -20,7 +20,7 @@ export function parseAgentPatchPackage(content: unknown): AgentPatchPackage {
   const summary = stringValue(parsed.summary);
   const branchName = stringValue(parsed.branchName).replace(/^refs\/heads\//, '');
   const commitMessage = stringValue(parsed.commitMessage);
-  const unifiedDiff = stringValue(parsed.unifiedDiff);
+  const unifiedDiff = normalizeUnifiedDiff(stringValue(parsed.unifiedDiff));
 
   if (!summary) throw new Error('Patch package missing summary.');
   if (!branchName || !/^[-a-zA-Z0-9/_]+$/.test(branchName)) throw new Error('Patch package has an invalid branch name.');
@@ -53,4 +53,11 @@ function extractJsonObject(content: string) {
   const end = trimmed.lastIndexOf('}');
   if (start >= 0 && end > start) return trimmed.slice(start, end + 1);
   return trimmed;
+}
+
+function normalizeUnifiedDiff(diff: string) {
+  return diff.replace(
+    /(^diff --git a\/(.+) b\/\2\n(?:new file mode .+\n)?index 0000000\.\.[^\n]+\n)--- a\/\2\n\+\+\+ b\/\2/gm,
+    '$1--- /dev/null\n+++ b/$2',
+  );
 }

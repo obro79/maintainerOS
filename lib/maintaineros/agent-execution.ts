@@ -1,3 +1,4 @@
+import { redactAgentCommandForEvidence } from './agent-command-evidence';
 import { parseAgentPatchPackage, type AgentPatchPackage } from './agent-patch-package';
 import { recordProviderRun } from './provider-runs';
 import type { IssueDetailViewModel, PullRequestViewModel, SandboxCommandResultViewModel, SandboxExecutionViewModel } from './types';
@@ -102,11 +103,12 @@ export async function runAgentExecution(issue: IssueDetailViewModel, repositoryI
 export async function generateClodPatchPackage(issue: IssueDetailViewModel, repositoryId: string): Promise<AgentPatchPackage> {
   if (!process.env.CLOD_API_KEY) throw new Error('CLOD_API_KEY is required to generate an agent patch.');
   const baseUrl = (process.env.CLOD_BASE_URL || 'https://api.clod.io/v1').replace(/\/$/, '');
-  const firstPayload = await requestClodPatchPayload(baseUrl, issue, repositoryId, true);
+  const repositorySnapshot = await buildRepositorySnapshot(repositoryId, issue);
+  const firstPayload = await requestClodPatchPayload(baseUrl, issue, repositoryId, repositorySnapshot, true);
   try {
     return parseAgentPatchPackage(firstPayload?.choices?.[0]?.message?.content);
   } catch (error) {
-    const retryPayload = await requestClodPatchPayload(baseUrl, issue, repositoryId, false);
+    const retryPayload = await requestClodPatchPayload(baseUrl, issue, repositoryId, repositorySnapshot, false);
     try {
       return parseAgentPatchPackage(retryPayload?.choices?.[0]?.message?.content);
     } catch {
@@ -119,7 +121,13 @@ export async function generateClodPatchPackage(issue: IssueDetailViewModel, repo
   }
 }
 
-async function requestClodPatchPayload(baseUrl: string, issue: IssueDetailViewModel, repositoryId: string, includeContextPack: boolean) {
+async function requestClodPatchPayload(
+  baseUrl: string,
+  issue: IssueDetailViewModel,
+  repositoryId: string,
+  repositorySnapshot: RepositorySnapshot,
+  includeContextPack: boolean,
+) {
   const response = await fetch(`${baseUrl}/chat/completions`, {
     method: 'POST',
     headers: {
@@ -139,6 +147,7 @@ async function requestClodPatchPayload(baseUrl: string, issue: IssueDetailViewMo
             'Required schema: {summary:string, branchName:string, commitMessage:string, filesIntended:string[], unifiedDiff:string, verificationCommands:string[]}.',
             'filesIntended must be an array of file paths, not a map.',
             'unifiedDiff must be one git apply compatible patch string beginning with diff --git.',
+            'Use repositorySnapshot before writing the diff. Existing files must be modified with real context, not recreated as new files.',
             'Keep changes scoped to the issue and do not include unrelated files.',
           ].join(' '),
         },
@@ -148,6 +157,7 @@ async function requestClodPatchPayload(baseUrl: string, issue: IssueDetailViewMo
             repositoryId,
             issue: { number: issue.number, title: issue.title, body: issue.body, labels: issue.labels },
             workOrder: issue.workOrder,
+            repositorySnapshot,
             contextPack: includeContextPack ? issue.contextPack : null,
           }),
         },
@@ -159,17 +169,76 @@ async function requestClodPatchPayload(baseUrl: string, issue: IssueDetailViewMo
   return payload;
 }
 
+interface RepositorySnapshot {
+  defaultRef: string;
+  files: Array<{ path: string; exists: boolean; content: string }>;
+}
+
+interface GitHubTreeResponse {
+  tree?: Array<{ path?: string; type?: string; size?: number }>;
+}
+
+interface GitHubContentResponse {
+  type?: string;
+  encoding?: string;
+  content?: string;
+}
+
+async function buildRepositorySnapshot(repositoryId: string, issue: IssueDetailViewModel): Promise<RepositorySnapshot> {
+  const [owner, repo] = repositoryId.split('/');
+  const defaultRef = 'main';
+  const suggestedFiles = issue.workOrder.suggestedFiles.filter(Boolean);
+  if (!suggestedFiles.length) return { defaultRef, files: [] };
+
+  const tree = await githubJson<GitHubTreeResponse>(`https://api.github.com/repos/${owner}/${repo}/git/trees/${defaultRef}?recursive=1`);
+  const paths = (tree.tree ?? [])
+    .filter((item) => item.type === 'blob' && item.path && (item.size ?? 0) <= 20_000)
+    .map((item) => item.path as string)
+    .filter((path) => suggestedFiles.some((suggested) => suggested.endsWith('/') ? path.startsWith(suggested) : path === suggested))
+    .slice(0, 8);
+
+  const files = await Promise.all(paths.map(async (path) => {
+    const encodedPath = path.split('/').map(encodeURIComponent).join('/');
+    const content = await githubJson<GitHubContentResponse>(`https://api.github.com/repos/${owner}/${repo}/contents/${encodedPath}?ref=${defaultRef}`);
+    return {
+      path,
+      exists: content.type === 'file',
+      content: content.encoding === 'base64' && content.content
+        ? Buffer.from(content.content, 'base64').toString('utf8').slice(0, 12_000)
+        : '',
+    };
+  }));
+
+  return { defaultRef, files };
+}
+
+async function githubJson<T>(url: string): Promise<T> {
+  const headers: HeadersInit = {
+    Accept: 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28',
+    'User-Agent': 'MaintainerOS-agent',
+  };
+  const token = githubWorkflowToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const response = await fetch(url, { headers });
+  if (!response.ok) return {} as T;
+  return response.json().catch(() => ({})) as Promise<T>;
+}
+
 function executionCommands(repositoryId: string, issue: IssueDetailViewModel, patchPackage: AgentPatchPackage) {
-  const token = process.env.GITHUB_TOKEN;
+  const token = githubWorkflowToken();
   if (!token) throw new Error('GITHUB_TOKEN is required for agent branch push and PR creation.');
   const [owner, repo] = repositoryId.split('/');
   const cloneUrl = `https://x-access-token:${token}@github.com/${owner}/${repo}.git`;
+  const encodedPatch = Buffer.from(patchPackage.unifiedDiff, 'utf8').toString('base64');
   return [
     `rm -rf /tmp/maintaineros-agent-${issue.number}`,
     `git clone ${shellQuote(cloneUrl)} /tmp/maintaineros-agent-${issue.number}`,
+    `cd /tmp/maintaineros-agent-${issue.number} && git config user.name 'MaintainerOS Agent' && git config user.email 'maintaineros-agent@users.noreply.github.com'`,
     `cd /tmp/maintaineros-agent-${issue.number} && git switch -c ${shellQuote(patchPackage.branchName)}`,
-    `cd /tmp/maintaineros-agent-${issue.number} && cat > /tmp/maintaineros-agent-${issue.number}.patch <<'PATCH'\n${patchPackage.unifiedDiff}\nPATCH\n git apply /tmp/maintaineros-agent-${issue.number}.patch`,
-    ...patchPackage.verificationCommands.map((command) => `cd /tmp/maintaineros-agent-${issue.number} && ${command}`),
+    `cd /tmp/maintaineros-agent-${issue.number} && printf %s ${shellQuote(encodedPatch)} | base64 -d > /tmp/maintaineros-agent-${issue.number}.patch && git apply /tmp/maintaineros-agent-${issue.number}.patch`,
+    `cd /tmp/maintaineros-agent-${issue.number} && git diff --check`,
+    ...safeVerificationCommands(patchPackage.verificationCommands).map((command) => `cd /tmp/maintaineros-agent-${issue.number} && ${command}`),
     `cd /tmp/maintaineros-agent-${issue.number} && git add ${patchPackage.filesIntended.map(shellQuote).join(' ')} && git commit -m ${shellQuote(patchPackage.commitMessage)}`,
     `cd /tmp/maintaineros-agent-${issue.number} && git push origin ${shellQuote(patchPackage.branchName)}`,
     `cd /tmp/maintaineros-agent-${issue.number} && git rev-parse HEAD`,
@@ -179,7 +248,7 @@ function executionCommands(repositoryId: string, issue: IssueDetailViewModel, pa
 async function createDaytonaSandbox(repositoryId: string, issueNumber: number) {
   if (!process.env.DAYTONA_API_KEY) throw new Error('DAYTONA_API_KEY is required to create an agent sandbox.');
   const baseUrl = (process.env.DAYTONA_API_URL || process.env.DAYTONA_BASE_URL || 'https://app.daytona.io/api').replace(/\/$/, '');
-  const response = await fetch(`${baseUrl}/sandboxes`, {
+  const response = await fetch(`${baseUrl}/sandbox`, {
     method: 'POST',
     headers: daytonaHeaders(),
     body: JSON.stringify({
@@ -204,11 +273,11 @@ async function runDaytonaCommand(sandboxId: string, command: string): Promise<Sa
   const exitCode = payload.exitCode ?? payload.code ?? (response.ok ? 0 : 1);
   const output = payload.stdout ?? payload.output ?? payload.stderr ?? response.statusText;
   return {
-    command,
+    command: redactAgentCommandForEvidence(command),
     status: response.ok && exitCode === 0 ? 'passed' : 'failed',
     exitCode,
     durationMs: Date.now() - startedAt,
-    summary: String(output).slice(0, 500),
+    summary: redactAgentCommandForEvidence(String(output)).slice(0, 500),
   };
 }
 
@@ -218,7 +287,7 @@ async function createGitHubPullRequest(repositoryId: string, patchPackage: Agent
     method: 'POST',
     headers: {
       Accept: 'application/vnd.github+json',
-      Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+      Authorization: `Bearer ${githubWorkflowToken()}`,
       'X-GitHub-Api-Version': '2022-11-28',
       'Content-Type': 'application/json',
       'User-Agent': 'MaintainerOS-agent',
@@ -295,6 +364,19 @@ function totalDuration(commandResults: SandboxCommandResultViewModel[]) {
 
 function stringValue(value: unknown) {
   return typeof value === 'string' && value.trim() ? value.trim() : '';
+}
+
+function githubWorkflowToken() {
+  return process.env.GITHUB_TOKEN?.trim();
+}
+
+function safeVerificationCommands(commands: string[]) {
+  const allowedPrefixes = ['npm ', 'npm test', 'pnpm ', 'yarn ', 'bun ', 'node ', 'npx ', 'tsc ', 'grep ', 'ls ', 'test '];
+  return commands
+    .map((command) => command.trim())
+    .filter((command) => allowedPrefixes.some((prefix) => command === prefix.trim() || command.startsWith(prefix)))
+    .filter((command) => !/[;&|<>`$]/.test(command))
+    .slice(0, 5);
 }
 
 function assertRepositoryId(repositoryId: string) {

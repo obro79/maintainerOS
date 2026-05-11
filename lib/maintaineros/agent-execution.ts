@@ -18,6 +18,8 @@ interface DaytonaCommandResponse {
   stdout?: string;
   stderr?: string;
   output?: string;
+  result?: string;
+  message?: string;
 }
 
 interface GitHubPullRequestResponse {
@@ -46,69 +48,94 @@ export async function runAgentExecution(issue: IssueDetailViewModel, repositoryI
     };
   }
 
-  const patchPackage = await generateClodPatchPackage(issue, repositoryId);
-  const sandboxId = await createDaytonaSandbox(repositoryId, issue.number);
-  const commands = executionCommands(repositoryId, issue, patchPackage);
-  const commandResults: SandboxCommandResultViewModel[] = [];
+  let patchFailure: string | null = null;
 
-  try {
-    for (const command of commands) {
-      commandResults.push(await runDaytonaCommand(sandboxId, command));
+  for (let attemptIndex = 0; attemptIndex < 2; attemptIndex += 1) {
+    const patchPackage = withExecutionBranchName(await generateClodPatchPackage(issue, repositoryId, patchFailure), issue.number);
+    const sandboxId = await createDaytonaSandbox(repositoryId, issue.number);
+    const commands = executionCommands(repositoryId, issue, patchPackage);
+    const commandResults: SandboxCommandResultViewModel[] = [];
+
+    try {
+      for (const command of commands) {
+        const result = await runDaytonaCommand(sandboxId, command);
+        commandResults.push(result);
+        if (result.status === 'failed') break;
+      }
+      const failed = commandResults.find((command) => command.status === 'failed');
+      if (failed && isPatchApplyCommand(failed.command) && !patchFailure) {
+        patchFailure = failed.summary;
+        await recordProviderRun({
+          provider: 'daytona',
+          purpose: 'run-agent',
+          status: 'failed',
+          sourceState: 'live',
+          repositoryId,
+          issueNumber: issue.number,
+          runId: sandboxId,
+          latencyMs: totalDuration(commandResults),
+          errorMessage: failed.summary,
+          requestMeta: { branchName: patchPackage.branchName, filesIntended: patchPackage.filesIntended, retryingPatchGeneration: true },
+          responseMeta: { commandResults, patchSummary: patchPackage.summary },
+        });
+        continue;
+      }
+      const headSha = [...commandResults].reverse().find((command) => command.command === 'git rev-parse HEAD')?.summary.trim() || 'unknown';
+      const attempt = buildAttempt(issue, repositoryId, sandboxId, patchPackage, commandResults, failed?.summary ?? null);
+      const pullRequest = failed ? null : await createGitHubPullRequest(repositoryId, patchPackage, issue.number, headSha);
+
+      await recordProviderRun({
+        provider: 'daytona',
+        purpose: 'run-agent',
+        status: failed ? 'failed' : 'succeeded',
+        sourceState: 'live',
+        repositoryId,
+        issueNumber: issue.number,
+        runId: sandboxId,
+        artifactUrl: pullRequest?.htmlUrl ?? null,
+        latencyMs: totalDuration(commandResults),
+        errorMessage: failed?.summary ?? null,
+        requestMeta: { branchName: patchPackage.branchName, filesIntended: patchPackage.filesIntended },
+        responseMeta: { commandResults, pullRequest, patchSummary: patchPackage.summary },
+      });
+
+      return {
+        ok: !failed,
+        blocked: false,
+        error: failed?.summary ?? null,
+        patchPackage,
+        attempt: pullRequest ? { ...attempt, pullRequestUrl: pullRequest.htmlUrl } : attempt,
+        pullRequest,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown agent execution error.';
+      await recordProviderRun({
+        provider: 'daytona',
+        purpose: 'run-agent',
+        status: 'failed',
+        sourceState: 'live',
+        repositoryId,
+        issueNumber: issue.number,
+        runId: sandboxId,
+        errorMessage: message,
+        responseMeta: { commandResults, patchSummary: patchPackage.summary },
+      });
+      return { ok: false, blocked: false, error: message, patchPackage, attempt: buildAttempt(issue, repositoryId, sandboxId, patchPackage, commandResults, message), pullRequest: null };
     }
-    const failed = commandResults.find((command) => command.status === 'failed');
-    const headSha = [...commandResults].reverse().find((command) => command.command === 'git rev-parse HEAD')?.summary.trim() || 'unknown';
-    const attempt = buildAttempt(issue, repositoryId, sandboxId, patchPackage, commandResults, failed?.summary ?? null);
-    const pullRequest = failed ? null : await createGitHubPullRequest(repositoryId, patchPackage, issue.number, headSha);
-
-    await recordProviderRun({
-      provider: 'daytona',
-      purpose: 'run-agent',
-      status: failed ? 'failed' : 'succeeded',
-      sourceState: 'live',
-      repositoryId,
-      issueNumber: issue.number,
-      runId: sandboxId,
-      artifactUrl: pullRequest?.htmlUrl ?? null,
-      latencyMs: totalDuration(commandResults),
-      errorMessage: failed?.summary ?? null,
-      requestMeta: { branchName: patchPackage.branchName, filesIntended: patchPackage.filesIntended },
-      responseMeta: { commandResults, pullRequest, patchSummary: patchPackage.summary },
-    });
-
-    return {
-      ok: !failed,
-      blocked: false,
-      error: failed?.summary ?? null,
-      patchPackage,
-      attempt: pullRequest ? { ...attempt, pullRequestUrl: pullRequest.htmlUrl } : attempt,
-      pullRequest,
-    };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown agent execution error.';
-    await recordProviderRun({
-      provider: 'daytona',
-      purpose: 'run-agent',
-      status: 'failed',
-      sourceState: 'live',
-      repositoryId,
-      issueNumber: issue.number,
-      runId: sandboxId,
-      errorMessage: message,
-      responseMeta: { commandResults, patchSummary: patchPackage.summary },
-    });
-    return { ok: false, blocked: false, error: message, patchPackage, attempt: buildAttempt(issue, repositoryId, sandboxId, patchPackage, commandResults, message), pullRequest: null };
   }
+
+  return { ok: false, blocked: false, error: patchFailure ?? 'Agent patch failed before PR creation.', patchPackage: null, attempt: null, pullRequest: null };
 }
 
-export async function generateClodPatchPackage(issue: IssueDetailViewModel, repositoryId: string): Promise<AgentPatchPackage> {
+export async function generateClodPatchPackage(issue: IssueDetailViewModel, repositoryId: string, previousPatchFailure: string | null = null): Promise<AgentPatchPackage> {
   if (!process.env.CLOD_API_KEY) throw new Error('CLOD_API_KEY is required to generate an agent patch.');
   const baseUrl = (process.env.CLOD_BASE_URL || 'https://api.clod.io/v1').replace(/\/$/, '');
   const repositorySnapshot = await buildRepositorySnapshot(repositoryId, issue);
-  const firstPayload = await requestClodPatchPayload(baseUrl, issue, repositoryId, repositorySnapshot, true);
+  const firstPayload = await requestClodPatchPayload(baseUrl, issue, repositoryId, repositorySnapshot, previousPatchFailure, true);
   try {
     return parseAgentPatchPackage(firstPayload?.choices?.[0]?.message?.content);
   } catch (error) {
-    const retryPayload = await requestClodPatchPayload(baseUrl, issue, repositoryId, repositorySnapshot, false);
+    const retryPayload = await requestClodPatchPayload(baseUrl, issue, repositoryId, repositorySnapshot, previousPatchFailure, false);
     try {
       return parseAgentPatchPackage(retryPayload?.choices?.[0]?.message?.content);
     } catch {
@@ -126,6 +153,7 @@ async function requestClodPatchPayload(
   issue: IssueDetailViewModel,
   repositoryId: string,
   repositorySnapshot: RepositorySnapshot,
+  previousPatchFailure: string | null,
   includeContextPack: boolean,
 ) {
   const response = await fetch(`${baseUrl}/chat/completions`, {
@@ -148,8 +176,10 @@ async function requestClodPatchPayload(
             'filesIntended must be an array of file paths, not a map.',
             'unifiedDiff must be one git apply compatible patch string beginning with diff --git.',
             'Use repositorySnapshot before writing the diff. Existing files must be modified with real context, not recreated as new files.',
+            'Do not invent duplicate context lines in unifiedDiff. The patch must apply cleanly with git apply --recount.',
+            previousPatchFailure ? `The previous patch failed to apply. Fix this exact error: ${previousPatchFailure}` : '',
             'Keep changes scoped to the issue and do not include unrelated files.',
-          ].join(' '),
+          ].filter(Boolean).join(' '),
         },
         {
           role: 'user',
@@ -158,6 +188,7 @@ async function requestClodPatchPayload(
             issue: { number: issue.number, title: issue.title, body: issue.body, labels: issue.labels },
             workOrder: issue.workOrder,
             repositorySnapshot,
+            previousPatchFailure,
             contextPack: includeContextPack ? issue.contextPack : null,
           }),
         },
@@ -271,7 +302,7 @@ async function runDaytonaCommand(sandboxId: string, command: string): Promise<Sa
   });
   const payload = await response.json().catch(() => ({})) as DaytonaCommandResponse;
   const exitCode = payload.exitCode ?? payload.code ?? (response.ok ? 0 : 1);
-  const output = payload.stdout ?? payload.output ?? payload.stderr ?? response.statusText;
+  const output = firstNonEmpty(payload.stderr, payload.stdout, payload.output, payload.result, payload.message, response.statusText);
   return {
     command: redactAgentCommandForEvidence(command),
     status: response.ok && exitCode === 0 ? 'passed' : 'failed',
@@ -377,6 +408,23 @@ function safeVerificationCommands(commands: string[]) {
     .filter((command) => allowedPrefixes.some((prefix) => command === prefix.trim() || command.startsWith(prefix)))
     .filter((command) => !/[;&|<>`$]/.test(command))
     .slice(0, 5);
+}
+
+function isPatchApplyCommand(command: string) {
+  return command.includes('git apply');
+}
+
+function firstNonEmpty(...values: Array<string | undefined>) {
+  return values.find((value) => typeof value === 'string' && value.trim().length > 0) ?? '';
+}
+
+function withExecutionBranchName(patchPackage: AgentPatchPackage, issueNumber: number): AgentPatchPackage {
+  const leaf = patchPackage.branchName.split('/').at(-1) ?? `issue-${issueNumber}`;
+  const safeLeaf = leaf.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 48) || `issue-${issueNumber}`;
+  return {
+    ...patchPackage,
+    branchName: `maintaineros/issue-${issueNumber}-${safeLeaf}-${Date.now()}`,
+  };
 }
 
 function assertRepositoryId(repositoryId: string) {

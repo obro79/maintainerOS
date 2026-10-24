@@ -189,4 +189,4 @@ npm run ci
 
 ## Team
 
-Built by [Owen Fisher](https://github.com/obro79) with Andy L, Jessica Zhou and Carson Kyba.
+Built by [Owen Fisher](https://github.com/obro79) with [Andy L](https://github.com/AndyJLi0), [Jessica Zhou](https://github.com/jjcyz) and [Carson Kyba](https://github.com/CarsonKiibi).

@@ -39,6 +39,8 @@ flowchart LR
 
 The Next.js app (`app/`) serves the dashboard and API routes. Domain logic lives in `lib/maintaineros/`: `routing.ts` picks the lane, `agent-execution.ts` and `daytona.ts` run fix attempts, `verification.ts` and `pr-gates.ts` hold the trust boundary, and `payout.ts` and `bounty-lifecycle.ts` gate money movement on verified PRs. Fixture mode swaps the Neon repository for local JSON backlogs to preview the backlog and workflow state offline. Live agent runs, PR verification and payouts still require provider access.
 
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full issue lifecycle, gate rules, data modes and testing strategy.
+
 ## Sponsor & Provider Stack
 
 [![GitHub](https://img.shields.io/badge/GitHub-issue%20import%20%26%20PRs-181717?logo=github&logoColor=white)](https://github.com)
@@ -140,6 +142,7 @@ GitHub imports default to the first 5,000 open issues so large public repositori
 npm run dev
 npm run lint
 npm run typecheck
+npm test
 npm run build
 npm run ci
 ```
@@ -156,9 +159,10 @@ npm run backend:check
 
 ## Tests
 
-The core workflow is covered by TypeScript smoke suites in `scripts/`, which run as part of `npm run ci`:
+The trust boundary (routing, verification, merge and payout gates) is covered by deterministic TypeScript suites in `scripts/`. They run offline and in CI on every PR:
 
 ```bash
+npm test                             # all suites
 npm run test:routing-policy          # lane routing decisions
 npm run test:issue-workflow          # issue -> work order projection
 npm run test:agent-execution         # agent patch generation and execution

@@ -43,7 +43,7 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Validate prep assets
         run: npm run prep:check
@@ -52,7 +52,13 @@ jobs:
         run: npm run lint
 
       - name: Typecheck
-        run: ./node_modules/.bin/tsc --noEmit
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Validate backend policy
+        run: npm run backend:check
 
       - name: Build
         run: npm run build

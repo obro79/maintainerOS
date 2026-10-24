@@ -3,7 +3,8 @@
 .env.*
 !.env.example
 node_modules/
-docs/
+/docs/*
+!docs/ARCHITECTURE.md
 !app/docs/
 !app/docs/**
 .next/

@@ -1,8 +1,43 @@
 # MaintainerOSS
 
-Repo-native work routing for maintainers who want agent fixes, contributor bounties, and PR verification to stay tied to reviewable proof.
+**Repo-native work routing for open-source maintainers: agent fixes, contributor bounties and PR verification, all tied to reviewable proof.**
+
+[![CI](https://github.com/obro79/maintainerOS/actions/workflows/ci.yml/badge.svg)](https://github.com/obro79/maintainerOS/actions/workflows/ci.yml)
+![Next.js](https://img.shields.io/badge/Next.js-000000?logo=nextdotjs&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
+![Postgres](https://img.shields.io/badge/Neon%20Postgres-00E599?logo=postgresql&logoColor=001E2B)
+
+**1st Overall and 1st Clustly prize, Cursor AI Hackathon**
+
+<!-- DEMO GIF: record a 20-30s walkthrough (connect repo -> routed backlog -> PR verification) and save it as public/screenshots/demo.gif -->
 
 MaintainerOSS is the open-source workspace for MaintainerOS. It imports GitHub issue backlogs, classifies work into operating lanes, prepares context for safe automation, keeps risky work in maintainer review, and gates bounty payouts on fresh PR verification.
+
+## What It Does
+
+- Imports up to 5,000 open issues, plus open PRs and Greptile review comments, from any public GitHub repo.
+- Routes each issue into one of four lanes: AI agent work order, maintainer review, funded bounty, or needs clarification.
+- Runs agent fix attempts in Daytona sandboxes with Nia context packs, and turns them into PRs.
+- Verifies every PR with Greptile before a maintainer accepts it, and only releases Clustly bounty payouts after that verification.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    GH[GitHub issues and PRs] -->|import + daily cron| IMP[github-import]
+    IMP --> DB[(Neon Postgres)]
+    DB --> RT[routing: CLōD lane decision]
+    RT -->|AI| AG[agent execution in Daytona + Nia context]
+    RT -->|DEV / CLARIFY| MR[maintainer review queue]
+    RT -->|CLUSTLY| BT[bounty lifecycle]
+    AG --> PR[pull request]
+    BT --> PR
+    PR --> VF[Greptile verification + PR gates]
+    VF --> AC{maintainer acceptance}
+    AC --> MG[merge or payout]
+```
+
+The Next.js app (`app/`) serves the dashboard and API routes. Domain logic lives in `lib/maintaineros/`: `routing.ts` picks the lane, `agent-execution.ts` and `daytona.ts` run fix attempts, `verification.ts` and `pr-gates.ts` hold the trust boundary, and `payout.ts` and `bounty-lifecycle.ts` gate money movement on verified PRs. Fixture mode swaps the Neon repository for local JSON backlogs to preview the backlog and workflow state offline. Live agent runs, PR verification and payouts still require provider access.
 
 ## Sponsor & Provider Stack
 
@@ -119,6 +154,20 @@ npm run prep:check
 npm run backend:check
 ```
 
+## Tests
+
+The core workflow is covered by TypeScript smoke suites in `scripts/`, which run as part of `npm run ci`:
+
+```bash
+npm run test:routing-policy          # lane routing decisions
+npm run test:issue-workflow          # issue -> work order projection
+npm run test:agent-execution         # agent patch generation and execution
+npm run test:ai-execution-artifacts  # attempt evidence and artifacts
+npm run test:greptile-v2             # Greptile verification parsing
+npm run test:verification-payout     # payouts only after verification
+npm run test:connect-oauth           # GitHub OAuth connect flow
+```
+
 ## Deployment Check
 
 Before deploying or landing changes, run the narrowest useful checks for the touched surface. For README-only changes, verify Markdown assets exist and run:
@@ -133,3 +182,7 @@ For application or provider changes, use:
 ```bash
 npm run ci
 ```
+
+## Team
+
+Built by [Owen Fisher](https://github.com/obro79) with Andy L, Jessica Zhou and Carson Kyba.

@@ -71,12 +71,12 @@ Every step writes trace events (`trace-events.ts`, `route-history.ts`), so faile
 
 | Mode | When | Backend |
 | --- | --- | --- |
-| Fixture | `MAINTAINEROS_OFFLINE_MODE=true`, or live mode without a database URL | `FixtureMaintainerOSRepository` reading `data/mock-repos/` |
-| Live | `MAINTAINEROS_DATA_MODE=live` and `DATABASE_URL` (or `NEON_DATABASE_URL`) set | `NeonMaintainerOSRepository` over the schema in `infra/neon/` |
+| Fixture | Default. Used unless `MAINTAINEROS_OFFLINE_MODE=false`, and also when live mode has no database URL | `FixtureMaintainerOSRepository` reading `data/mock-repos/` |
+| Live | `MAINTAINEROS_OFFLINE_MODE=false`, `MAINTAINEROS_DATA_MODE=live`, and `DATABASE_URL` (or `NEON_DATABASE_URL`) set | `NeonMaintainerOSRepository` over the schema in `infra/neon/` |
 
 The Neon schema (`infra/neon/001_init.sql`) holds `repositories`, `issues`, `issue_classifications`, `work_orders`, `pull_requests`, `verification_runs`, `bounties`, `payment_artifacts` and `model_runs`. Optional auth and row-level security are in `002_optional_auth_rls.sql`.
 
-Provider adapters (CLōD, Nia, Daytona, Greptile, Clustly, Stripe) all fall back to fixture-shaped results when their keys are missing. That keeps the app runnable offline and the tests deterministic.
+Fixture data keeps the dashboard runnable offline, but a missing provider key does not always produce a fixture result. Without its key, CLōD returns a fallback routing artifact, Nia can return a fixture context pack, and Greptile returns a blocked verification. Daytona sandbox creation and `LiveClustlyProvider.createTask()` throw an error, and Stripe billing stays disabled unless `BILLING_ENABLED` and its keys are set. The test suites use fixture inputs and injected responses, so they don't depend on any provider.
 
 ## Testing strategy
 

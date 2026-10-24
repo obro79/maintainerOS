@@ -37,7 +37,7 @@ flowchart LR
     AC --> MG[merge or payout]
 ```
 
-The Next.js app (`app/`) serves the dashboard and API routes. Domain logic lives in `lib/maintaineros/`: `routing.ts` picks the lane, `agent-execution.ts` and `daytona.ts` run fix attempts, `verification.ts` and `pr-gates.ts` hold the trust boundary, and `payout.ts` and `bounty-lifecycle.ts` gate money movement on verified PRs. Fixture mode swaps the Neon repository for local JSON backlogs so the whole flow runs offline.
+The Next.js app (`app/`) serves the dashboard and API routes. Domain logic lives in `lib/maintaineros/`: `routing.ts` picks the lane, `agent-execution.ts` and `daytona.ts` run fix attempts, `verification.ts` and `pr-gates.ts` hold the trust boundary, and `payout.ts` and `bounty-lifecycle.ts` gate money movement on verified PRs. Fixture mode swaps the Neon repository for local JSON backlogs to preview the backlog and workflow state offline. Live agent runs, PR verification and payouts still require provider access.
 
 ## Sponsor & Provider Stack
 
